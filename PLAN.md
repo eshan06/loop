@@ -24,7 +24,7 @@ Both lanes work in parallel. Neither needs anything from the other yet.
 - [ ] I-6 Design tokens in `DesignSystem/`: colors, type scale, spacing, corner radii, the share-type badges.
 
 ### Server lane
-- [ ] S-1 Confirm the OCI stack is deployed and you can SSH in. Clone this repo to `~/loop` on the server.
+- [x] S-1 Confirm the OCI stack is deployed and you can SSH in. Clone this repo to `~/loop` on the server.
 - [ ] S-2 Open port 8000 in the VCN security list and in `firewalld`.
 - [ ] S-3 In the Generative AI Playground, check whether `cohere.command-a-vision` is available. Write the answer in `coord/server.md` because it decides the scan path.
 - [ ] S-4 FastAPI skeleton in `backend/` with `GET /health`, `.env.example`, `requirements.txt`, and a venv on the server.

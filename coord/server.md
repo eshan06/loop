@@ -6,8 +6,8 @@ Add new log entries at the top of the Log section, newest first. Keep each entry
 
 ## Server status
 
-- API base URL: not deployed yet
-- Vision model (`cohere.command-a-vision`) available on our account: not checked yet
+- API base URL: not deployed yet. It will be `http://163.192.218.131:8000` once S-2 and S-4 land.
+- Vision model (`cohere.command-a-vision`) available on our account: listed in the model catalog, but not called yet. S-3 will confirm it.
 - Demo accounts: not seeded yet
 
 Keep this block current. It's the first thing the iOS lane looks at.
@@ -29,6 +29,10 @@ None yet.
 None yet.
 
 ## Log
+
+### 2026-10-17 — S-1 done
+- Done: S-1. The OCI stack is up and SSH works. The repo is cloned to `~/loop` on the server (163.192.218.131). Python 3.12 is installed there.
+- Now: S-2 (open port 8000), then S-3 (vision model check).
 
 ### 2026-10-17 — lane created
 - Now: nothing in progress. Start with Phase 0 in `PLAN.md`.
