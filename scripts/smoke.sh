@@ -1204,6 +1204,91 @@ req POST "/listings/$SL/style"
 expect 401 unauthorized "style without a token"
 
 # ---------------------------------------------------------------------------
+section "dorm leaderboard (S-21)"
+# Fresh owners F, G, H with this run's own dorm names (smoke.edu has no dorm list, so
+# dorm is free text), so their counts are exact even though smoke.edu accumulates runs.
+# F's dorm completes 2 exchanges; G's and H's 1 each (a tie: same rank, alphabetical).
+# I has no dorm, so I's exchange counts toward the campus but never on the board.
+BOARD_OK="set(d) == {'items'} and all(set(r) == {'rank', 'dorm', 'items_shared'} and isinstance(r['dorm'], str) and r['dorm'] != '' and type(r['items_shared']) is int and r['items_shared'] > 0 and type(r['rank']) is int for r in d['items']) and len({r['dorm'] for r in d['items']}) == len(d['items']) and all(r['rank'] == 1 + sum(1 for x in d['items'] if x['items_shared'] > r['items_shared']) for r in d['items']) and [(-r['items_shared'], r['dorm'].casefold()) for r in d['items']] == sorted((-r['items_shared'], r['dorm'].casefold()) for r in d['items'])"
+DORM_F="Lb North $RUN"; DORM_G="Lb South $RUN"; DORM_H="Lb East $RUN"
+req GET /leaderboard/dorms "" "$TOKEN_B"
+expect 200 "GET /leaderboard/dorms"
+check "$BOARD_OK" "board shape: exact keys, ranks match counts, ties share a rank, ties alphabetical"
+check "not {'$DORM_F', '$DORM_G', '$DORM_H'} & {r['dorm'] for r in d['items']}" "this run's dorms aren't on the board yet"
+LB_BEFORE="$(jget "sum(r['items_shared'] for r in d['items'])")"
+
+lb_user() {  # lb_user LETTER DORM_JSON -> prints a token for a fresh smoke.edu user with that dorm
+  req POST /auth/login "{\"email\": \"smoke.lb$1${RUN}@smoke.edu\"}"
+  [[ "$STATUS" == 200 ]] || fail "login leaderboard user $1"
+  local token; token="$(jget 'd["token"]')"
+  req PATCH /me "{\"dorm\": $2}" "$token"
+  [[ "$STATUS" == 200 ]] || fail "set leaderboard user $1's dorm"
+  echo "$token"
+}
+lb_exchange() {  # lb_exchange OWNER_TOKEN N -> owner lists an item, B requests it, owner accepts and completes
+  local photo lid rid
+  photo="$(up "$SMALL_JPEG" front "$1")" || exit 1
+  req POST /listings "{\"title\": \"Smoke leaderboard tee $2 $MK\", \"category\": \"tops\", \"condition\": \"good\", \"share_type\": \"free\", \"meetup_spot_id\": $SPOT1, \"photo_ids\": [$photo]}" "$1"
+  [[ "$STATUS" == 201 ]] || fail "leaderboard listing $2"
+  lid="$(jget 'd["id"]')"
+  req POST "/listings/$lid/requests" '{}' "$TOKEN_B"
+  [[ "$STATUS" == 201 ]] || fail "B requests leaderboard listing $2"
+  rid="$(jget 'd["id"]')"
+  req POST "/requests/$rid/accept" "" "$1"
+  [[ "$STATUS" == 200 ]] || fail "accept leaderboard request $2"
+  req POST "/requests/$rid/complete" "" "$1"
+  [[ "$STATUS" == 200 ]] || fail "complete leaderboard request $2"
+}
+TOKEN_F="$(lb_user f "\"$DORM_F\"")" || exit 1
+TOKEN_G="$(lb_user g "\"$DORM_G\"")" || exit 1
+TOKEN_H="$(lb_user h "\"$DORM_H\"")" || exit 1
+TOKEN_I="$(lb_user i null)" || exit 1
+ok "4 owners: F, G, H in this run's dorms, I with none"
+
+# A pending request isn't counted yet.
+PLB="$(up "$SMALL_JPEG" front "$TOKEN_F")" || exit 1
+req POST /listings "{\"title\": \"Smoke leaderboard pending $MK\", \"category\": \"tops\", \"condition\": \"good\", \"share_type\": \"free\", \"meetup_spot_id\": $SPOT1, \"photo_ids\": [$PLB]}" "$TOKEN_F"
+expect 201 "F lists an item"
+LLB="$(jget 'd["id"]')"
+req POST "/listings/$LLB/requests" '{}' "$TOKEN_B"
+expect 201 "B requests it (left pending)"
+req GET /leaderboard/dorms "" "$TOKEN_B"
+check "'$DORM_F' not in {r['dorm'] for r in d['items']}" "a pending request doesn't put F's dorm on the board"
+
+lb_exchange "$TOKEN_F" 1; lb_exchange "$TOKEN_F" 2
+lb_exchange "$TOKEN_G" 3; lb_exchange "$TOKEN_H" 4; lb_exchange "$TOKEN_I" 5
+ok "5 exchanges completed (F 2, G 1, H 1, I 1)"
+
+req GET /leaderboard/dorms "" "$TOKEN_B"
+expect 200 "leaderboard after the exchanges"
+check "$BOARD_OK" "board is still consistent"
+LB="{r['dorm']: r for r in d['items']}"
+check "$LB['$DORM_F']['items_shared'] == 2 and $LB['$DORM_G']['items_shared'] == 1 and $LB['$DORM_H']['items_shared'] == 1" "counts by owner dorm: F 2, G 1, H 1"
+check "$LB['$DORM_F']['rank'] < $LB['$DORM_H']['rank'] == $LB['$DORM_G']['rank']" "F's dorm ranks above; G and H tie on one rank"
+check "[r['dorm'] for r in d['items']].index('$DORM_H') < [r['dorm'] for r in d['items']].index('$DORM_G')" "the tie is listed alphabetically (East before South)"
+check "sum(r['items_shared'] for r in d['items']) == $LB_BEFORE + 4" "board total grew by 4 (I's no-dorm exchange isn't counted)"
+LB_TOP="$(jget "d['items'][0]['dorm']")"
+cp "$BODY" "$TMP/lb.json"
+req GET /leaderboard/dorms "" "$TOKEN_F"
+cmp -s "$BODY" "$TMP/lb.json" || fail "the board differs by viewer on the same campus"
+ok "same board for every viewer on the campus"
+req GET /impact/campus "" "$TOKEN_B"
+check "d['top_dorm'] == '$LB_TOP'" "/impact/campus top_dorm is the board's first dorm"
+
+# Counts follow the owner's current dorm: G moves to H's dorm, so H's dorm has 2 and G's is gone.
+req PATCH /me "{\"dorm\": \"$DORM_H\"}" "$TOKEN_G"
+expect 200 "G moves to H's dorm"
+req GET /leaderboard/dorms "" "$TOKEN_B"
+check "$BOARD_OK and $LB['$DORM_H']['items_shared'] == 2 and '$DORM_G' not in $LB and $LB['$DORM_H']['rank'] == $LB['$DORM_F']['rank']" "G's exchange now counts for H's dorm, tying F's"
+check "[r['dorm'] for r in d['items']].index('$DORM_H') < [r['dorm'] for r in d['items']].index('$DORM_F')" "the new tie is alphabetical too (East before North)"
+
+req GET /leaderboard/dorms "" "$TOKEN_C"
+expect 200 "leaderboard on another campus"
+check "$BOARD_OK and not {'$DORM_F', '$DORM_H'} & {r['dorm'] for r in d['items']}" "another campus doesn't see smoke.edu dorms"
+req GET /leaderboard/dorms
+expect 401 unauthorized "leaderboard without a token"
+
+# ---------------------------------------------------------------------------
 section "demo campus vanderbilt.edu (S-15, read-only)"
 # READ-ONLY on purpose: the demo data must survive smoke runs. Logging in only adds a
 # session row. Never call GET /requests/{id}/messages here (it moves read markers), and
@@ -1300,6 +1385,14 @@ else
   req GET /impact/campus "" "$DEMO_J"
   expect 200 "Vanderbilt /impact/campus"
   check "d['items_rehomed'] > 0 and d['textile_kg'] > 0 and d['water_l'] > 0 and d['co2_kg'] > 0 and isinstance(d['top_dorm'], str)" "campus impact this week is > 0 with a top dorm"
+  DEMO_TOP="$(jget "d['top_dorm']")"
+  req GET /leaderboard/dorms "" "$DEMO_J"
+  expect 200 "Vanderbilt /leaderboard/dorms"
+  check "$BOARD_OK and len(d['items']) >= 3" "demo board has 3+ dorms, ranks consistent"
+  check "d['items'][0]['dorm'] == '$DEMO_TOP' and d['items'][0]['rank'] == 1" "board's first dorm is /impact/campus top_dorm"
+  DEMO_LB_DORMS="$(jget "sorted(r['dorm'] for r in d['items'])")"
+  req GET /dorms "" "$DEMO_J"
+  check "set($DEMO_LB_DORMS) <= set(d['items'])" "every board dorm is a Vanderbilt dorm"
   req GET "/requests/$DEMO_RID" "" "$DEMO_R"
   expect 403 forbidden "Riley can't open the Jordan-Sam request"
   req GET "/listings/$DEMO_LID" "" "$TOKEN_A"
