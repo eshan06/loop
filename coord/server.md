@@ -30,6 +30,12 @@ None yet.
 
 ## Log
 
+### 2026-10-17 — S-5 done
+- Done: S-5. MySQL admin login works. `backend/migrations/001_schema.sql` creates all 12 tables from the ARCHITECTURE data model (InnoDB, utf8mb4, VARCHAR enums, FKs, feed/request/message/notification indexes) in database `loop`, applied on the server. Runner: from `backend/` with the venv, `python migrate.py` (idempotent, tracks `schema_migrations`) or `python migrate.py --status`.
+- Done: `scripts/db-tunnel.sh` forwards MySQL to the Mac (3306, or 3307 if a local MySQL holds 3306; this Mac uses 3307). `SHOW TABLES` verified through it.
+- Now: S-6 (systemd `loop-api`).
+- Heads-up: no contract change. Tables are empty until the seed script (S-15).
+
 ### 2026-10-17 — S-4 done
 - Done: S-4. FastAPI skeleton in `backend/app/` (config, lazy DB engine, CORS, `/media` static, one error handler). `GET /health` → `{"status":"ok"}`; every error (unknown route, validation, `ApiError`, crashes) returns `{"error":{"code","message"}}`. Venv + `.env` set up on the server; verified from outside on port 8000, then stopped.
 - Now: S-5 (DB tunnel and schema).
