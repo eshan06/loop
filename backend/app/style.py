@@ -34,7 +34,7 @@ from .models import Listing
 
 log = logging.getLogger("loop.style")
 
-STYLE_TIMEOUT = 12.0  # seconds the endpoint gives the model before using templates
+STYLE_TIMEOUT = 15.0  # seconds the endpoint gives the model before using templates (calls take ~3-7 s)
 MIN_IDEAS, MAX_IDEAS = 2, 3
 TITLE_MAX, DESCRIPTION_MAX = 40, 200
 
@@ -127,15 +127,18 @@ def prompt(title: str, category: str | None, color: str | None, tags: Any) -> st
         f"- category: {category or 'unknown'}\n"
         f"- color: {color or 'not given'}\n"
         f"- tags: {tag_text}\n"
-        "Suggest 3 different outfits built around this exact item. Each one pairs it with "
-        "2 or 3 concrete everyday pieces, named by type and color (like \"a gray hoodie\", "
-        "\"black jeans\", \"white sneakers\"), that suit the item's category, color and vibe, "
-        "for a real college moment (class, a library night, game day, a dining hall run, "
-        "a party, a career fair). Write in a casual, friendly college-student voice.\n"
+        "Suggest 3 outfits built around this exact item, each with a clearly different vibe "
+        "(for example relaxed, put-together, cozy, sporty, going out; pick what suits the item). "
+        "Each one pairs it with 2 or 3 concrete everyday pieces named by type and color (like "
+        "\"a gray hoodie\", \"black jeans\", \"white sneakers\") whose colors work with the "
+        "item's color. Describe how this kind of item is actually worn (a hat goes on your head, "
+        "shoes go with pants, a bag is carried). Casual, friendly college-student voice.\n"
         "Never mention brands, stores, prices or buying anything new. No emoji, no hashtags.\n"
         "Reply with ONLY one JSON object, no markdown and no other text:\n"
         '{"ideas": [{"title": string, "description": string}]}\n'
-        "- title: 2 to 4 words in Title Case, like \"Weekend Layers\".\n"
+        "- title: 2 to 4 words in Title Case that name the look itself, like \"Weekend Layers\" "
+        "or \"Black and Cream\". Avoid generic titles like \"Game Day Spirit\" or "
+        "\"Casual Class Day\".\n"
         "- description: one sentence, at most 120 characters, like "
         "\"Over a gray hoodie with black jeans and white sneakers.\" Don't repeat the item's name; "
         "start with how to wear it."
@@ -146,7 +149,7 @@ def generate(title: str, category: str | None, color: str | None, tags: Any,
              timeout: float = STYLE_TIMEOUT) -> list[dict[str, str]]:
     """Ideas from the text model. Raises on failure, bad JSON or timeout."""
     text = prompt(title, category, color, tags)
-    future = ai._pool.submit(ai.text_chat, text, 500, 0.6)
+    future = ai._pool.submit(ai.text_chat, text, 500, 0.8)
     try:
         reply = future.result(timeout=timeout)
     except FutureTimeout as exc:

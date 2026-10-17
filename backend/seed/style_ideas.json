@@ -1,0 +1,667 @@
+{
+  "listings": {
+    "quarterzip": {
+      "basis": "14c3db1f224b9a46",
+      "ideas": [
+        {
+          "title": "Cozy Library Night",
+          "description": "Layer over a white thermal, pair with dark gray joggers, and slip on some fuzzy cream slippers."
+        },
+        {
+          "title": "Casual Class Day",
+          "description": "Zip it halfway, add light blue mom jeans, and finish with white canvas sneakers."
+        },
+        {
+          "title": "Game Day Vibes",
+          "description": "Wear it open over a cream tee, team it with black leggings, and rock some gray high-tops."
+        }
+      ]
+    },
+    "converse": {
+      "basis": "986d2859f2a840ec",
+      "ideas": [
+        {
+          "title": "Classroom Comfort",
+          "description": "Pair with a white graphic tee, dark blue jeans, and a light denim jacket for a laid-back class look."
+        },
+        {
+          "title": "Library Chill",
+          "description": "Wear with black joggers, a cozy beige sweater, and a scarf for those late-night study sessions."
+        },
+        {
+          "title": "Game Day Spirit",
+          "description": "Rock with a red flannel shirt, dark gray shorts, and a baseball cap for a fun and casual game day outfit."
+        }
+      ]
+    },
+    "cap": {
+      "basis": "ed63911421987bd5",
+      "ideas": [
+        {
+          "title": "Casual Class Day",
+          "description": "Pair with a white graphic tee, light blue denim jacket, and dark gray joggers for a laid-back look."
+        },
+        {
+          "title": "Library Study Session",
+          "description": "Wear over a soft beige sweater, black leggings, and brown loafers for cozy comfort."
+        },
+        {
+          "title": "Game Day Spirit",
+          "description": "Team with a red flannel shirt, dark wash jeans, and white high-tops for a spirited vibe."
+        }
+      ]
+    },
+    "jeans": {
+      "basis": "d3188fc645936524",
+      "ideas": [
+        {
+          "title": "Casual Class Day",
+          "description": "Pair with a white graphic tee, an oversized denim jacket, and white low-top sneakers for a laid-back look."
+        },
+        {
+          "title": "Library Study Session",
+          "description": "Layer under a cozy beige cardigan, add a simple black turtleneck, and slip into brown leather loafers."
+        },
+        {
+          "title": "Game Day Spirit",
+          "description": "Tuck into a bright red crewneck sweater, throw on a navy blue baseball cap, and finish with white high-top sneakers."
+        }
+      ]
+    },
+    "sundress": {
+      "basis": "6ad3915e4b9c8f44",
+      "ideas": [
+        {
+          "title": "Classroom Chic",
+          "description": "Pair with a white button-down shirt, tan belt, and brown loafers for a smart, put-together look."
+        },
+        {
+          "title": "Library Lounge",
+          "description": "Layer under a cozy beige cardigan, add blue skinny jeans, and slip on some comfy white sneakers."
+        },
+        {
+          "title": "Game Day Spirit",
+          "description": "Throw on a denim jacket, white crew socks, and red sneakers for a fun, spirited outfit."
+        }
+      ]
+    },
+    "trackpants": {
+      "basis": "93627280f9b6446a",
+      "ideas": [
+        {
+          "title": "Sporty Study Session",
+          "description": "Pair with a white graphic tee, a black denim jacket, and white sneakers for a comfy library look."
+        },
+        {
+          "title": "Game Day Ready",
+          "description": "Rock with a gold cropped sweatshirt, black high-tops, and a baseball cap for campus spirit."
+        },
+        {
+          "title": "Casual Coffee Run",
+          "description": "Layer under an oversized beige cardigan, add a simple white tank, and slip-on sandals for a chill vibe."
+        }
+      ]
+    },
+    "breton": {
+      "basis": "796bd3040448a5e1",
+      "ideas": [
+        {
+          "title": "Classic Campus Look",
+          "description": "Tuck it into high-waisted dark denim shorts, add white canvas sneakers, and a navy cardigan for a cozy library night."
+        },
+        {
+          "title": "Game Day Spirit",
+          "description": "Layer under a red flannel shirt, pair with light blue jeans, and finish with white high-tops for a fun, spirited outfit."
+        },
+        {
+          "title": "Career Fair Chic",
+          "description": "Pair with tailored black trousers, a beige blazer, and loafers for a polished yet relaxed professional vibe."
+        }
+      ]
+    },
+    "tote": {
+      "basis": "25439514d80ff29f",
+      "ideas": [
+        {
+          "title": "Library Study Session",
+          "description": "Pair with a white button-down shirt, dark gray chinos, and brown loafers for a smart, focused look."
+        },
+        {
+          "title": "Game Day Spirit",
+          "description": "Throw over a navy crewneck sweater, light blue jeans, and white canvas sneakers for a casual, spirited outfit."
+        },
+        {
+          "title": "Career Fair Ready",
+          "description": "Combine with a light gray blazer, black slim-fit pants, and black ankle boots for a polished, professional vibe."
+        }
+      ]
+    },
+    "docs": {
+      "basis": "c3c6edb5cde8af7c",
+      "ideas": [
+        {
+          "title": "Classroom Chic",
+          "description": "Pair with a white button-down shirt, black skinny jeans, and a navy blue blazer for a smart, polished look."
+        },
+        {
+          "title": "Library Night Vibes",
+          "description": "Wear with dark gray joggers, an oversized beige sweater, and a scarf for a cozy, focused study session."
+        },
+        {
+          "title": "Game Day Spirit",
+          "description": "Team with a bright yellow graphic tee, ripped blue jeans, and a denim jacket for a fun, energetic outfit."
+        }
+      ]
+    },
+    "skirt": {
+      "basis": "584c3d5db8dea2f7",
+      "ideas": [
+        {
+          "title": "Library Chic",
+          "description": "Pair with a white button-down blouse, a navy blue cardigan, and brown loafers for a cozy study session."
+        },
+        {
+          "title": "Game Day Glam",
+          "description": "Style with a black graphic tee, a denim jacket, and white sneakers for a fun and spirited look."
+        },
+        {
+          "title": "Party Ready",
+          "description": "Combine with a silver sequin top, black tights, and ankle boots for a dazzling night out."
+        }
+      ]
+    },
+    "fleece": {
+      "basis": "77dcc1cb85482693",
+      "ideas": [
+        {
+          "title": "Library Night Layers",
+          "description": "Over a white thermal top, paired with dark gray joggers and black slip-on shoes for a cozy study session."
+        },
+        {
+          "title": "Game Day Spirit",
+          "description": "Zipped over a navy blue t-shirt, with light blue jeans and white high-tops for a fun and spirited look."
+        },
+        {
+          "title": "Dining Hall Run",
+          "description": "Layered over a light gray crewneck sweatshirt, with black leggings and white sneakers for a quick and comfy meal."
+        }
+      ]
+    },
+    "backpack": {
+      "basis": "2700fbc97653ee1b",
+      "ideas": [
+        {
+          "title": "Classroom Chic",
+          "description": "Pair with a white button-down shirt, navy chinos, and brown loafers for a smart, put-together look for class."
+        },
+        {
+          "title": "Library Night",
+          "description": "Throw it on with a cozy beige sweater, dark gray joggers, and white sneakers for a comfy study session."
+        },
+        {
+          "title": "Game Day Spirit",
+          "description": "Match it with a red flannel shirt, black leggings, and white high-tops for a fun, casual game day outfit."
+        }
+      ]
+    },
+    "leather": {
+      "basis": "a726dab1e8e51bc6",
+      "ideas": [
+        {
+          "title": "Library Night",
+          "description": "Layer over a white tee, dark brown corduroy pants, and tan desert boots for a cozy study session."
+        },
+        {
+          "title": "Game Day Edge",
+          "description": "Pair with a striped red and white long sleeve, black ripped jeans, and high-top black sneakers."
+        },
+        {
+          "title": "Dining Hall Run",
+          "description": "Throw on over a light blue button-down, medium wash jeans, and white low-top sneakers."
+        }
+      ]
+    },
+    "cableknit": {
+      "basis": "37f761bbbd6a4901",
+      "ideas": [
+        {
+          "title": "Cozy Library Night",
+          "description": "Layer over a white button-down, paired with dark gray joggers and brown loafers for a comfy study session."
+        },
+        {
+          "title": "Fall Class Outfit",
+          "description": "Tuck into high-waisted beige corduroy pants, add a burgundy scarf, and finish with ankle boots."
+        },
+        {
+          "title": "Game Day Spirit",
+          "description": "Wear with light blue denim shorts, white crew socks, and sneakers for a spirited, casual look."
+        }
+      ]
+    },
+    "beanie": {
+      "basis": "5de9ac4e66c14d10",
+      "ideas": [
+        {
+          "title": "Cozy Library Night",
+          "description": "Pair with an oversized cream sweater, dark green cords, and brown leather boots for a snug study session."
+        },
+        {
+          "title": "Game Day Spirit",
+          "description": "Rock it with a navy puffer jacket, light wash jeans, and red high-tops for a lively campus event."
+        },
+        {
+          "title": "Casual Class Combo",
+          "description": "Throw it on with a white graphic tee, charcoal joggers, and slip-on vans for an easy, comfy lecture look."
+        }
+      ]
+    },
+    "flannel": {
+      "basis": "f89838a47db16bee",
+      "ideas": [
+        {
+          "title": "Cozy Library Night",
+          "description": "Layer over a white thermal top, pair with dark green cords, and slip on some brown loafers for a comfy study session."
+        },
+        {
+          "title": "Game Day Spirit",
+          "description": "Tie around the waist with a navy blue t-shirt, light wash denim shorts, and white high-tops for a spirited look."
+        },
+        {
+          "title": "Fall Class Combo",
+          "description": "Tuck into black skinny jeans, add a mustard yellow cardigan, and finish with ankle boots for a chic, casual vibe."
+        }
+      ]
+    },
+    "puffer": {
+      "basis": "56f46e360e0cdfa7",
+      "ideas": [
+        {
+          "title": "Cozy Class Day",
+          "description": "Layer over a white crewneck sweater, dark gray joggers, and black slip-on shoes for a comfy lecture look."
+        },
+        {
+          "title": "Library Night Out",
+          "description": "Pair with a light blue flannel shirt, black leggings, and brown boots for a long study session."
+        },
+        {
+          "title": "Game Day Spirit",
+          "description": "Throw it on with a red beanie, dark blue jeans, and white high-tops to cheer on your team in style."
+        }
+      ]
+    },
+    "hiking": {
+      "basis": "bed0a25ae3875e8c",
+      "ideas": [
+        {
+          "title": "Campus Hike Ready",
+          "description": "Pair with olive green cargo pants, a navy blue fleece jacket, and a beanie for a cozy outdoor study session."
+        },
+        {
+          "title": "Library Adventure",
+          "description": "Wear with dark grey joggers, a white graphic tee, and a plaid flannel shirt for a comfy late-night study vibe."
+        },
+        {
+          "title": "Game Day Spirit",
+          "description": "Team with black leggings, a bright red sweater, and a baseball cap for a spirited yet practical game day look."
+        }
+      ]
+    },
+    "woolcoat": {
+      "basis": "b1e8217d8c9e3ba6",
+      "ideas": [
+        {
+          "title": "Classy Campus Look",
+          "description": "Layer over a white button-down, navy chinos, and brown leather loafers for a polished class outfit."
+        },
+        {
+          "title": "Cozy Library Night",
+          "description": "Pair with a cream turtleneck, dark grey joggers, and white low-top sneakers for a comfy study session."
+        },
+        {
+          "title": "Game Day Chic",
+          "description": "Throw over a burgundy sweater, black skinny jeans, and ankle boots for a stylish yet warm game day."
+        }
+      ]
+    },
+    "maxidress": {
+      "basis": "cb2ee062c9684dc4",
+      "ideas": [
+        {
+          "title": "Boho Class Vibes",
+          "description": "Layer with a white lace bralette, tan wide-leg pants, and brown leather sandals for a comfy lecture look."
+        },
+        {
+          "title": "Library Night Chic",
+          "description": "Pair with an oversized beige cardigan, dark tights, and black ankle boots for a cozy study session."
+        },
+        {
+          "title": "Game Day Retro",
+          "description": "Style with a red bandana headband, denim jacket, and white canvas sneakers for campus spirit."
+        }
+      ]
+    },
+    "crossbody": {
+      "basis": "9adc3aeb9e418fa4",
+      "ideas": [
+        {
+          "title": "Library Chic",
+          "description": "Pair with a navy blue sweater, dark wash skinny jeans, and brown leather loafers for a cozy study session."
+        },
+        {
+          "title": "Game Day Glam",
+          "description": "Wear with a white graphic tee, red pleated skirt, and canvas high-tops for a spirited campus event."
+        },
+        {
+          "title": "Career Fair Ready",
+          "description": "Style with a black blazer, tailored gray trousers, and pointed-toe flats for a polished professional look."
+        }
+      ]
+    },
+    "cargo": {
+      "basis": "ffefbcb647ae0605",
+      "ideas": [
+        {
+          "title": "Utility Chic",
+          "description": "Pair with a white graphic tee, an oversized denim jacket, and black combat boots for a laid-back class look."
+        },
+        {
+          "title": "Streetwear Vibes",
+          "description": "Layer under a black cropped hoodie, add white crew socks, and slip-on slides for a cozy library night."
+        },
+        {
+          "title": "Casual Cool",
+          "description": "Tuck in a tan long-sleeve henley, throw on a brown corduroy shirt jacket, and finish with brown loafers for a dining hall run."
+        }
+      ]
+    },
+    "duffel": {
+      "basis": "111a7e99ce88c149",
+      "ideas": [
+        {
+          "title": "Classy Traveler",
+          "description": "Pair with a crisp white button-down, dark navy chinos, and brown leather loafers for a polished class look."
+        },
+        {
+          "title": "Library Chill",
+          "description": "Throw over a cozy beige sweater, light gray joggers, and white low-top sneakers for a comfy study session."
+        },
+        {
+          "title": "Game Day Ready",
+          "description": "Match with a team-colored tee, dark denim jacket, and tan desert boots for spirited campus energy."
+        }
+      ]
+    },
+    "running": {
+      "basis": "e5ea602960477f74",
+      "ideas": [
+        {
+          "title": "Campus Run",
+          "description": "Pair with black leggings, a bright green tee, and a navy windbreaker for a quick jog between classes."
+        },
+        {
+          "title": "Library Chill",
+          "description": "Team with dark gray joggers, a white graphic tee, and a navy flannel shirt for a cozy study session."
+        },
+        {
+          "title": "Game Day Spirit",
+          "description": "Wear with navy shorts, a green college hoodie, and a baseball cap for cheering on your team."
+        }
+      ]
+    },
+    "polo": {
+      "basis": "b9c1a5771e0c6edf",
+      "ideas": [
+        {
+          "title": "Classy Campus Look",
+          "description": "Tuck it into high-waisted beige chinos, add a navy blazer, and finish with brown loafers for a smart class outfit."
+        },
+        {
+          "title": "Library Chill",
+          "description": "Layer it over a white crewneck tee, pair with dark gray joggers, and slip on some black slides for a cozy study session."
+        },
+        {
+          "title": "Game Day Spirit",
+          "description": "Wear it untucked with light blue denim shorts, white crew socks, and red sneakers for a fun and spirited game day look."
+        }
+      ]
+    },
+    "shorts": {
+      "basis": "c077c7e6e6e6cf17",
+      "ideas": [
+        {
+          "title": "Casual Class Day",
+          "description": "Pair with a white graphic tee, an oversized denim jacket, and canvas slip-ons for a laid-back look."
+        },
+        {
+          "title": "Library Study Session",
+          "description": "Layer under a cozy beige cardigan, add a simple black tank, and slip into comfy slides."
+        },
+        {
+          "title": "Game Day Spirit",
+          "description": "Team with a bright yellow crop top, a red flannel tied around the waist, and high-top sneakers."
+        }
+      ]
+    },
+    "shirtdress": {
+      "basis": "e4cb1293469cbdad",
+      "ideas": [
+        {
+          "title": "Library Night",
+          "description": "Layer over a white turtleneck, paired with dark brown tights and black loafers for a cozy study session."
+        },
+        {
+          "title": "Career Fair Chic",
+          "description": "Style with a navy blazer, black ankle boots, and a silver statement necklace for a polished look."
+        },
+        {
+          "title": "Dining Hall Run",
+          "description": "Wear with white sneakers, a denim jacket, and a crossbody bag for a casual, comfy outfit."
+        }
+      ]
+    },
+    "blackdress": {
+      "basis": "126712627ff42552",
+      "ideas": [
+        {
+          "title": "Classy Comfort",
+          "description": "Layer with a white button-down shirt, add black tights, and finish with brown loafers for a library study session."
+        },
+        {
+          "title": "Game Day Chic",
+          "description": "Pair with a red oversized cardigan, black leggings, and white sneakers for a spirited campus event."
+        },
+        {
+          "title": "Dining Hall Glam",
+          "description": "Style with a denim jacket, white crew socks, and black Mary Janes for a casual yet cute dining hall look."
+        }
+      ]
+    },
+    "birks": {
+      "basis": "ac317eb14180d274",
+      "ideas": [
+        {
+          "title": "Casual Class Day",
+          "description": "Pair with light blue denim shorts, a white graphic tee, and a navy baseball cap for a laid-back look."
+        },
+        {
+          "title": "Library Study Session",
+          "description": "Wear with black joggers, a soft beige sweater, and a crossbody bag for comfort and style."
+        },
+        {
+          "title": "Dining Hall Run",
+          "description": "Team with dark green cargo pants, a striped red and white long-sleeve shirt, and a denim jacket."
+        }
+      ]
+    },
+    "hoodie": {
+      "basis": "fba977b4d95c747e",
+      "ideas": [
+        {
+          "title": "Casual Campus Vibes",
+          "description": "Layer over a white tee, pair with ripped black jeans, and finish with white sneakers for a laid-back class look."
+        },
+        {
+          "title": "Library Night Comfort",
+          "description": "Team with gray joggers and black slide sandals for a cozy, quiet study session in the library."
+        },
+        {
+          "title": "Game Day Spirit",
+          "description": "Wear with bright yellow shorts and white high-tops to stand out and cheer on your team in style."
+        }
+      ]
+    },
+    "raincoat": {
+      "basis": "985e43f1e3f8525a",
+      "ideas": [
+        {
+          "title": "Rainy Day Class",
+          "description": "Layer over a navy blue sweater, dark green cords, and brown boots for a cozy lecture hall look."
+        },
+        {
+          "title": "Library Study Session",
+          "description": "Pair with a white thermal, black leggings, and gray slip-on shoes for a comfy study vibe."
+        },
+        {
+          "title": "Game Day Spirit",
+          "description": "Throw on over a red flannel shirt, denim shorts, and white canvas sneakers for campus spirit."
+        }
+      ]
+    },
+    "bandtee": {
+      "basis": "25fa19853f575bf6",
+      "ideas": [
+        {
+          "title": "Classroom Comfort",
+          "description": "Layer under a cozy beige cardigan, pair with dark blue mom jeans, and finish with white canvas sneakers."
+        },
+        {
+          "title": "Library Chill",
+          "description": "Tuck into high-waisted gray joggers, add a burgundy flannel shirt around the waist, and slip on black slides."
+        },
+        {
+          "title": "Game Day Spirit",
+          "description": "Knot at the waist, team it with red athletic shorts, and rock some white high-top sneakers."
+        }
+      ]
+    },
+    "overalldress": {
+      "basis": "9e7f7628a0de5f0a",
+      "ideas": [
+        {
+          "title": "Casual Campus Vibes",
+          "description": "Layer over a white graphic tee, paired with brown ankle boots and a crossbody bag for a laid-back class look."
+        },
+        {
+          "title": "Library Night Comfort",
+          "description": "Style with a cozy beige cardigan, white crew socks, and slip-on loafers for a quiet study session."
+        },
+        {
+          "title": "Game Day Spirit",
+          "description": "Throw on a red flannel shirt underneath, add white sneakers, and grab a baseball cap for campus spirit."
+        }
+      ]
+    },
+    "cardigan": {
+      "basis": "77f18b776038a480",
+      "ideas": [
+        {
+          "title": "Cozy Library Night",
+          "description": "Layer over a white thermal top, pair with dark green cords, and slip on some brown loafers for a comfy study session."
+        },
+        {
+          "title": "Game Day Spirit",
+          "description": "Button it over a yellow tee, team it with blue jeans, and finish with white high-tops for campus spirit."
+        },
+        {
+          "title": "Dining Hall Run",
+          "description": "Throw it on over a black tank, match with gray joggers, and slide into some fuzzy slippers for a quick bite."
+        }
+      ]
+    },
+    "belt": {
+      "basis": "09a40ebb26523784",
+      "ideas": [
+        {
+          "title": "Casual Class Day",
+          "description": "Pair with a white graphic tee, dark blue jeans, and brown boots for a laid-back yet put-together look."
+        },
+        {
+          "title": "Library Study Session",
+          "description": "Wear over a light blue chambray shirt, khaki chinos, and white low-top sneakers for a comfy vibe."
+        },
+        {
+          "title": "Game Day Spirit",
+          "description": "Team with a maroon crewneck sweater, black joggers, and gray high-tops for a sporty, campus-ready outfit."
+        }
+      ]
+    },
+    "chinos": {
+      "basis": "01be62c039a1a11f",
+      "ideas": [
+        {
+          "title": "Classroom Chic",
+          "description": "Tuck a light blue button-down shirt into the chinos, add a navy blazer, and finish with brown loafers for a polished class look."
+        },
+        {
+          "title": "Library Lounge",
+          "description": "Pair with a white crewneck sweater, a dark green utility jacket, and beige desert boots for a cozy study session."
+        },
+        {
+          "title": "Career Fair Ready",
+          "description": "Match with a crisp white dress shirt, a gray V-neck sweater, and black Oxford shoes for a professional yet approachable vibe."
+        }
+      ]
+    },
+    "dressshirt": {
+      "basis": "5f2f88d7d1a405ce",
+      "ideas": [
+        {
+          "title": "Classy Casual",
+          "description": "Tuck it into dark green cords, add a navy blazer, and brown loafers for a polished class look."
+        },
+        {
+          "title": "Library Chic",
+          "description": "Layer over a white tee, pair with black skinny jeans, and slip on some gray sneakers for a comfy study session."
+        },
+        {
+          "title": "Game Day Prep",
+          "description": "Roll up the sleeves, wear with red chinos, and throw on a denim jacket for a spirited campus event."
+        }
+      ]
+    },
+    "scarf": {
+      "basis": "40117a5af59b9dd9",
+      "ideas": [
+        {
+          "title": "Cozy Library Night",
+          "description": "Wrap it over a cream turtleneck, paired with dark green cords and brown loafers for a snug study session."
+        },
+        {
+          "title": "Game Day Spirit",
+          "description": "Layer it with a navy puffer jacket, light blue jeans, and red sneakers for a warm, spirited look."
+        },
+        {
+          "title": "Career Fair Chic",
+          "description": "Style it with a black blazer, white button-down, and gray slacks for a polished, professional vibe."
+        }
+      ]
+    },
+    "denimjacket": {
+      "basis": "f4caa5df42f66f2f",
+      "ideas": [
+        {
+          "title": "Casual Class Day",
+          "description": "Layer over a white graphic tee, paired with dark blue skinny jeans and white canvas sneakers for a comfy look."
+        },
+        {
+          "title": "Library Study Session",
+          "description": "Throw it on with a black turtleneck, gray joggers, and black Chelsea boots for a cozy yet put-together vibe."
+        },
+        {
+          "title": "Game Day Spirit",
+          "description": "Pair with a red crewneck sweatshirt, light wash blue mom jeans, and white high-top sneakers for a fun, spirited outfit."
+        }
+      ]
+    }
+  }
+}
