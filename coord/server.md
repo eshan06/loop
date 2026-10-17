@@ -30,6 +30,7 @@ Every change to `docs/API.md` gets a line here: what changed and whether the iOS
 - 2026-10-17 (S-7): rules spelled out per endpoint (no change to shapes): success statuses, field length limits for listings and profile, `photo_ids` 1 to 5, `PATCH /listings` replaces photos, DELETE/PATCH on completed listings is 409, `role` required on `/me/requests`, `GET /listings/{id}` works in any status, hidden listings visible to their owner, which events send which notification, email normalization and campus from the last two domain labels. iOS: nothing beyond the above.
 - 2026-10-17 (S-10): `POST /scan` `kinds` must each be `front`, `back`, `label`, or `other` (`avatar` is a 400). iOS: nothing to do if it sends front/back/label.
 - Contract v1 frozen (2026-10-17). Changes from now on go through the request process in CLAUDE.md.
+- 2026-10-17 (S-13): messages rules spelled out (additive, no shape change): `POST /requests/{id}/messages` trims `body`; empty/missing → 400. Sending marks the sender's side read and bumps the Request's `updated_at` (chat moves to the top of `GET /me/requests`); reading doesn't change `updated_at`. iOS: nothing to do.
 
 ## Open requests to the iOS lane
 
@@ -42,6 +43,12 @@ None yet.
 None yet.
 
 ## Log
+
+### 2026-10-17 — S-13 done: chat live
+- Done: S-13. Live: `GET /requests/{id}/messages[?after_id=N]` (`{"items": [Message]}` oldest first by id, not paged; any request status; marks read up to the newest returned id, never backwards; non-numeric `after_id` → 400) and `POST /requests/{id}/messages` (201 + Message; body trimmed, 1-1000 chars else 400; only while `accepted` else 409 `wrong_status`). Both: the two people only → 403; other campus/no such request → 404 (same `find_request` helper as `GET /requests/{id}`). `unread_messages` on Requests and `GET /me/unread` `messages` now move with chat (smoke-tested both sides). The 3 s poll is 3 PK lookups + one range scan on `(request_id, id)`, and only writes when there's something new.
+- Done: `message_out` in serializers.py; `events.on_message_sent(db, msg, req, actor)` no-op hook for S-23 `new_message`. smoke.sh now 346 checks, all pass (2 runs in a row).
+- Contract: send trims and bumps the Request's `updated_at`; reading doesn't. No iOS change.
+- Now: S-15 (seed, demo accounts per IOS-1/IOS-2).
 
 ### 2026-10-17 — S-12 done: requests live
 - Done: S-12. Live: `POST /listings/{id}/requests` (201; note optional, trimmed, 280 max; body may be `{}` or empty; 409 `own_listing` / `already_requested` (open = pending or accepted) / `listing_unavailable` (not active), checked in that order; re-request allowed after declined/cancelled), `GET /me/requests?role=incoming|outgoing` (role required → 400; paged; `updated_at` desc), `GET /requests/{id}` (the two people only → else 403; other campus → 404), `POST /requests/{id}/accept|decline|complete|cancel` (200 + Request; 403 wrong person; 409 `wrong_status`). Accept → listing `pending` and every other pending request on it `declined`; complete (either side) → listing `completed`, `completed_at` set, owner's `items_shared` +1; cancel of an accepted request → listing back to `active`. Each action is one transaction with the listing row locked (`FOR UPDATE`); two simultaneous accepts on one listing: one 200, one 409 (tested).

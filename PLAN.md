@@ -66,7 +66,7 @@ The iOS lane builds against mocks, and the server lane builds the real endpoints
 - [x] S-10 Scan: `POST /scan` calls the vision model and returns a validated draft. Include the fallback path and a timeout.
 - [x] S-11 Listings: create, read, update, delete, plus the feed with filters, search, and paging.
 - [x] S-12 Requests: create, accept, decline, complete, cancel. Accepting one request declines the others on that listing.
-- [ ] S-13 Messages: list after an ID, send.
+- [x] S-13 Messages: list after an ID, send.
 - [x] S-14 Meetup spots per campus.
 - [ ] S-15 Seed script with 30 to 40 listings using real photos of the team's clothes, plus three demo accounts.
 
