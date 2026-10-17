@@ -55,9 +55,10 @@ def _visible_listing(db: Session, user: User, listing_id: int) -> Listing:
     return listing
 
 
-def _find(db: Session, user: User, request_id: int, lock: bool = False) -> tuple[Request, Listing]:
+def find_request(db: Session, user: User, request_id: int, lock: bool = False) -> tuple[Request, Listing]:
     """A request and its listing. Another campus (or no such request) is 404;
-    someone on the campus who isn't one of the two people is 403. With `lock`,
+    someone on the campus who isn't one of the two people is 403. The messages
+    router uses this too, so chat has the same access rules as GET /requests/{id}. With `lock`,
     the listing and then the request are locked and re-read for an update."""
     req = db.get(Request, request_id)
     if req is None:
@@ -146,7 +147,7 @@ def get_my_requests(
 def get_request(
     request_id: int, user: User = Depends(current_user), db: Session = Depends(get_db)
 ) -> RequestOut:
-    req, _ = _find(db, user, request_id)
+    req, _ = find_request(db, user, request_id)
     return request_out(db, req, user)
 
 
@@ -156,7 +157,7 @@ def get_request(
 def accept_request(
     request_id: int, user: User = Depends(current_user), db: Session = Depends(get_db)
 ) -> RequestOut:
-    req, listing = _find(db, user, request_id, lock=True)
+    req, listing = find_request(db, user, request_id, lock=True)
     if listing.owner_id != user.id:
         raise ApiError(403, "forbidden", "Only the owner can accept a request.")
     if req.status != "pending":
@@ -182,7 +183,7 @@ def accept_request(
 def decline_request(
     request_id: int, user: User = Depends(current_user), db: Session = Depends(get_db)
 ) -> RequestOut:
-    req, listing = _find(db, user, request_id, lock=True)
+    req, listing = find_request(db, user, request_id, lock=True)
     if listing.owner_id != user.id:
         raise ApiError(403, "forbidden", "Only the owner can decline a request.")
     if req.status != "pending":
@@ -196,7 +197,7 @@ def decline_request(
 def complete_request(
     request_id: int, user: User = Depends(current_user), db: Session = Depends(get_db)
 ) -> RequestOut:
-    req, listing = _find(db, user, request_id, lock=True)
+    req, listing = find_request(db, user, request_id, lock=True)
     if req.status != "accepted":
         raise _wrong_status(f"This request is {req.status}, so it can't be marked done.")
     req.status = "completed"
@@ -210,7 +211,7 @@ def complete_request(
 def cancel_request(
     request_id: int, user: User = Depends(current_user), db: Session = Depends(get_db)
 ) -> RequestOut:
-    req, listing = _find(db, user, request_id, lock=True)
+    req, listing = find_request(db, user, request_id, lock=True)
     if req.requester_id != user.id:
         raise ApiError(403, "forbidden", "Only the person who sent the request can cancel it.")
     if req.status not in OPEN:

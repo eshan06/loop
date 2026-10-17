@@ -511,7 +511,7 @@ Query: `after_id` (optional). Returns `{"items": [Message, ...]}` in order, olde
 }
 ```
 
-Reading marks every message up to the newest one returned as read for the reader, which clears `unread_messages` on the Request. Messages can be read in any request status. Only the two people on the request can read or send; anyone else gets `forbidden` (403).
+Reading marks every message up to the newest one returned as read for the reader, which clears `unread_messages` on the Request. Messages can be read in any request status. Only the two people on the request can read or send; anyone else gets `forbidden` (403). Reading doesn't change the Request's `updated_at`.
 
 ### POST /requests/{id}/messages
 
@@ -519,7 +519,7 @@ Reading marks every message up to the newest one returned as read for the reader
 { "body": "Commons at 4?" }
 ```
 
-1 to 1000 characters. Only allowed when the request is `accepted`, otherwise `wrong_status` (409). Returns the Message with status 201 and sends the other person a `new_message` notification.
+1 to 1000 characters after trimming spaces at the ends; an empty or missing `body` is `bad_request` (400). Only allowed when the request is `accepted`, otherwise `wrong_status` (409). Returns the Message with status 201 and sends the other person a `new_message` notification. Sending also marks the sender's side as read up to their message and bumps the Request's `updated_at`, so the chat moves to the top of `GET /me/requests`.
 
 ### GET /impact/me
 
