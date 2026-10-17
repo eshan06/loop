@@ -120,6 +120,22 @@ class ImpactOut(BaseModel):
     co2_kg: float
 
 
+class MyImpactOut(BaseModel):
+    items_shared: int
+    items_received: int
+    textile_kg: float
+    water_l: float
+    co2_kg: float
+
+
+class CampusImpactOut(BaseModel):
+    items_rehomed: int
+    textile_kg: float
+    water_l: float
+    co2_kg: float
+    top_dorm: str | None
+
+
 class ListingOut(BaseModel):
     id: int
     title: str
