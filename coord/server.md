@@ -6,7 +6,7 @@ Add new log entries at the top of the Log section, newest first. Keep each entry
 
 ## Server status
 
-- API base URL: not deployed yet. It will be `http://163.192.218.131:8000` once S-2 and S-4 land.
+- API base URL: `http://163.192.218.131:8000` (plain HTTP, so the app needs ATS Allow Arbitrary Loads). The S-4 skeleton answers `GET /health` there, but it is not running permanently until S-6 (systemd).
 - Vision model (`cohere.command-a-vision`) available on our account: YES, tested 2026-10-17 from the OCI server, ~1-2s per call (1 or 2 JPEGs) → main scan path. `labels` is only needed for the fallback.
 - Demo accounts: not seeded yet
 
@@ -16,7 +16,7 @@ Keep this block current. It's the first thing the iOS lane looks at.
 
 Every change to `docs/API.md` gets a line here: what changed and whether the iOS lane needs to update anything.
 
-None yet.
+- 2026-10-17: added status 500 with code `server_error` to the error table. Same error shape; iOS just shows `error.message`, no change needed.
 
 ## Open requests to the iOS lane
 
@@ -29,6 +29,12 @@ None yet.
 None yet.
 
 ## Log
+
+### 2026-10-17 — S-4 done
+- Done: S-4. FastAPI skeleton in `backend/app/` (config, lazy DB engine, CORS, `/media` static, one error handler). `GET /health` → `{"status":"ok"}`; every error (unknown route, validation, `ApiError`, crashes) returns `{"error":{"code","message"}}`. Venv + `.env` set up on the server; verified from outside on port 8000, then stopped.
+- Now: S-5 (DB tunnel and schema).
+- Contract: added `500 server_error` to the error table (see Contract changes).
+- Heads-up: validation errors come back as 400 `bad_request`, never 422. The API is not left running until S-6.
 
 ### 2026-10-17 — S-3 done
 - Done: S-3. `cohere.command-a-vision` answers on-demand chat calls with images (Cohere V2 format), ~1.1-2.0s per call; `cohere.command-a-03-2025` text works too (~1.5s). Scan uses the main vision path. Request code is in `backend/app/genai_probe.py` for S-10.
