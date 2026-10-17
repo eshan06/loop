@@ -35,6 +35,7 @@ Every change to `docs/API.md` gets a line here: what changed and whether the iOS
 - 2026-10-17 (S-17): additive, no shape change. New "Where the impact numbers come from" section (after `GET /impact/campus`) with the citation and the per-category table; `GET /impact/campus` rules spelled out (`items_rehomed` = exchanges completed on my campus in the last 7 days, each item counted once; `top_dorm` = owner dorm with the most, ties alphabetical). Listing `impact` values changed (real numbers now) and `water_l` comes back as e.g. `777.0`. iOS: nothing to do (decode as `Double`).
 - 2026-10-17 (S-18): clarification, no shape change. Saves: re-saving keeps the original save time, you can save your own listing, PUT/DELETE on a listing you can't see is `404 not_found`. iOS: nothing to do.
 - 2026-10-17 (S-19): clarification, no shape change. `GET /listings/{id}/similar` never includes the caller's own listings; score = 3 per shared tag + 2 same category + 1 same size, ties newest; zero-score items only fill when there aren't enough matches; `limit` over 20 treated as 20; source not visible → `404 not_found`. iOS: nothing to do.
+- 2026-10-17 (S-20): clarification, no shape change. `POST /listings/{id}/style`: title <= 40 and description <= 200 chars; cache cleared when title/category/color/tags change; same visibility as `GET /listings/{id}` (else `404 not_found`); if the model fails or takes > 15 s the server returns 3 template ideas (200, same shape, not cached) instead of `502 ai_unavailable`; demo listings are pre-cached. iOS: nothing to do (expect ~5 s on a first, uncached call).
 
 ## Open requests to the iOS lane
 
@@ -47,6 +48,12 @@ None yet.
 None yet.
 
 ## Log
+
+### 2026-10-17 — S-20 done: Style it live, demo listings pre-warmed
+- Done: S-20. `POST /listings/{id}/style` (`app/style.py`, route in `app/routers/listings.py`): cached ideas return instantly (~0.07 s); otherwise `cohere.command-a-03-2025` writes 3 ideas as JSON (validated, title <= 40 / description <= 200 chars), cached in `listings.style_ideas` as `{basis, ideas}` where `basis` hashes title/category/color/tags, so an edit regenerates. Model failure or > 15 s → 3 template ideas from category + color, 200, not cached (a reply landing after the timeout still gets cached). Real model calls take ~4-7 s (not 1.5 s), with rare spikes past 15 s. Demo: `backend/seed/style_ideas.json` snapshot for all 39 listings, baked in by `seed.py` (reseed makes no AI calls); `python -m seed.style_warm [--force]` regenerates it on the server. Smoke 533 checks, passed twice.
+- Contract: clarification, no shape change (see Contract changes). iOS: nothing required; the 502 path can stay, it just won't fire. Show a spinner on the first tap of a non-demo listing (~5 s).
+- Heads-up: demo reseeded (same data, now with style ideas on every listing).
+- Now: S-21 (dorm leaderboard).
 
 ### 2026-10-17 — S-19 done: similar items live
 - Done: S-19. `GET /listings/{id}/similar` in `app/routers/listings.py`: loads (id, tags, category, size, created_at) for the campus's active listings, minus the source and the caller's own, ranks in Python (3 per shared tag case-insensitive + 2 same category + 1 same size; newest, then id), returns the top `limit` (default 6, max 20) as full Listings via `listings_out`. Source follows GET /listings/{id} visibility (other campus/deleted/someone else's hidden → 404). Smoke 492 checks, passed twice; demo check asserts a Jordan item has 3+ similar items.
