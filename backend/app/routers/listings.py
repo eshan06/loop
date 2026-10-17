@@ -1,0 +1,284 @@
+"""Listings: the campus feed, create, read, edit, delete, and GET /me/listings.
+
+Every query is scoped to the caller's campus; another campus's listing is 404.
+A `hidden` listing is 404 for everyone but its owner.
+"""
+
+from __future__ import annotations
+
+from fastapi import APIRouter, Depends, Query, Response
+from sqlalchemy import String, cast, delete, func, or_, select, update
+from sqlalchemy.orm import Session
+
+from ..auth import current_user
+from ..db import get_db
+from ..errors import ApiError
+from ..models import Listing, MeetupSpot, Photo, User
+from ..paging import Paging, paged, paging_params
+from ..schemas import ListingIn, ListingOut, Page
+from ..serializers import listing_out, listings_out
+
+router = APIRouter(tags=["listings"])
+
+SHARE_TYPES = ("swap", "free", "donate")
+CONDITIONS = ("new", "like_new", "good", "worn")
+CATEGORIES = ("tops", "bottoms", "outerwear", "dresses", "shoes", "accessories", "bags")
+
+MAX_PHOTOS = 5
+MAX_TAGS = 10
+MAX_TAG_LEN = 30
+# field -> max length, for the optional free-text fields
+TEXT_LIMITS = {"size": 20, "color": 60, "brand": 80, "description": 2000}
+TITLE_MAX = 120
+
+
+def _bad(message: str) -> ApiError:
+    return ApiError(400, "bad_request", message)
+
+
+def _enum(value: str | None, field: str, allowed: tuple[str, ...]) -> str:
+    v = (value or "").strip().lower()
+    if v not in allowed:
+        raise _bad(f"{field}: must be one of {', '.join(allowed)}.")
+    return v
+
+
+def _text(value: str | None, field: str, max_len: int) -> str | None:
+    """Trim; empty becomes None; over max_len is a 400."""
+    if value is None:
+        return None
+    value = value.strip()
+    if not value:
+        return None
+    if len(value) > max_len:
+        raise _bad(f"{field}: must be at most {max_len} characters.")
+    return value
+
+
+def _tags(values: list[str] | None) -> list[str]:
+    if values is None:
+        return []
+    if len(values) > MAX_TAGS:
+        raise _bad(f"tags: at most {MAX_TAGS} tags.")
+    out: list[str] = []
+    seen: set[str] = set()
+    for raw in values:
+        tag = raw.strip()
+        if not tag:
+            continue
+        if len(tag) > MAX_TAG_LEN:
+            raise _bad(f"tags: each tag must be at most {MAX_TAG_LEN} characters.")
+        if tag.casefold() not in seen:
+            seen.add(tag.casefold())
+            out.append(tag)
+    return out
+
+
+def _photos(db: Session, user: User, photo_ids: list[int] | None, listing_id: int | None) -> list[Photo]:
+    """The caller's photos for these IDs, in order. Each must be theirs and not on
+    another listing (photos already on `listing_id` are fine, for PATCH)."""
+    if not photo_ids:
+        raise _bad("photo_ids: add at least one photo.")
+    if len(photo_ids) > MAX_PHOTOS:
+        raise ApiError(400, "too_many_photos", f"A listing can have at most {MAX_PHOTOS} photos.")
+    if len(set(photo_ids)) != len(photo_ids):
+        raise _bad("photo_ids: the same photo is listed twice.")
+    found = {p.id: p for p in db.scalars(select(Photo).where(Photo.id.in_(photo_ids)))}
+    photos = []
+    for pid in photo_ids:
+        p = found.get(pid)
+        if p is None or p.owner_id != user.id:
+            raise _bad(f"photo_ids: photo {pid} isn't one of your uploads.")
+        if p.listing_id is not None and p.listing_id != listing_id:
+            raise _bad(f"photo_ids: photo {pid} is already on another listing.")
+        photos.append(p)
+    return photos
+
+
+def _spot(db: Session, user: User, spot_id: int | None) -> int:
+    if spot_id is None:
+        raise _bad("meetup_spot_id: pick a meetup spot.")
+    spot = db.get(MeetupSpot, spot_id)
+    if spot is None or spot.campus_id != user.campus_id:
+        raise _bad("meetup_spot_id: pick one of the meetup spots for your campus.")
+    return spot.id
+
+
+def _apply(db: Session, user: User, listing: Listing, body: ListingIn, creating: bool) -> list[Photo] | None:
+    """Validate the sent fields and set them on `listing`. POST sends every field
+    (missing ones count as null); PATCH only the ones in the body. Returns the new
+    photo list when photo_ids was sent, else None."""
+    sent = set(ListingIn.model_fields) if creating else body.model_fields_set
+
+    if "title" in sent:
+        title = _text(body.title, "title", TITLE_MAX)
+        if title is None:
+            raise _bad(f"title: must be 1 to {TITLE_MAX} characters.")
+        listing.title = title
+    if "category" in sent:
+        listing.category = _enum(body.category, "category", CATEGORIES)
+    if "condition" in sent:
+        listing.condition = _enum(body.condition, "condition", CONDITIONS)
+    if "share_type" in sent:
+        listing.share_type = _enum(body.share_type, "share_type", SHARE_TYPES)
+    for field, max_len in TEXT_LIMITS.items():
+        if field in sent:
+            setattr(listing, field, _text(getattr(body, field), field, max_len))
+    if "tags" in sent:
+        listing.tags = _tags(body.tags)
+    if "meetup_spot_id" in sent:
+        listing.meetup_spot_id = _spot(db, user, body.meetup_spot_id)
+    if "photo_ids" in sent:
+        return _photos(db, user, body.photo_ids, listing.id)
+    return None
+
+
+def _attach(db: Session, listing: Listing, photos: list[Photo]) -> None:
+    """Make `photos` (in order) the listing's photos; detach any others."""
+    keep = [p.id for p in photos]
+    db.execute(
+        update(Photo)
+        .where(Photo.listing_id == listing.id, Photo.id.not_in(keep))
+        .values(listing_id=None, position=None)
+    )
+    for i, p in enumerate(photos):
+        p.listing_id = listing.id
+        p.position = i
+
+
+def _visible(db: Session, user: User, listing_id: int) -> Listing:
+    """A listing the caller may see: same campus, and not hidden unless theirs."""
+    listing = db.get(Listing, listing_id)
+    if (
+        listing is None
+        or listing.campus_id != user.campus_id
+        or (listing.status == "hidden" and listing.owner_id != user.id)
+    ):
+        raise ApiError(404, "not_found", "That listing isn't available.")
+    return listing
+
+
+def _editable(db: Session, user: User, listing_id: int) -> Listing:
+    listing = _visible(db, user, listing_id)
+    if listing.owner_id != user.id:
+        raise ApiError(403, "forbidden", "You can only change your own listings.")
+    if listing.status == "completed":
+        raise ApiError(409, "wrong_status", "This item has already been exchanged, so it can't be changed.")
+    return listing
+
+
+def _filter(value: str | None, field: str, allowed: tuple[str, ...]) -> str | None:
+    if value is None or not value.strip():
+        return None
+    return _enum(value, field, allowed)
+
+
+def _like(text: str) -> str:
+    """Case-insensitive substring pattern; `!` escapes LIKE wildcards in the text."""
+    escaped = text.lower().replace("!", "!!").replace("%", "!%").replace("_", "!_")
+    return f"%{escaped}%"
+
+
+# ---- Routes ------------------------------------------------------------------
+
+@router.get("/listings")
+def get_feed(
+    share_type: str | None = Query(None),
+    category: str | None = Query(None),
+    size: str | None = Query(None),
+    q: str | None = Query(None),
+    paging: Paging = Depends(paging_params),
+    user: User = Depends(current_user),
+    db: Session = Depends(get_db),
+) -> Page[ListingOut]:
+    stmt = select(Listing).where(Listing.campus_id == user.campus_id, Listing.status == "active")
+    if (st := _filter(share_type, "share_type", SHARE_TYPES)) is not None:
+        stmt = stmt.where(Listing.share_type == st)
+    if (cat := _filter(category, "category", CATEGORIES)) is not None:
+        stmt = stmt.where(Listing.category == cat)
+    if size is not None and size.strip():
+        stmt = stmt.where(func.lower(Listing.size) == size.strip().lower())
+    if q is not None and q.strip():
+        pattern = _like(q.strip())
+        stmt = stmt.where(
+            or_(
+                func.lower(Listing.title).like(pattern, escape="!"),
+                func.lower(Listing.brand).like(pattern, escape="!"),
+                func.lower(cast(Listing.tags, String)).like(pattern, escape="!"),
+            )
+        )
+    stmt = stmt.order_by(Listing.created_at.desc(), Listing.id.desc())
+    rows, total = paged(db, stmt, paging)
+    return Page[ListingOut](
+        items=listings_out(db, rows, user), total=total, next_offset=paging.next_offset(len(rows), total)
+    )
+
+
+@router.post("/listings", status_code=201)
+def create_listing(
+    body: ListingIn, user: User = Depends(current_user), db: Session = Depends(get_db)
+) -> ListingOut:
+    listing = Listing(owner_id=user.id, campus_id=user.campus_id, status="active")
+    photos = _apply(db, user, listing, body, creating=True)
+    db.add(listing)
+    db.flush()
+    _attach(db, listing, photos or [])
+    db.commit()
+    return listing_out(db, listing, user)
+
+
+@router.get("/listings/{listing_id}")
+def get_listing(
+    listing_id: int, user: User = Depends(current_user), db: Session = Depends(get_db)
+) -> ListingOut:
+    return listing_out(db, _visible(db, user, listing_id), user)
+
+
+@router.patch("/listings/{listing_id}")
+def patch_listing(
+    listing_id: int, body: ListingIn, user: User = Depends(current_user), db: Session = Depends(get_db)
+) -> ListingOut:
+    listing = _editable(db, user, listing_id)
+    photos = _apply(db, user, listing, body, creating=False)
+    if photos is not None:
+        _attach(db, listing, photos)
+    db.commit()
+    db.refresh(listing)
+    return listing_out(db, listing, user)
+
+
+@router.delete("/listings/{listing_id}", status_code=204)
+def delete_listing(
+    listing_id: int, user: User = Depends(current_user), db: Session = Depends(get_db)
+) -> Response:
+    _editable(db, user, listing_id)
+    # Plain SQL delete: MySQL cascades requests, messages, saves and reports, and
+    # sets photos.listing_id / notifications.listing_id to NULL (see CLAUDE.md Gotchas).
+    db.execute(delete(Listing).where(Listing.id == listing_id))
+    db.commit()
+    return Response(status_code=204)
+
+
+@router.get("/me/listings")
+def get_my_listings(
+    status: str = Query("active"),
+    paging: Paging = Depends(paging_params),
+    user: User = Depends(current_user),
+    db: Session = Depends(get_db),
+) -> Page[ListingOut]:
+    tab = status.strip().lower()
+    if tab == "active":
+        statuses = ("active", "pending", "hidden")
+    elif tab == "completed":
+        statuses = ("completed",)
+    else:
+        raise _bad("status: must be active or completed.")
+    stmt = (
+        select(Listing)
+        .where(Listing.owner_id == user.id, Listing.status.in_(statuses))
+        .order_by(Listing.created_at.desc(), Listing.id.desc())
+    )
+    rows, total = paged(db, stmt, paging)
+    return Page[ListingOut](
+        items=listings_out(db, rows, user), total=total, next_offset=paging.next_offset(len(rows), total)
+    )
