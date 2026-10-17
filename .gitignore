@@ -60,3 +60,26 @@ fastlane/report.xml
 fastlane/Preview.html
 fastlane/screenshots/**/*.png
 fastlane/test_output
+
+# ---- Loop ----
+# This machine's lane (ios or server). Each machine sets its own.
+.lane
+
+# Secrets: never commit these
+.env
+*.pem
+.oci/
+**/oci_api_key*
+
+# Python backend
+.venv/
+__pycache__/
+*.pyc
+
+# Server-side photo uploads
+loop-media/
+
+# macOS and personal Claude Code settings
+.DS_Store
+.claude/settings.local.json
+CLAUDE.local.md
