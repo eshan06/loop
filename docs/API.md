@@ -550,6 +550,25 @@ Covers the last 7 days. `top_dorm` is `null` when no exchange has a dorm yet.
 { "items_rehomed": 86, "textile_kg": 61.5, "water_l": 194000, "co2_kg": 760.0, "top_dorm": "Kissam" }
 ```
 
+`items_rehomed` counts exchanges completed on my campus in the last 7 days, and the totals add up each of those items once. `top_dorm` is the owner's dorm with the most of them (the same count as `GET /leaderboard/dorms`), ties broken alphabetically.
+
+### Where the impact numbers come from
+
+Each item's `impact` is a typical garment mass for its category times a footprint per kilogram of clothing. The full derivation is in the comment at the top of `backend/app/impact.py`.
+
+- Footprint per kg: WRAP (2017), "Valuing Our Clothes: the cost of UK fashion", page 11, Table 3, 2016 column: 23.2 t CO2e and 7,060 m³ of water per tonne of clothing over its whole life cycle, so 23.2 kg CO2e and 7,060 L per kg. <https://www.wrap.ngo/sites/default/files/2020-10/WRAP-valuing-our-clothes-the-cost-of-uk-fashion_WRAP.pdf>
+- Garment masses: Sandin, Roos, Spak, Zamani & Peters (2019), "Environmental assessment of Swedish clothing consumption: six garments, sustainable futures", Mistra Future Fashion report 2019:05 (RISE / Chalmers), Table 3.1 (printed page 28): T-shirt 110 g, jeans 477 g, dress 478 g, jacket 444 g, socks 43 g. <https://research.chalmers.se/publication/514322>
+
+| category | stands in for | textile_kg | water_l | co2_kg |
+| --- | --- | --- | --- | --- |
+| tops | T-shirt | 0.11 | 777 | 2.6 |
+| bottoms | jeans | 0.48 | 3368 | 11.1 |
+| dresses | dress | 0.48 | 3375 | 11.1 |
+| outerwear | jacket | 0.44 | 3135 | 10.3 |
+| accessories | socks | 0.04 | 304 | 1.0 |
+| shoes | jeans mass (assumption: neither source covers footwear) | 0.48 | 3368 | 11.1 |
+| bags | jacket mass (assumption: neither source covers bags) | 0.44 | 3135 | 10.3 |
+
 ### PUT and DELETE /listings/{id}/save, GET /me/saved
 
 PUT and DELETE return 204 and are safe to repeat. `GET /me/saved` returns a paged list of saved Listings in any status except `hidden`, most recently saved first.
