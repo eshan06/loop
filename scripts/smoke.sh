@@ -1289,6 +1289,188 @@ req GET /leaderboard/dorms
 expect 401 unauthorized "leaderboard without a token"
 
 # ---------------------------------------------------------------------------
+section "notifications (S-23)"
+# Fresh users: owner NO (Olive), requesters N1 (Rex), N2 (Ruth), N3 (no name -> "Someone").
+# Every count is exact because these users only exist for this run.
+NOTIF_KEYS="{'id','type','title','body','request_id','listing_id','read','created_at'}"
+nt_user() {  # nt_user LETTER [NAME] -> prints "TOKEN USER_ID" for a fresh smoke.edu user
+  req POST /auth/login "{\"email\": \"smoke.nt$1${RUN}@smoke.edu\"}"
+  [[ "$STATUS" == 200 ]] || fail "login notifications user $1"
+  local token id; token="$(jget 'd["token"]')"; id="$(jget 'd["user"]["id"]')"
+  if [[ -n "${2:-}" ]]; then
+    req PATCH /me "{\"name\": \"$2\"}" "$token"
+    [[ "$STATUS" == 200 ]] || fail "name notifications user $1"
+  fi
+  echo "$token $id"
+}
+nt_list() {  # nt_list TOKEN TITLE -> prints a new listing id
+  local photo; photo="$(up "$SMALL_JPEG" front "$1")" || exit 1
+  req POST /listings "{\"title\": \"$2\", \"category\": \"outerwear\", \"condition\": \"good\", \"share_type\": \"free\", \"meetup_spot_id\": $SPOT1, \"photo_ids\": [$photo]}" "$1"
+  [[ "$STATUS" == 201 ]] || fail "list $2"
+  jget 'd["id"]'
+}
+# nts TOKEN -> GET /notifications?limit=50 into $BODY (fails the run on error)
+nts() { req GET "/notifications?limit=50" "" "$1"; [[ "$STATUS" == 200 ]] || fail "GET /notifications"; }
+read -r TOK_NO USR_NO <<<"$(nt_user o "Olive Smoke")" || exit 1
+read -r TOK_N1 USR_N1 <<<"$(nt_user r1 "Rex Smoke")" || exit 1
+read -r TOK_N2 USR_N2 <<<"$(nt_user r2 "Ruth Smoke")" || exit 1
+read -r TOK_N3 USR_N3 <<<"$(nt_user r3)" || exit 1
+[[ -n "$TOK_NO" && -n "$TOK_N1" && -n "$TOK_N2" && -n "$TOK_N3" && -n "$USR_N3" ]] || fail "set up notification users"
+ok "4 fresh users for notifications"
+NT_T1="Notif jacket $MK"; NT_T2="Notif boots $MK"
+NL1="$(nt_list "$TOK_NO" "$NT_T1")" || exit 1
+NL2="$(nt_list "$TOK_NO" "$NT_T2")" || exit 1
+ok "owner listed 2 items"
+
+req GET /notifications "" "$TOK_NO"
+expect 200 "GET /notifications"
+check "d == {'items': [], 'total': 0, 'next_offset': None, 'unread': 0}" "new user: no notifications, unread 0"
+req GET /notifications
+expect 401 unauthorized "GET /notifications without a token"
+req POST /notifications/read '{"all": true}'
+expect 401 unauthorized "POST /notifications/read without a token"
+
+# Three requests on NL1 -> three request_received for the owner, none for the requesters.
+req POST "/listings/$NL1/requests" '{}' "$TOK_N1"; [[ "$STATUS" == 201 ]] || fail "N1 requests NL1"
+NR1="$(jget 'd["id"]')"
+nts "$TOK_NO"
+check "d['total'] == 1 and d['unread'] == 1 and set(d['items'][0]) == $NOTIF_KEYS" "owner has 1 notification with exactly the contract keys"
+check "d['items'][0]['type'] == 'request_received' and d['items'][0]['title'] == 'Rex requested your item' and d['items'][0]['body'] == '$NT_T1'" "request_received: 'Rex requested your item', body is the listing title"
+check "d['items'][0]['request_id'] == $NR1 and d['items'][0]['listing_id'] == $NL1 and d['items'][0]['read'] is False and ISO.match(d['items'][0]['created_at'])" "request_received IDs, unread, ISO time"
+nts "$TOK_N1"
+check "d['total'] == 0" "the requester isn't notified about their own request"
+sleep 1
+req POST "/listings/$NL1/requests" '{"note": "please!"}' "$TOK_N2"; [[ "$STATUS" == 201 ]] || fail "N2 requests NL1"
+NR2="$(jget 'd["id"]')"
+sleep 1
+req POST "/listings/$NL1/requests" '{}' "$TOK_N3"; [[ "$STATUS" == 201 ]] || fail "N3 requests NL1"
+NR3="$(jget 'd["id"]')"
+nts "$TOK_NO"
+check "d['total'] == 3 and d['unread'] == 3 and [n['request_id'] for n in d['items']] == [$NR3, $NR2, $NR1]" "owner has 3 unread, newest first"
+check "d['items'][0]['title'] == 'Someone requested your item'" "a requester with no name shows as Someone"
+req GET "/notifications?limit=2" "" "$TOK_NO"
+check "len(d['items']) == 2 and d['total'] == 3 and d['next_offset'] == 2 and d['unread'] == 3" "page 1 of 2 (limit 2), unread counts every page"
+req GET "/notifications?limit=2&offset=2" "" "$TOK_NO"
+check "len(d['items']) == 1 and d['items'][0]['request_id'] == $NR1 and d['next_offset'] is None and d['unread'] == 3" "page 2: the oldest, last page"
+req GET "/notifications?limit=0" "" "$TOK_NO"
+expect 400 bad_request "limit=0 is a bad request"
+req GET /me/unread "" "$TOK_NO"
+check "d['notifications'] == 3 and d['incoming_requests'] == 3" "owner /me/unread: 3 notifications, 3 incoming"
+
+# Decline N2 -> N2 gets request_declined; the owner's request_received for it is read.
+req POST "/requests/$NR2/decline" "" "$TOK_NO"; [[ "$STATUS" == 200 ]] || fail "owner declines N2"
+nts "$TOK_N2"
+check "d['total'] == 1 and d['unread'] == 1 and d['items'][0]['type'] == 'request_declined' and d['items'][0]['title'] == 'Olive declined your request'" "N2 gets request_declined from Olive"
+check "d['items'][0]['request_id'] == $NR2 and d['items'][0]['listing_id'] == $NL1 and d['items'][0]['body'] == '$NT_T1'" "declined points at N2's request and NL1"
+nts "$TOK_NO"
+check "d['total'] == 3 and d['unread'] == 2 and [n['read'] for n in d['items'] if n['request_id'] == $NR2] == [True]" "owner: nothing new, the declined request's notification is read"
+
+# Accept N1 -> N1 gets request_accepted, N3 is auto-declined.
+sleep 1
+req POST "/requests/$NR1/accept" "" "$TOK_NO"; [[ "$STATUS" == 200 ]] || fail "owner accepts N1"
+nts "$TOK_N1"
+check "d['total'] == 1 and d['items'][0]['type'] == 'request_accepted' and d['items'][0]['title'] == 'Olive accepted your request' and d['items'][0]['request_id'] == $NR1 and d['items'][0]['body'] == '$NT_T1'" "N1 gets request_accepted"
+nts "$TOK_N3"
+check "d['total'] == 1 and d['items'][0]['type'] == 'request_declined' and d['items'][0]['request_id'] == $NR3 and d['items'][0]['title'] == 'Olive gave this one to someone else'" "auto-declined N3 gets request_declined"
+nts "$TOK_N2"
+check "d['total'] == 1" "N2 (already declined) gets nothing more"
+nts "$TOK_NO"
+check "d['total'] == 3 and d['unread'] == 0 and all(n['read'] for n in d['items'])" "owner: accept and auto-decline mark all request_received read, nothing new"
+
+# Messages: N1 -> owner; a second unread message collapses into the same notification.
+req POST "/requests/$NR1/messages" '{"body": "Hi Olive, is noon ok?"}' "$TOK_N1"; [[ "$STATUS" == 201 ]] || fail "N1 messages"
+nts "$TOK_NO"
+check "d['total'] == 4 and d['unread'] == 1 and d['items'][0]['type'] == 'new_message' and d['items'][0]['title'] == 'Rex sent you a message' and d['items'][0]['body'] == 'Hi Olive, is noon ok?'" "owner gets new_message from Rex with the text"
+check "d['items'][0]['request_id'] == $NR1 and d['items'][0]['listing_id'] == $NL1" "new_message points at the request"
+NM1="$(jget "d['items'][0]['id']")"; NM1_AT="$(jget "d['items'][0]['created_at']")"
+nts "$TOK_N1"
+check "d['total'] == 1" "the sender isn't notified about their own message"
+sleep 1
+req POST "/requests/$NR1/messages" '{"body": "Or 1pm works too"}' "$TOK_N1"; [[ "$STATUS" == 201 ]] || fail "N1 messages again"
+nts "$TOK_NO"
+check "d['total'] == 4 and d['unread'] == 1 and d['items'][0]['id'] == $NM1" "second unread message collapses into the same notification"
+check "d['items'][0]['title'] == 'Rex sent you 2 messages' and d['items'][0]['body'] == 'Or 1pm works too' and d['items'][0]['created_at'] > '$NM1_AT'" "collapsed: count in title, newest text, created_at bumped"
+req GET /me/unread "" "$TOK_NO"
+check "d['notifications'] == 1 and d['messages'] == 2" "owner /me/unread: 1 notification, 2 messages"
+
+# The owner replies -> her new_message is read; N1 gets one.
+req POST "/requests/$NR1/messages" '{"body": "Noon at Commons!"}' "$TOK_NO"; [[ "$STATUS" == 201 ]] || fail "owner replies"
+nts "$TOK_NO"
+check "d['total'] == 4 and d['unread'] == 0" "replying marks the owner's new_message read"
+nts "$TOK_N1"
+check "d['total'] == 2 and d['unread'] == 2 and d['items'][0]['type'] == 'new_message' and d['items'][0]['title'] == 'Olive sent you a message'" "N1 gets new_message from Olive"
+NM2="$(jget "d['items'][0]['id']")"
+sleep 1
+req POST "/requests/$NR1/messages" '{"body": "See you"}' "$TOK_NO"; [[ "$STATUS" == 201 ]] || fail "owner messages again"
+nts "$TOK_N1"
+check "d['total'] == 2 and d['items'][0]['id'] == $NM2 and d['items'][0]['title'] == 'Olive sent you 2 messages'" "N1's new_message collapses too"
+# Reading the chat marks N1's new_message read; the next message starts a new one.
+req GET "/requests/$NR1/messages" "" "$TOK_N1"; [[ "$STATUS" == 200 ]] || fail "N1 reads the chat"
+nts "$TOK_N1"
+check "d['total'] == 2 and d['unread'] == 1 and [n['read'] for n in d['items'] if n['id'] == $NM2] == [True]" "reading the chat marks N1's new_message read"
+sleep 1
+LONG="$(python3 -c 'print(" ".join(["word"] * 80))')"
+req POST "/requests/$NR1/messages" "{\"body\": \"$LONG\"}" "$TOK_NO"; [[ "$STATUS" == 201 ]] || fail "owner sends a long message"
+nts "$TOK_N1"
+check "d['total'] == 3 and d['unread'] == 2 and d['items'][0]['id'] != $NM2 and d['items'][0]['title'] == 'Olive sent you a message'" "after reading, a new message makes a new notification"
+check "len(d['items'][0]['body']) <= 140 and d['items'][0]['body'].endswith('…')" "long message body is a short preview"
+req GET /me/unread "" "$TOK_N1"
+check "d['notifications'] == 2" "N1 /me/unread notifications 2"
+
+# Complete and cancel send nothing.
+req POST "/requests/$NR1/complete" "" "$TOK_N1"; [[ "$STATUS" == 200 ]] || fail "N1 completes"
+nts "$TOK_NO"; check "d['total'] == 4" "complete: nothing for the owner"
+nts "$TOK_N1"; check "d['total'] == 3" "complete: nothing for the requester"
+req POST "/listings/$NL2/requests" '{}' "$TOK_N2"; [[ "$STATUS" == 201 ]] || fail "N2 requests NL2"
+NR4="$(jget 'd["id"]')"
+nts "$TOK_NO"; check "d['total'] == 5 and d['unread'] == 1 and d['items'][0]['request_id'] == $NR4" "N2's request on NL2 notifies the owner"
+req POST "/requests/$NR4/cancel" "" "$TOK_N2"; [[ "$STATUS" == 200 ]] || fail "N2 cancels pending"
+nts "$TOK_NO"; check "d['total'] == 5" "cancel (pending): nothing for the owner"
+req POST "/listings/$NL2/requests" '{}' "$TOK_N3"; [[ "$STATUS" == 201 ]] || fail "N3 requests NL2"
+NR5="$(jget 'd["id"]')"
+req POST "/requests/$NR5/accept" "" "$TOK_NO"; [[ "$STATUS" == 200 ]] || fail "owner accepts N3 on NL2"
+req POST "/requests/$NR5/cancel" "" "$TOK_N3"; [[ "$STATUS" == 200 ]] || fail "N3 cancels accepted"
+nts "$TOK_NO"; check "d['total'] == 6 and not any(n['type'] not in ('request_received', 'new_message') for n in d['items'])" "cancel (accepted): owner got only the request_received"
+nts "$TOK_N3"; check "d['total'] == 2 and d['items'][0]['type'] == 'request_accepted' and d['items'][0]['request_id'] == $NR5" "N3: declined earlier, now accepted, nothing for the cancel"
+nts "$TOK_N2"; check "d['total'] == 1" "N2: nothing for its own cancel"
+
+# Mark read: some IDs, someone else's IDs, then all.
+nts "$TOK_N1"
+N1_UNREAD="$(jget "[n['id'] for n in d['items'] if not n['read']]")"
+N1_FIRST="$(jget "[n['id'] for n in d['items'] if not n['read']][0]")"
+check "len($N1_UNREAD) == 2" "N1 has 2 unread before marking"
+req POST /notifications/read "{\"ids\": [$N1_FIRST]}" "$TOK_N2"
+expect 204 "someone else's ID is ignored (still 204)"
+nts "$TOK_N1"; check "d['unread'] == 2" "N1's notification is still unread"
+req POST /notifications/read "{\"ids\": [$N1_FIRST, 999999999]}" "$TOK_N1"
+expect 204 "POST /notifications/read with ids"
+[[ ! -s "$BODY" ]] || fail "mark-read 204 has an empty body"
+ok "mark-read body is empty"
+nts "$TOK_N1"
+check "d['unread'] == 1 and [n['read'] for n in d['items'] if n['id'] == $N1_FIRST] == [True] and d['total'] == 3" "only that ID is read"
+req POST /notifications/read "{\"ids\": [$N1_FIRST]}" "$TOK_N1"
+expect 204 "marking it again is still 204"
+nts "$TOK_N1"; check "d['unread'] == 1" "idempotent"
+req POST /notifications/read '{"ids": []}' "$TOK_N1"
+expect 204 "empty ids is a no-op 204"
+req GET /me/unread "" "$TOK_N1"
+check "d['notifications'] == 1" "/me/unread agrees: 1"
+req POST /notifications/read '{}' "$TOK_N1"
+expect 400 bad_request "mark-read with neither ids nor all"
+req POST /notifications/read '{"all": false}' "$TOK_N1"
+expect 400 bad_request "mark-read with all false"
+req POST /notifications/read '{"ids": "x"}' "$TOK_N1"
+expect 400 bad_request "mark-read with ids not a list"
+req POST /notifications/read "" "$TOK_N1"
+expect 400 bad_request "mark-read with no body"
+req POST /notifications/read '{"all": true}' "$TOK_N1"
+expect 204 "POST /notifications/read all"
+nts "$TOK_N1"; check "d['unread'] == 0 and all(n['read'] for n in d['items']) and d['total'] == 3" "all read, nothing deleted"
+req GET /me/unread "" "$TOK_N1"
+check "d['notifications'] == 0" "/me/unread notifications 0"
+nts "$TOK_NO"; check "d['unread'] == 1" "marking all for N1 didn't touch the owner's"
+
+# ---------------------------------------------------------------------------
 section "demo campus vanderbilt.edu (S-15, read-only)"
 # READ-ONLY on purpose: the demo data must survive smoke runs. Logging in only adds a
 # session row. Never call GET /requests/{id}/messages here (it moves read markers), and
@@ -1345,6 +1527,13 @@ else
   req GET /me/unread "" "$DEMO_J"
   expect 200 "Jordan's /me/unread"
   check "all(isinstance(d[k], int) and d[k] >= 0 for k in ('notifications', 'messages', 'incoming_requests'))" "unread counts are numbers"
+  check "d['notifications'] >= 2" "Jordan's bell has 2+ unread"
+  req GET "/notifications?limit=50" "" "$DEMO_J"
+  expect 200 "Jordan's /notifications (read-only: never marked read here)"
+  check "d['unread'] >= 2 and d['total'] >= 5 and all(set(n) == $NOTIF_KEYS and ISO.match(n['created_at']) for n in d['items'])" "Jordan has 5+ notifications, 2+ unread, contract shape"
+  check "{'request_received', 'request_accepted', 'new_message'} <= {n['type'] for n in d['items']} and all(n['request_id'] and n['listing_id'] for n in d['items'] if n['type'] != 'badge_earned')" "Jordan's notifications cover requests, an accept and a message, with IDs"
+  check "[(n['created_at'], n['id']) for n in d['items']] == sorted(((n['created_at'], n['id']) for n in d['items']), reverse=True)" "Jordan's notifications newest first"
+  check "any(n['type'] == 'new_message' and n['title'].startswith('Sam sent you') for n in d['items'])" "Jordan has a message notification from Sam"
 
   req GET "/me/requests?role=incoming" "" "$DEMO_S"
   check "d['total'] >= 1" "Sam has incoming requests"
