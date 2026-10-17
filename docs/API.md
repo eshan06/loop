@@ -573,6 +573,8 @@ Each item's `impact` is a typical garment mass for its category times a footprin
 
 PUT and DELETE return 204 and are safe to repeat. `GET /me/saved` returns a paged list of saved Listings in any status except `hidden`, most recently saved first.
 
+Saving again keeps the original save time. You can save your own listing. A listing you can't see (another campus, deleted, or someone else's `hidden` listing) is `404 not_found` for both PUT and DELETE. Every Listing's `saved_by_me` reflects the caller's saves.
+
 ### GET /listings/{id}/similar
 
 Query: `limit` (default 6, max 20). Returns `{"items": [Listing, ...]}`: active listings on the same campus, ranked by shared tags, then same category. Never includes the listing itself. Can be empty.

@@ -1,4 +1,5 @@
-"""Listings: the campus feed, create, read, edit, delete, and GET /me/listings.
+"""Listings: the campus feed, create, read, edit, delete, GET /me/listings, and
+saves (PUT/DELETE /listings/{id}/save, GET /me/saved).
 
 Every query is scoped to the caller's campus; another campus's listing is 404.
 A `hidden` listing is 404 for everyone but its owner.
@@ -8,12 +9,13 @@ from __future__ import annotations
 
 from fastapi import APIRouter, Depends, Query, Response
 from sqlalchemy import String, cast, delete, func, or_, select, update
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from ..auth import current_user
 from ..db import get_db
 from ..errors import ApiError
-from ..models import Listing, MeetupSpot, Photo, User
+from ..models import Listing, MeetupSpot, Photo, Save, User
 from ..paging import Paging, paged, paging_params
 from ..schemas import ListingIn, ListingOut, Page
 from ..serializers import listing_out, listings_out
@@ -277,6 +279,58 @@ def get_my_listings(
         select(Listing)
         .where(Listing.owner_id == user.id, Listing.status.in_(statuses))
         .order_by(Listing.created_at.desc(), Listing.id.desc())
+    )
+    rows, total = paged(db, stmt, paging)
+    return Page[ListingOut](
+        items=listings_out(db, rows, user), total=total, next_offset=paging.next_offset(len(rows), total)
+    )
+
+
+# ---- Saves -------------------------------------------------------------------
+# PUT and DELETE are idempotent 204s on any listing the caller can see (any status,
+# including their own: the contract only forbids requesting/reporting your own).
+# Saving again keeps the original save time.
+
+@router.put("/listings/{listing_id}/save", status_code=204)
+def save_listing(
+    listing_id: int, user: User = Depends(current_user), db: Session = Depends(get_db)
+) -> Response:
+    listing = _visible(db, user, listing_id)
+    if db.get(Save, (user.id, listing.id)) is None:
+        db.add(Save(user_id=user.id, listing_id=listing.id))
+        try:
+            db.commit()
+        except IntegrityError:  # a concurrent PUT saved it first: same result
+            db.rollback()
+    return Response(status_code=204)
+
+
+@router.delete("/listings/{listing_id}/save", status_code=204)
+def unsave_listing(
+    listing_id: int, user: User = Depends(current_user), db: Session = Depends(get_db)
+) -> Response:
+    listing = _visible(db, user, listing_id)
+    db.execute(delete(Save).where(Save.user_id == user.id, Save.listing_id == listing.id))
+    db.commit()
+    return Response(status_code=204)
+
+
+@router.get("/me/saved")
+def get_my_saved(
+    paging: Paging = Depends(paging_params),
+    user: User = Depends(current_user),
+    db: Session = Depends(get_db),
+) -> Page[ListingOut]:
+    """Saved listings in any status except hidden, most recently saved first."""
+    stmt = (
+        select(Listing)
+        .join(Save, Save.listing_id == Listing.id)
+        .where(
+            Save.user_id == user.id,
+            Listing.campus_id == user.campus_id,
+            Listing.status != "hidden",
+        )
+        .order_by(Save.created_at.desc(), Listing.id.desc())
     )
     rows, total = paged(db, stmt, paging)
     return Page[ListingOut](

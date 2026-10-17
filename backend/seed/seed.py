@@ -144,7 +144,7 @@ REQUESTS: list[dict] = [
      "completed_h": 14, "note": "Exactly what I needed for my interview outfit!"},
 ]
 
-# Saved listings: (user, listing key, hours ago)
+# Saved listings: (user, listing key, hours ago). Jordan (demo) has 3 so the Saved tab has items.
 SAVES: list[tuple[str, str, float]] = [
     ("jordan.park", "puffer", 12),
     ("jordan.park", "woolcoat", 30),
@@ -214,8 +214,12 @@ def check_activity(listings: list[dict]) -> dict[str, str]:
         if request_status(r) == "pending":
             assert status[r["listing"]] == "active", \
                 f"{r['listing']}: pending request on a listing that isn't active"
-    for user, key, _ in SAVES:
+    for user, key, hours in SAVES:
         assert user in USERS and key in by_key and by_key[key]["owner"] != user, f"bad save {key}"
+        assert 0 < hours < by_key[key]["hours_ago"], f"save of {key} before it was posted"
+    pairs = [(u, k) for u, k, _ in SAVES]
+    assert len(pairs) == len(set(pairs)), "duplicate save"
+    assert sum(u == "jordan.park" for u, _ in pairs) >= 2, "Jordan's Saved tab needs 2+ items"
     return status
 
 
