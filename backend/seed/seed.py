@@ -21,7 +21,9 @@ What a run does, in one transaction:
    their profile is reset.
 2. Rebuild: dorms, meetup spots, USERS, the listings in seed/photos/manifest.json
    (photos copied to MEDIA_DIR/seed/, cached "Style it" ideas from
-   seed/style_ideas.json), then REQUESTS with MESSAGES and SAVES.
+   seed/style_ideas.json), then REQUESTS with MESSAGES and SAVES, and the
+   notifications that activity would have sent (written by the same builders the
+   API's event hooks use, app/notifications.py, back-dated with `at=`).
 After the commit, photo files from the old state that the new state doesn't use
 are deleted from MEDIA_DIR.
 
@@ -42,14 +44,16 @@ from datetime import datetime, timedelta
 from pathlib import Path
 
 from PIL import Image
-from sqlalchemy import select, text
+from sqlalchemy import select, text, update
 from sqlalchemy.orm import Session
 
 from app.campus import DEFAULT_MEETUP_SPOTS
+from app import notifications as notes
 from app.config import settings
 from app.db import SessionLocal, get_engine
 from app.models import (
-    Campus, Dorm, Listing, MeetupSpot, Message, Photo, Request, Save, User, utcnow,
+    Campus, Dorm, Listing, MeetupSpot, Message, Notification, Photo, Request, Save, User,
+    utcnow,
 )
 from app.photos import MAX_SIDE, normalize_jpeg
 from app.style import basis as style_basis
@@ -159,6 +163,12 @@ SAVES: list[tuple[str, str, float]] = [
     ("riley.chen", "cableknit", 20),
 ]
 
+# Notifications: request ones (received/accepted/declined) newer than this many hours
+# stay unread; older ones count as seen. new_message ones are unread exactly when the
+# recipient has unread messages on that chat (the read markers above).
+UNREAD_WITHIN_H = 6
+REQUEST_TYPES = ("request_received", "request_accepted", "request_declined")
+
 LISTING_FIELDS = ("title", "category", "size", "color", "brand", "condition",
                   "description", "tags", "share_type")
 
@@ -241,10 +251,35 @@ def check_activity(listings: list[dict]) -> dict[str, str]:
     for user, key, hours in SAVES:
         assert user in USERS and key in by_key and by_key[key]["owner"] != user, f"bad save {key}"
         assert 0 < hours < by_key[key]["hours_ago"], f"save of {key} before it was posted"
+    unread = expected_unread(by_key)
+    assert 2 <= unread.get("jordan.park", 0) <= 4, f"Jordan should have 2-4 unread notifications: {unread}"
     pairs = [(u, k) for u, k, _ in SAVES]
     assert len(pairs) == len(set(pairs)), "duplicate save"
     assert sum(u == "jordan.park" for u, _ in pairs) >= 2, "Jordan's Saved tab needs 2+ items"
     return status
+
+
+def expected_unread(by_key: dict[str, dict]) -> dict[str, int]:
+    """Unread notifications per user that build() should leave (mirrors its rules)."""
+    out: dict[str, int] = {}
+    for r in REQUESTS:
+        owner = by_key[r["listing"]]["owner"]
+        if "accepted_h" not in r and r["created_h"] < UNREAD_WITHIN_H:
+            out[owner] = out.get(owner, 0) + 1  # request_received, not yet acted on
+        if r.get("accepted_h", UNREAD_WITHIN_H) < UNREAD_WITHIN_H:
+            out[r["requester"]] = out.get(r["requester"], 0) + 1  # request_accepted
+        msgs = r.get("messages", [])
+        for side, user in (("owner", owner), ("requester", r["requester"])):
+            read_n = r.get(f"{side}_read", len(msgs))
+            if any(s != side for s, _, _ in msgs[read_n:]):
+                out[user] = out.get(user, 0) + 1  # one collapsed new_message
+    return out
+
+
+def unread_by_user(db: Session, users: dict[str, User]) -> dict[str, int]:
+    return {k: db.query(Notification).filter(Notification.user_id == u.id,
+                                             Notification.read_at.is_(None)).count()
+            for k, u in users.items()}
 
 
 # --------------------------------------------------------------------------- wipe
@@ -356,8 +391,13 @@ def build(db: Session, campus: Campus, listings: list[dict], status: dict[str, s
             status=request_status(r), created_at=ago(r["created_h"]),
             completed_at=ago(r["completed_h"]) if "completed_h" in r else None,
         )
+        req.owner_last_read_id = req.requester_last_read_id = 0
         db.add(req)
         db.flush()
+        # Replay the activity through the notification builders, in order, as the API would.
+        notes.request_received(db, req, at=ago(r["created_h"]))
+        if "accepted_h" in r:
+            notes.request_accepted(db, req, at=ago(r["accepted_h"]))
         msgs = []
         for side, hours, body in r.get("messages", []):
             sender = listing.owner_id if side == "owner" else req.requester_id
@@ -366,18 +406,44 @@ def build(db: Session, campus: Campus, listings: list[dict], status: dict[str, s
             db.flush()
             msgs.append(msg)
             events.append(hours)
+            if side == "owner":  # a sender has read up to their own message
+                req.owner_last_read_id = msg.id
+            else:
+                req.requester_last_read_id = msg.id
+            notes.new_message(db, msg, req, at=ago(hours))
         ids = [m.id for m in msgs]
         owner_n = r.get("owner_read", len(ids))
         requester_n = r.get("requester_read", len(ids))
         req.owner_last_read_id = ids[owner_n - 1] if owner_n else 0
         req.requester_last_read_id = ids[requester_n - 1] if requester_n else 0
+        # Whoever has read the whole chat has also seen its new_message notifications.
+        for uid, marker in ((listing.owner_id, req.owner_last_read_id),
+                            (req.requester_id, req.requester_last_read_id)):
+            if all(m.id <= marker for m in msgs if m.sender_id != uid):
+                notes.mark_read(db, uid, req.id, ("new_message",), at=now)
         # updated_at: the latest event (accept/complete/message), like the API leaves it.
         req.updated_at = ago(min(h for h in events if h is not None))
+
+    # Older request notifications count as seen.
+    db.flush()
+    db.execute(
+        update(Notification)
+        .where(Notification.user_id.in_([u.id for u in users.values()]),
+               Notification.type.in_(REQUEST_TYPES), Notification.read_at.is_(None),
+               Notification.created_at < ago(UNREAD_WITHIN_H))
+        .values(read_at=now)
+        .execution_options(synchronize_session=False)
+    )
 
     for user_key, listing_key, hours in SAVES:
         db.add(Save(user_id=users[user_key].id, listing_id=rows[listing_key].id,
                     created_at=ago(hours)))
     db.flush()
+
+    unread = {k: n for k, n in unread_by_user(db, users).items() if n}
+    want = {k: n for k, n in expected_unread({i["key"]: i for i in listings}).items() if n}
+    assert unread == want, f"unread notifications {unread} != expected {want}"
+    print(f"notifications: {db.query(Notification).filter(Notification.user_id.in_([u.id for u in users.values()])).count()} written, unread {unread}")
     return used_paths
 
 
@@ -403,6 +469,7 @@ def run(check_only: bool = False) -> int:
     print(f"manifest ok: {len(listings)} listings {counts}, {len(USERS)} users, "
           f"{len(REQUESTS)} requests, {len(SAVES)} saves, "
           f"{len(style)}/{len(listings)} with style ideas")
+    print(f"unread notifications expected: {expected_unread({i['key']: i for i in listings})}")
     missing = [item["key"] for item in listings if item["key"] not in style]
     if missing:
         print("  no current style ideas (run `python -m seed.style_warm`): " + ", ".join(missing))
