@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+# Removes AI attribution lines (Co-Authored-By: Claude, "Generated with Claude Code")
+# from commit messages. Turn on once per clone: git config core.hooksPath .githooks
+msg_file="$1"
+tmp="$(mktemp)"
+awk '
+  { l = tolower($0) }
+  l ~ /^co-authored-by:.*(claude|anthropic)/ { next }
+  l ~ /generated with \[?claude code/ { next }
+  { lines[++n] = $0 }
+  END {
+    while (n > 0 && lines[n] ~ /^[[:space:]]*$/) n--
+    for (i = 1; i <= n; i++) print lines[i]
+  }
+' "$msg_file" > "$tmp" && cat "$tmp" > "$msg_file"
+rm -f "$tmp"

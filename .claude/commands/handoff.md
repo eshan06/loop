@@ -14,5 +14,5 @@ Read this machine's lane from `.lane` (`ios` or `server`). Only edit files that 
 2. If the other lane answered one of this lane's requests, move it to "Closed requests" with a short note.
 3. In `PLAN.md`, update the status marks on this lane's tasks only (`I-` for ios, `S-` for server). Don't touch the other lane's lines.
 4. (server lane only) If the server's API URL, the vision model check, or the demo accounts changed, update "Server status" in `coord/server.md`.
-5. Show me the diff, then commit with a message that starts with the lane, like `ios: feed filters (I-11)`.
+5. Show me the diff, then commit with a message that starts with the lane, like `ios: feed filters (I-11)`. Don't add a `Co-Authored-By` line or a "Generated with Claude Code" line.
 6. Run `git pull --rebase`, then `git push`. If the push is rejected, pull with rebase again and retry. If there's a conflict in a file this lane doesn't own, stop and tell me rather than resolving it.

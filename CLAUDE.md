@@ -21,11 +21,12 @@ Two Macs run Claude Code at the same time, one per lane. They never edit the sam
 | `ios` | iOS Mac | Every screen in the app | `ios/`, `coord/ios.md`, iOS lines in `PLAN.md` |
 | `server` | The Mac with the OCI account | Backend, database, AI calls, the OCI server, seed data | `backend/`, `scripts/`, `docs/API.md`, `coord/server.md`, server lines in `PLAN.md` |
 
-Each machine sets its lane once, in a file git ignores:
+Each machine runs this once after cloning. It sets the lane in a file git ignores and turns on the repo's git hooks:
 
 ```
 echo ios > .lane      # on the iOS Mac
 echo server > .lane   # on the OCI Mac
+git config core.hooksPath .githooks
 ```
 
 If a third person is coding, they work through one of these two machines' lanes and claim tasks in that lane. Only two machines push code at once.
@@ -42,6 +43,12 @@ Between those, the rules are:
 2. `docs/API.md` belongs to the server lane. The iOS lane asks for changes through a request. The server lane makes the change, notes it under "Contract changes" in `coord/server.md`, and pushes the doc before or with the code.
 3. Small commits, pushed often. Always `git pull --rebase` before pushing. If a push is rejected, pull with rebase and push again. Never force-push `main`.
 4. If you're blocked, mark the task `[!]` in `PLAN.md`, say why in your coord file, and pick up the next unblocked task. Don't wait idle.
+
+## Commits
+
+Commits never credit Claude. Don't add a `Co-Authored-By: Claude` line or a "Generated with Claude Code" line to any commit message, including commits Claude Code makes on its own. Commit messages start with the lane, like `ios: feed filters (I-11)`.
+
+As a backstop, `.githooks/commit-msg` strips those lines from every commit. It only runs on machines that ran `git config core.hooksPath .githooks`.
 
 ## Rules for the code
 
