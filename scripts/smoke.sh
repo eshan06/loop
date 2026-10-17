@@ -260,5 +260,20 @@ req GET /me "" "$TOKEN_A"
 check "d['avatar_url'] == '$AVATAR_URL'" "GET /me shows the avatar url"
 
 # ---------------------------------------------------------------------------
+section "meetup spots (S-14)"
+req GET /meetup-spots
+expect 401 unauthorized "GET /meetup-spots without a token"
+req GET /meetup-spots "" "$TOKEN_A"
+expect 200 "GET /meetup-spots"
+check 'list(d) == ["items"] and len(d["items"]) > 0' "campus has at least one spot (defaults filled in)"
+check 'all(set(s) == {"id", "name"} and type(s["id"]) is int and isinstance(s["name"], str) and s["name"] for s in d["items"])' "each spot is {id, name}"
+check '[s["name"].casefold() for s in d["items"]] == sorted(s["name"].casefold() for s in d["items"])' "spots sorted by name"
+check 'len({s["id"] for s in d["items"]}) == len(d["items"])' "spot ids unique"
+SPOTS_A="$(jget '[s["id"] for s in d["items"]]')"
+req GET /meetup-spots "" "$TOKEN_B"
+expect 200 "GET /meetup-spots as user B (same campus)"
+check "[s['id'] for s in d['items']] == $SPOTS_A" "same list for everyone on the campus, no duplicate defaults"
+
+# ---------------------------------------------------------------------------
 echo
 echo "PASS: $PASS checks against $BASE_URL"
