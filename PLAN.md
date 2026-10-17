@@ -62,7 +62,7 @@ The iOS lane builds against mocks, and the server lane builds the real endpoints
 
 ### Server lane
 - [x] S-8 Auth: `POST /auth/login` with the .edu check, campus from the email domain, bearer tokens. `GET /me` and `PATCH /me`.
-- [ ] S-9 Photos: `POST /photos`, saved to disk and served from `/media`.
+- [x] S-9 Photos: `POST /photos`, saved to disk and served from `/media`.
 - [ ] S-10 Scan: `POST /scan` calls the vision model and returns a validated draft. Include the fallback path and a timeout.
 - [ ] S-11 Listings: create, read, update, delete, plus the feed with filters, search, and paging.
 - [ ] S-12 Requests: create, accept, decline, complete, cancel. Accepting one request declines the others on that listing.

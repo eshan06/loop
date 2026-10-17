@@ -227,8 +227,10 @@ if command -v sips >/dev/null 2>&1 && sips -z 1000 2000 "$SMALL_JPEG" --out "$TM
   expect 201 "POST /photos 2000x1000 kind=FRONT"
   check 'd["kind"] == "front"' "kind normalized to lowercase"
   fetch "$(jget 'd["url"]')" "$TMP/got-big.jpg"
-  [[ "$STATUS" == "200" && "$(jpeg_size "$TMP/got-big.jpg")" == "1600x800" ]] \
-    || fail "big photo resized to 1600x800 (got $STATUS $(jpeg_size "$TMP/got-big.jpg" 2>/dev/null))"
+  # sips may carry the EXIF orientation over, so either orientation is fine.
+  BIG_SIZE="$(jpeg_size "$TMP/got-big.jpg" 2>/dev/null)"
+  [[ "$STATUS" == "200" && ( "$BIG_SIZE" == "1600x800" || "$BIG_SIZE" == "800x1600" ) ]] \
+    || fail "big photo resized to longest side 1600 (got $STATUS $BIG_SIZE)"
   ok "big photo resized to longest side 1600"
 else
   echo "  skip resize check (no sips)"

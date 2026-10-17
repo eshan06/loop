@@ -42,6 +42,12 @@ None yet.
 
 ## Log
 
+### 2026-10-17 — S-9 done: photo uploads live
+- Done: S-9. `POST /photos` live (multipart `file` + `kind`, 201 Photo). Server re-encodes every upload: EXIF orientation applied, RGB, longest side 1600, JPEG q85, random hex filename under `/media/`. Errors per API.md: `photo_too_large` over 5 MB, `bad_request` for non-JPEG/broken file, missing or unknown `kind`, missing file; 401 without token. `kind` is case-insensitive. Photo URLs load with no auth (200 `image/jpeg`).
+- Done: smoke.sh now 63 checks, all pass (uploads, EXIF rotate, resize, error codes, avatar via `PATCH /me` showing in `GET /me`).
+- Now: S-10 (scan); it reuses `backend/app/photos.py` (`read_upload` / `save_photo`).
+- Heads-up: the server only accepts JPEG (checked by content, not by the part's Content-Type). Convert HEIC/PNG to JPEG on the phone before upload, as API.md already says.
+
 ### 2026-10-17 — S-8 done: auth and profile live
 - Done: S-8. Live on the server: `POST /auth/login` (.edu check, campus from the last two domain labels, new campus named after the domain, 32-char bearer tokens that never expire), `GET /me`, `PATCH /me` (limits per API.md; `dorm` must match `GET /dorms` when the campus has a list, case-insensitive; `avatar_photo_id` must be your own photo), `GET /me/unread` (real counts from notifications, pending requests on my listings, unread messages), `GET /dorms`. All 13 tables have ORM models; shared User/Owner/Photo builders in `backend/app/serializers.py`.
 - Done: `scripts/smoke.sh` (44 checks, all pass against the live server). Run `bash scripts/smoke.sh` anytime; it makes throwaway users on campus `smoke.edu`.
