@@ -100,3 +100,64 @@ class UnreadOut(BaseModel):
     notifications: int
     messages: int
     incoming_requests: int
+
+
+# ---- Paging ----------------------------------------------------------------
+
+class Page(BaseModel, Generic[T]):
+    """Paged list: {"items": [...], "total": 87, "next_offset": 20 | null}."""
+
+    items: list[T]
+    total: int
+    next_offset: int | None
+
+
+# ---- Listings --------------------------------------------------------------
+
+class ImpactOut(BaseModel):
+    textile_kg: float
+    water_l: float
+    co2_kg: float
+
+
+class ListingOut(BaseModel):
+    id: int
+    title: str
+    category: str
+    size: str | None
+    color: str | None
+    brand: str | None
+    condition: str
+    description: str | None
+    tags: list[str]
+    share_type: str
+    status: str
+    photos: list[PhotoOut]
+    meetup_spot: MeetupSpotOut | None
+    owner: OwnerOut
+    impact: ImpactOut
+    is_mine: bool
+    saved_by_me: bool
+    my_request_status: str | None
+    my_request_id: int | None
+    pending_request_count: int
+    accepted_request_id: int | None
+    created_at: str
+
+
+class ListingIn(BaseModel):
+    """Body of POST and PATCH /listings. Every field optional here; the router
+    checks required fields (POST) and limits, so messages name the field.
+    `model_fields_set` tells PATCH which fields were sent."""
+
+    title: StrictStr | None = None
+    category: StrictStr | None = None
+    size: StrictStr | None = None
+    color: StrictStr | None = None
+    brand: StrictStr | None = None
+    condition: StrictStr | None = None
+    description: StrictStr | None = None
+    tags: list[StrictStr] | None = None
+    share_type: StrictStr | None = None
+    meetup_spot_id: StrictInt | None = None
+    photo_ids: list[StrictInt] | None = None

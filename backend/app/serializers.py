@@ -1,7 +1,7 @@
 """Shared builders that turn ORM rows into the API objects in docs/API.md.
 
-Every endpoint that returns a User, Owner, Photo, ... uses these, so the shapes
-stay identical everywhere. Later tasks add Listing, Request, Message and
+Every endpoint that returns a User, Owner, Photo, Listing, ... uses these, so the
+shapes stay identical everywhere. Later tasks add Request, Message and
 Notification builders here.
 """
 
@@ -11,11 +11,21 @@ from collections.abc import Iterable
 from datetime import UTC, datetime
 
 from sqlalchemy import func, select
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 
 from .config import settings
-from .models import Listing, MeetupSpot, Photo, User
-from .schemas import CampusOut, MeetupSpotOut, OwnerOut, PhotoOut, Sizes, UserOut
+from .impact import impact_for
+from .models import Listing, MeetupSpot, Photo, Request, Save, User
+from .schemas import (
+    CampusOut,
+    ImpactOut,
+    ListingOut,
+    MeetupSpotOut,
+    OwnerOut,
+    PhotoOut,
+    Sizes,
+    UserOut,
+)
 
 
 def iso(dt: datetime | None) -> str | None:
@@ -100,3 +110,95 @@ def owner_out(db: Session, user: User, shared: int | None = None) -> OwnerOut:
         avatar_url=avatar_url(user),
         items_shared=items_shared(db, user.id) if shared is None else shared,
     )
+
+
+# ---- Listing -----------------------------------------------------------------
+
+def listings_out(db: Session, listings: list[Listing], viewer: User) -> list[ListingOut]:
+    """Many Listings as seen by `viewer`, in the given order, in a fixed handful of
+    queries (photos, owners with avatars, items_shared, spots, requests, saves)
+    no matter how many listings."""
+    if not listings:
+        return []
+    ids = [lst.id for lst in listings]
+
+    photos: dict[int, list[Photo]] = {i: [] for i in ids}
+    for p in db.scalars(
+        select(Photo).where(Photo.listing_id.in_(ids)).order_by(Photo.position, Photo.id)
+    ):
+        photos[p.listing_id].append(p)
+
+    owner_ids = {lst.owner_id for lst in listings}
+    owners = {
+        u.id: u
+        for u in db.scalars(
+            select(User).where(User.id.in_(owner_ids)).options(selectinload(User.avatar_photo))
+        )
+    }
+    shared = items_shared_counts(db, owner_ids)
+
+    spot_ids = {lst.meetup_spot_id for lst in listings if lst.meetup_spot_id is not None}
+    spots = (
+        {s.id: s for s in db.scalars(select(MeetupSpot).where(MeetupSpot.id.in_(spot_ids)))}
+        if spot_ids
+        else {}
+    )
+
+    # Every request on these listings, oldest first: small at demo scale, one query.
+    mine: dict[int, tuple[int, str]] = {}  # listing_id -> (my latest request id, status)
+    pending: dict[int, int] = {}
+    accepted: dict[int, int] = {}
+    for rid, lid, requester_id, status in db.execute(
+        select(Request.id, Request.listing_id, Request.requester_id, Request.status)
+        .where(Request.listing_id.in_(ids))
+        .order_by(Request.id)
+    ):
+        if requester_id == viewer.id:
+            mine[lid] = (rid, status)
+        if status == "pending":
+            pending[lid] = pending.get(lid, 0) + 1
+        elif status == "accepted":
+            accepted[lid] = rid
+
+    saved = set(
+        db.scalars(select(Save.listing_id).where(Save.user_id == viewer.id, Save.listing_id.in_(ids)))
+    )
+
+    out = []
+    for lst in listings:
+        is_mine = lst.owner_id == viewer.id
+        my_req = mine.get(lst.id)
+        out.append(
+            ListingOut(
+                id=lst.id,
+                title=lst.title,
+                category=lst.category,
+                size=lst.size,
+                color=lst.color,
+                brand=lst.brand,
+                condition=lst.condition,
+                description=lst.description,
+                tags=list(lst.tags or []),
+                share_type=lst.share_type,
+                status=lst.status,
+                photos=[photo_out(p) for p in photos[lst.id]],
+                meetup_spot=meetup_spot_out(spots.get(lst.meetup_spot_id)),
+                owner=owner_out(db, owners[lst.owner_id], shared.get(lst.owner_id, 0)),
+                impact=ImpactOut(**impact_for(lst.category)),
+                is_mine=is_mine,
+                saved_by_me=lst.id in saved,
+                my_request_status=my_req[1] if my_req else None,
+                my_request_id=my_req[0] if my_req else None,
+                pending_request_count=pending.get(lst.id, 0) if is_mine else 0,
+                accepted_request_id=(
+                    accepted.get(lst.id) if is_mine and lst.status == "pending" else None
+                ),
+                created_at=iso(lst.created_at),
+            )
+        )
+    return out
+
+
+def listing_out(db: Session, listing: Listing, viewer: User) -> ListingOut:
+    """One Listing as seen by `viewer`."""
+    return listings_out(db, [listing], viewer)[0]
