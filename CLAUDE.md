@@ -112,3 +112,8 @@ iOS lane: open `ios/Loop.xcodeproj` and run. The base URL and the mock switch li
 - Xcode 15 doesn't main-actor-isolate View members: mark `View` structs `@MainActor` or they can't touch the `@MainActor` stores.
 - `-useMocks NO` on the command line arrives as the string "NO", not a Bool. `APIConfig` reads it with `bool(forKey:)`.
 - Run the iOS tests with `xcodebuild test -project ios/Loop.xcodeproj -scheme Loop -destination 'platform=iOS Simulator,name=iPhone 15 Pro'`. `TEST_RUNNER_LOOP_LIVE=1` also runs the read-only live-server walk-through.
+- Apple Vision on the phone is insurance, never a gate: `OnDeviceLabeler` returns whatever it has after 8 seconds, so a stalled Vision call can't hold up `/scan`.
+- Real device vs Simulator: the camera needs a real iPhone. To test the photo picker, add media first (`xcrun simctl addmedia booted a.jpg b.heic`); the UI tests use it.
+- The sign-in screen (DEBUG builds) has a Mock data / Live server switch, so a phone can talk to the real server with no code change and no launch arguments. Mock and live sessions keep separate tokens.
+- Loop Lime (`Theme.lime`, `#C7E75A`) is an accent, not a theme: Scan button, welcome highlighter, Just posted tag, completion checkmark, "You"/"Yours". Near-black (`Theme.onLime`) on top of it. Don't write the hex anywhere else.
+

@@ -33,7 +33,16 @@ Scope: how the iOS app looks, feels, and behaves screen by screen. The API, data
 | `destructive` | `systemRed` | Decline, delete, report |
 | `warning` | `systemOrange` | The "pending" status |
 
-**Color budget:** only system semantic colors (green, red, orange) for status. No brand color, and no color for share types, impact, or badges. Impact and badges get their emphasis from type, weight, and motion.
+**Color budget:** system semantic colors (green, red, orange) for status, plus one brand accent, **Loop Lime `#C7E75A`** (update 2026-10-17). No color for share types, impact numbers, or badges. Impact and badges get their emphasis from type, weight, and motion.
+
+**Loop Lime** is a controlled accent, not a theme. It is defined once, as `Theme.lime` in `DesignSystem/Theme.swift` (with `Theme.onLime`, near-black, for anything on top of it). Text and icons on lime are always near-black. It appears only in:
+1. The raised Scan button in the tab bar.
+2. The welcome and launch screens: a highlighter stroke behind the word "loop".
+3. Publishing: the new card gets a lime "Just posted" tag for about 6 seconds (a tag only, no border around the photo).
+4. Exchange completion: the checkmark disc.
+5. "You" / "Yours" markers (leaderboard row, item cards, item detail).
+
+Everything else stays as designed: black primary buttons, black selected chips, neutral gray capsules, and status colors that keep their system meaning (green accepted, red decline, orange pending). Don't use lime for body text, icons on the off-white page (contrast), tab selection, or impact statistics.
 
 ### 2.3 Type
 - SF Pro (system) for everything, using Dynamic Type styles (`.largeTitle` … `.caption2`).
@@ -47,7 +56,7 @@ Scope: how the iOS app looks, feels, and behaves screen by screen. The API, data
 
 ### 2.5 Components
 - **`ShareTypeCapsule`**: a neutral capsule with text only (`Swap`, `Free`, `Donate`): `.caption.weight(.semibold)`, `surface` fill, `textPrimary`. No icons and no color.
-- **`YoursCapsule`**: the same style, label `Yours`. It sits next to the share-type capsule on my own cards.
+- **`YoursCapsule`**: the same shape with the label `Yours`, in Loop Lime with near-black text (`TagCapsule(lime: true)`). It sits next to the share-type capsule on my own cards.
 - **`StatusPill`** for request status: `pending` orange, `accepted` green, `declined` and `cancelled` gray, `completed` black. A tinted fill at 15% opacity with full-color text.
 - **`CachedImage`**: see §9.2.
 - **`EmptyState`**: an SF Symbol, a one-line title, a one-line body, and an optional button. Wraps `ContentUnavailableView`.
@@ -417,7 +426,7 @@ This machine works on **feature branches with PRs into `main`** (currently `feat
 - Onboarding carousel (I-30), campus map (I-28), Swap Day events (I-29).
 - Push notifications (APNs).
 - Paging the feed beyond the first 50 listings.
-- Any brand or accent color beyond black and the system semantic colors.
+- Any brand color beyond Loop Lime (see §2.2) and the system semantic colors.
 
 ## 16. Open items to verify
 - The final Vanderbilt dorm list (§4.2).

@@ -55,6 +55,49 @@ final class LoopUITests: XCTestCase {
         app.navigationBars.buttons.firstMatch.tap()
     }
 
+    /// Relaunch with extra launch arguments (mock failure switches, live mode).
+    func relaunch(_ extra: [String]) {
+        app.terminate()
+        app.launchArguments = ["-useMocks", "YES", "-resetSession", "YES", "-uiTesting", "YES"] + extra
+        app.launch()
+    }
+
+    /// Open the scan flow in the Simulator (no camera) with sample photos and land on Review.
+    func openReviewWithSamplePhotos() {
+        app.buttons["Scan an item"].tap()
+        let sample = app.buttons["sampleBtn"]
+        XCTAssertTrue(sample.waitForExistence(timeout: 8))
+        sample.tap()
+        XCTAssertTrue(app.staticTexts["Reading your photos…"].waitForExistence(timeout: 5))
+    }
+
+    func chooseShareTypeAndSpot() {
+        Thread.sleep(forTimeInterval: 1.0)
+        let swap = app.segmentedControls.firstMatch.buttons["Swap"]
+        for _ in 0..<3 where !swap.isSelected { swap.tap(); Thread.sleep(forTimeInterval: 0.4) }
+        XCTAssertTrue(swap.isSelected, "Swap is selected")
+        let picker = app.buttons["meetupPicker"]
+        XCTAssertTrue(picker.waitForExistence(timeout: 3))
+        picker.tap()
+        app.buttons["Commons Center"].firstMatch.tap()
+    }
+
+    /// Fill the AI fields by hand: title, category, condition.
+    func fillItemFieldsByHand(title: String) {
+        let titleField = app.textFields["Title"]
+        XCTAssertTrue(titleField.waitForExistence(timeout: 3))
+        titleField.tap()
+        titleField.typeText(title)
+        app.keyboards.buttons["Done"].tap()   // the keyboard would cover the rows below
+        let category = app.buttons["categoryPicker"]
+        XCTAssertTrue(category.waitForExistence(timeout: 3))
+        category.tap()
+        app.buttons["Tops"].firstMatch.tap()
+        let good = app.segmentedControls.buttons["Good"]
+        for _ in 0..<4 where !good.exists { app.swipeUp() }
+        good.tap()
+    }
+
     // MARK: Tests
 
     /// Read-only walk through the live server as the seeded demo account Jordan (nothing is created or changed).
@@ -78,7 +121,7 @@ final class LoopUITests: XCTestCase {
         Thread.sleep(forTimeInterval: 3)
         shot("L3-requests-live")
         tab("Profile")
-        XCTAssertTrue(app.staticTexts["Badges"].waitForExistence(timeout: 10))
+        XCTAssertTrue(button(containing: "Your impact").waitForExistence(timeout: 10))   // the Badges row only shows once /me/badges is live
         Thread.sleep(forTimeInterval: 3)
         shot("L4-profile-live")
         button(containing: "Your impact").tap()
@@ -292,5 +335,84 @@ final class LoopUITests: XCTestCase {
         app.buttons.matching(NSPredicate(format: "label BEGINSWITH 'Notifications'")).firstMatch.tap()
         XCTAssertTrue(app.staticTexts["No notifications"].waitForExistence(timeout: 5))
         shot("16b-notifications-empty")
+    }
+
+    // MARK: Scan: AI failure, library, Mock/Live switch
+
+    /// `source: none`: the banner explains, fields unlock empty, Try again is offered, and manual entry can still post.
+    func testAIFailureFallsBackToManualEntryAndStillPosts() {
+        relaunch(["-mockScanFails", "YES"])
+        signIn(as: "Jordan")
+        openReviewWithSamplePhotos()
+        XCTAssertTrue(app.staticTexts["Couldn't fill this in automatically."].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.buttons["Try again"].exists)
+        XCTAssertFalse(app.staticTexts["Filled in by AI. Check before posting."].exists)
+        shot("05c-review-ai-failed")
+        XCTAssertFalse(app.buttons["Post"].isEnabled, "nothing is filled in yet")
+
+        fillItemFieldsByHand(title: "Hand-typed sweater")
+        chooseShareTypeAndSpot()
+        // Try again fails again here, and must not wipe what was typed.
+        app.buttons["Try again"].tap()
+        XCTAssertTrue(app.staticTexts["Couldn't fill this in automatically."].waitForExistence(timeout: 10))
+        XCTAssertEqual(app.textFields["Title"].value as? String, "Hand-typed sweater", "retry keeps manual entry")
+        let post = app.buttons["Post"]
+        XCTAssertTrue(post.isEnabled)
+        post.tap()
+        XCTAssertTrue(app.tabBars.buttons["Feed"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.staticTexts["Hand-typed sweater"].waitForExistence(timeout: 10), "the new listing shows in the feed")
+        XCTAssertTrue(app.staticTexts["Just posted"].waitForExistence(timeout: 5), "the new card is marked Just posted")
+    }
+
+    /// The /scan request itself fails (no connection): photos are uploaded one by one on Post instead.
+    func testScanRequestFailureUploadsPhotosOnPost() {
+        relaunch(["-mockScanThrows", "YES"])
+        signIn(as: "Jordan")
+        openReviewWithSamplePhotos()
+        XCTAssertTrue(app.staticTexts["Couldn't fill this in automatically."].waitForExistence(timeout: 10))
+        fillItemFieldsByHand(title: "Offline sweater")
+        chooseShareTypeAndSpot()
+        app.buttons["Post"].tap()
+        XCTAssertTrue(app.tabBars.buttons["Feed"].waitForExistence(timeout: 15))
+        XCTAssertTrue(app.staticTexts["Offline sweater"].waitForExistence(timeout: 10))
+    }
+
+    /// The sign-in screen's Mock/Live switch changes the data source without a rebuild, and keeps its state.
+    func testServerSwitchOnSignInScreen() {
+        let mode = app.segmentedControls["serverMode"]
+        XCTAssertTrue(mode.waitForExistence(timeout: 10))
+        XCTAssertTrue(mode.buttons["Mock data"].isSelected)
+        mode.buttons["Live server"].tap()
+        XCTAssertTrue(mode.buttons["Live server"].isSelected)
+        shot("01c-signin-live-selected")
+        // Back to mock so later runs start clean.
+        mode.buttons["Mock data"].tap()
+        XCTAssertTrue(mode.buttons["Mock data"].isSelected)
+    }
+
+    /// Photo library per scan step, through the real system picker. Needs media in the Simulator's library
+    /// (`xcrun simctl addmedia booted <files>`); skipped when the library is empty.
+    func testPhotoLibraryPicksFillScanSteps() throws {
+        signIn(as: "Jordan")
+        app.buttons["Scan an item"].tap()
+        XCTAssertTrue(app.buttons["sampleBtn"].waitForExistence(timeout: 8))
+        for step in ["Front", "Back", "Label"] {
+            XCTAssertTrue(app.staticTexts[step].waitForExistence(timeout: 5), "step \(step) is showing")
+            app.buttons["Choose from library"].tap()
+            // The system picker labels its thumbnails "Photo, <date>".
+            let photo = app.images.matching(NSPredicate(format: "label BEGINSWITH 'Photo,'")).firstMatch
+            guard photo.waitForExistence(timeout: 10) else {
+                throw XCTSkip("the Simulator's photo library is empty; run `xcrun simctl addmedia booted <jpg>` first")
+            }
+            if step == "Front" { shot("04b-photo-picker") }
+            photo.tap()
+            Thread.sleep(forTimeInterval: 1.5)
+        }
+        // Three picks completed the flow and went straight to Review with three photos.
+        XCTAssertTrue(app.staticTexts["Reading your photos…"].waitForExistence(timeout: 8)
+                      || app.staticTexts["Filled in by AI. Check before posting."].waitForExistence(timeout: 8))
+        XCTAssertTrue(app.staticTexts["Front"].exists && app.staticTexts["Back"].exists && app.staticTexts["Label"].exists,
+                      "Review shows the three photos in order")
+        shot("05d-review-from-library")
     }
 }

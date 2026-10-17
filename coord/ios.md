@@ -17,6 +17,13 @@ Give each request an ID (`IOS-1`, `IOS-2`, ...). Move it to "Closed requests" on
 
 ## Log
 
+### 2026-10-17 — Frontend readiness audit and Loop Lime
+- Done: scan pipeline audit (camera flow, library per step, resize and JPEG upload order, Apple Vision, `/scan` request format, skeletons, retry and manual fallback, post and feed refresh, request to chat to complete, Mock to Live). Fixed: retry no longer overwrites what the user typed; a failed post resumes photo uploads instead of redoing them; image encoding moved off the main thread; library picks are decoded with ImageIO (a 31 MB HEIC works); Vision has an 8 s deadline; the keyboard no longer covers the form; `new_message` banners now fire again when a collapsed notification gets another message (docs/API.md says it keeps its `id`); detail refreshes when a request notification arrives; the feed clears filters so a new post is visible; the Mock/Live switch on the sign-in screen works without code changes; `-useMocks NO` was being ignored and now works. Loop Lime added as `Theme.lime`.
+- Verified: clean build; 35 unit tests and 11 UI tests pass, including the live read-only ones (`TEST_RUNNER_LOOP_LIVE=1`). Every live GET decodes into the app's models. Request formatting for `POST /scan` matches `backend/app/routers/scan.py` (repeated `photos` parts, `kinds`, `labels`).
+- Now: real iPhone run for the camera, then Sync point C (I-17) on two phones, then I-26.
+- Needs: nothing new. FYI, not a request: `GET /me/badges` returns 404 on the live server today (S-22 not deployed). The app hides the badge row until it works, and the celebration skips the badge card, so nothing breaks. Tell me when S-22 is live and I'll rerun the live walk.
+- Heads-up: no live mutations were run (no post, request, accept, or complete). Logging in as the demo accounts for read-only checks creates a few sessions on the server and nothing else.
+
 ### 2026-10-17 — iOS frontend builds, passes its tests, and runs on the live server
 - Done: I-1 to I-8, I-10 to I-16, I-18 to I-25 (screens), verified in the iPhone 15 Pro Simulator on iOS 17.2. Clean build succeeds. 12 unit tests and 7 UI tests pass (`xcodebuild test`, see the Gotchas in `CLAUDE.md`); the UI tests walk sign-in, profile setup, scan with sample photos, review, post, save, request, accept, chat, mark done with badge, impact and leaderboard, filters, search, Style it, report, edit, and the empty states, all on the stateful mock. Screenshots are in `ios/Screenshots/`.
 - Done: a read-only walk of the live server as Jordan (`TEST_RUNNER_LOOP_LIVE=1`): sign-in, feed with real photos, detail, requests, profile, impact. Every response decodes into the app's models. Sync point A is met.

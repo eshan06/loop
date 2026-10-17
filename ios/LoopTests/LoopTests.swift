@@ -211,4 +211,68 @@ final class LoopTests: XCTestCase {
         let found = try await api.listings(ListingQuery(q: "samba")).items
         XCTAssertEqual(found.map(\.title), ["Adidas Samba OG"])
     }
+
+    // MARK: Live server, read-only (opt in with TEST_RUNNER_LOOP_LIVE=1)
+
+    /// Decodes real server responses with the app's models. Only GETs, so nothing on the server changes
+    /// (it skips `GET /requests/{id}/messages`, which marks messages read, and `POST /listings/{id}/style`).
+    func testLiveServerReadOnlyEndpointsDecode() async throws {
+        try XCTSkipUnless(ProcessInfo.processInfo.environment["LOOP_LIVE"] == "1", "set TEST_RUNNER_LOOP_LIVE=1 to hit the live server")
+        let defaults = UserDefaults.standard
+        defer { defaults.removeObject(forKey: "useMocks"); APIConfig.setUseMocks(false); AuthToken.set(nil); defaults.removeObject(forKey: "useMocks") }
+        APIConfig.setUseMocks(false)
+        AuthToken.set(nil)
+        let api = LiveAPIClient()
+
+        let healthy = try await api.health()
+        XCTAssertTrue(healthy)
+        let login = try await api.login(email: "jordan.park@vanderbilt.edu")
+        AuthToken.set(login.token)
+        XCTAssertEqual(login.user.campus.name, "Vanderbilt")
+        let me = try await api.me()
+        XCTAssertEqual(me.email, "jordan.park@vanderbilt.edu")
+        XCTAssertNotNil(me.name)
+        _ = try await api.unread()
+        let dorms = try await api.dorms()
+        XCTAssertFalse(dorms.isEmpty)
+        let spots = try await api.meetupSpots()
+        XCTAssertFalse(spots.isEmpty)
+
+        let feed = try await api.listings(ListingQuery())
+        XCTAssertFalse(feed.items.isEmpty)
+        XCTAssertTrue(feed.items.allSatisfy { !$0.photos.isEmpty && $0.status == .active })
+        let first = try XCTUnwrap(feed.items.first)
+        let detail = try await api.listing(id: first.id)
+        XCTAssertEqual(detail.id, first.id)
+        _ = try await api.listings(ListingQuery(shareType: .free))
+        _ = try await api.listings(ListingQuery(category: .shoes))
+        _ = try await api.listings(ListingQuery(q: "jacket"))
+        _ = try await api.myListings(status: .active)
+        _ = try await api.myListings(status: .completed)
+        _ = try await api.similar(listingID: first.id)
+        _ = try await api.savedListings()
+
+        let incoming = try await api.myRequests(role: .incoming)
+        let outgoing = try await api.myRequests(role: .outgoing)
+        if let request = (incoming.items + outgoing.items).first {
+            let one = try await api.request(id: request.id)
+            XCTAssertEqual(one.id, request.id)
+        }
+
+        let mine = try await api.myImpact()
+        XCTAssertGreaterThanOrEqual(mine.itemsShared, 0)
+        let campus = try await api.campusImpact()
+        let board = try await api.leaderboard()
+        if let top = board.first, let topDorm = campus.topDorm { XCTAssertEqual(top.dorm, topDorm, "docs/API.md: first row matches top_dorm") }
+        // S-22 (badges) may not be deployed yet; the app hides the badge row when this 404s.
+        do {
+            let badges = try await api.badges()
+            XCTAssertEqual(badges.map(\.id), ["first_swap", "giving_back", "closet_cleanout"])
+        } catch {
+            XCTAssertEqual(error.apiCode, "not_found", "only a not-yet-deployed endpoint is tolerated here")
+            print("NOTE: GET /me/badges is not live yet (server task S-22)")
+        }
+        let notes = try await api.notifications()
+        XCTAssertGreaterThanOrEqual(notes.unread, 0)
+    }
 }
