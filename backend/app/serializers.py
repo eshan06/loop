@@ -14,8 +14,8 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from .config import settings
-from .models import Listing, Photo, User
-from .schemas import CampusOut, OwnerOut, PhotoOut, Sizes, UserOut
+from .models import Listing, MeetupSpot, Photo, User
+from .schemas import CampusOut, MeetupSpotOut, OwnerOut, PhotoOut, Sizes, UserOut
 
 
 def iso(dt: datetime | None) -> str | None:
@@ -40,6 +40,11 @@ def photo_url(photo_or_path: Photo | str | None) -> str | None:
 
 def photo_out(photo: Photo) -> PhotoOut:
     return PhotoOut(id=photo.id, url=photo_url(photo), kind=photo.kind)
+
+
+def meetup_spot_out(spot: MeetupSpot | None) -> MeetupSpotOut | None:
+    """{id, name}; None when a listing's spot was removed (Listing.meetup_spot is nullable)."""
+    return None if spot is None else MeetupSpotOut(id=spot.id, name=spot.name)
 
 
 def avatar_url(user: User) -> str | None:

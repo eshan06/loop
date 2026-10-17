@@ -63,6 +63,11 @@ class PhotoOut(BaseModel):
     kind: str
 
 
+class MeetupSpotOut(BaseModel):
+    id: int
+    name: str
+
+
 # ---- Auth and profile ------------------------------------------------------
 
 class LoginIn(BaseModel):
