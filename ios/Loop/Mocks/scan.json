@@ -1,0 +1,18 @@
+{
+  "photos": [
+    { "id": 71, "url": "mock://media/outerwear-71-0.jpg", "kind": "front" },
+    { "id": 72, "url": "mock://media/outerwear-71-1.jpg", "kind": "back" },
+    { "id": 73, "url": "mock://media/outerwear-71-2.jpg", "kind": "label" }
+  ],
+  "draft": {
+    "title": "Levi's denim trucker jacket",
+    "category": "outerwear",
+    "size": "M",
+    "color": "Light wash blue",
+    "brand": "Levi's",
+    "condition": "good",
+    "description": "Classic trucker jacket with button front and chest pockets. Light fading at the cuffs.",
+    "tags": ["denim", "jacket", "light wash", "vintage"]
+  },
+  "source": "vision"
+}

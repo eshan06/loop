@@ -1,0 +1,8 @@
+{ "items": [
+  { "rank": 1, "dorm": "Kissam", "items_shared": 14 },
+  { "rank": 2, "dorm": "Zeppos", "items_shared": 11 },
+  { "rank": 3, "dorm": "E. Bronson Ingram", "items_shared": 9 },
+  { "rank": 4, "dorm": "Warren", "items_shared": 7 },
+  { "rank": 5, "dorm": "Rothschild", "items_shared": 5 },
+  { "rank": 6, "dorm": "Branscomb", "items_shared": 3 }
+] }

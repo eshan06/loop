@@ -1,0 +1,16 @@
+{
+  "photos": [
+    { "id": 74, "url": "mock://media/tops-74-0.jpg", "kind": "front" }
+  ],
+  "draft": {
+    "title": null,
+    "category": null,
+    "size": null,
+    "color": null,
+    "brand": null,
+    "condition": null,
+    "description": null,
+    "tags": []
+  },
+  "source": "none"
+}

@@ -1,0 +1,898 @@
+{
+  "items": [
+    {
+      "id": 40,
+      "title": "Levi's denim trucker jacket",
+      "category": "outerwear",
+      "size": "M",
+      "color": "Light wash blue",
+      "brand": "Levi's",
+      "condition": "good",
+      "description": "Classic trucker jacket with button front and chest pockets. Light fading at the cuffs.",
+      "tags": [
+        "denim",
+        "jacket",
+        "light wash",
+        "vintage"
+      ],
+      "share_type": "swap",
+      "status": "active",
+      "photos": [
+        {
+          "id": 101,
+          "url": "mock://media/outerwear-40-0.jpg",
+          "kind": "front"
+        },
+        {
+          "id": 102,
+          "url": "mock://media/outerwear-40-1.jpg",
+          "kind": "back"
+        },
+        {
+          "id": 103,
+          "url": "mock://media/outerwear-40-2.jpg",
+          "kind": "label"
+        }
+      ],
+      "meetup_spot": {
+        "id": 1,
+        "name": "Alumni Lawn"
+      },
+      "owner": {
+        "id": 5,
+        "name": "Sam Lee",
+        "dorm": "Zeppos",
+        "avatar_url": null,
+        "items_shared": 2
+      },
+      "impact": {
+        "textile_kg": 0.9,
+        "water_l": 4200,
+        "co2_kg": 20.0
+      },
+      "is_mine": false,
+      "saved_by_me": false,
+      "my_request_status": null,
+      "my_request_id": null,
+      "pending_request_count": 0,
+      "accepted_request_id": null,
+      "created_at": "2026-10-17T20:00:00Z"
+    },
+    {
+      "id": 41,
+      "title": "Patagonia Better Sweater fleece",
+      "category": "outerwear",
+      "size": "S",
+      "color": "Heather gray",
+      "brand": "Patagonia",
+      "condition": "like_new",
+      "description": "Quarter-zip fleece, super warm, worn maybe five times.",
+      "tags": [
+        "fleece",
+        "quarter zip",
+        "outdoors"
+      ],
+      "share_type": "free",
+      "status": "pending",
+      "photos": [
+        {
+          "id": 104,
+          "url": "mock://media/outerwear-41-0.jpg",
+          "kind": "front"
+        },
+        {
+          "id": 105,
+          "url": "mock://media/outerwear-41-1.jpg",
+          "kind": "back"
+        }
+      ],
+      "meetup_spot": {
+        "id": 2,
+        "name": "Commons Center"
+      },
+      "owner": {
+        "id": 7,
+        "name": "Riley Chen",
+        "dorm": "E. Bronson Ingram",
+        "avatar_url": null,
+        "items_shared": 6
+      },
+      "impact": {
+        "textile_kg": 0.9,
+        "water_l": 4200,
+        "co2_kg": 20.0
+      },
+      "is_mine": false,
+      "saved_by_me": false,
+      "my_request_status": null,
+      "my_request_id": null,
+      "pending_request_count": 0,
+      "accepted_request_id": null,
+      "created_at": "2026-10-17T17:00:00Z"
+    },
+    {
+      "id": 42,
+      "title": "Vintage Vanderbilt crewneck",
+      "category": "tops",
+      "size": "L",
+      "color": "Black and gold",
+      "brand": "Champion",
+      "condition": "good",
+      "description": "Thrifted reverse-weave crewneck. Slight cracking on the print.",
+      "tags": [
+        "crewneck",
+        "vintage",
+        "college"
+      ],
+      "share_type": "donate",
+      "status": "active",
+      "photos": [
+        {
+          "id": 106,
+          "url": "mock://media/tops-42-0.jpg",
+          "kind": "front"
+        }
+      ],
+      "meetup_spot": {
+        "id": 3,
+        "name": "Rand Hall"
+      },
+      "owner": {
+        "id": 8,
+        "name": "Maya Patel",
+        "dorm": "Warren",
+        "avatar_url": null,
+        "items_shared": 3
+      },
+      "impact": {
+        "textile_kg": 0.25,
+        "water_l": 2700,
+        "co2_kg": 5.5
+      },
+      "is_mine": false,
+      "saved_by_me": false,
+      "my_request_status": null,
+      "my_request_id": null,
+      "pending_request_count": 0,
+      "accepted_request_id": null,
+      "created_at": "2026-10-17T14:00:00Z"
+    },
+    {
+      "id": 43,
+      "title": "Nike Air Force 1 '07",
+      "category": "shoes",
+      "size": "9",
+      "color": "White",
+      "brand": "Nike",
+      "condition": "good",
+      "description": "Creased toe box but cleaned. Comes with extra laces.",
+      "tags": [
+        "sneakers",
+        "white",
+        "classic"
+      ],
+      "share_type": "swap",
+      "status": "active",
+      "photos": [
+        {
+          "id": 107,
+          "url": "mock://media/shoes-43-0.jpg",
+          "kind": "front"
+        },
+        {
+          "id": 108,
+          "url": "mock://media/shoes-43-1.jpg",
+          "kind": "back"
+        }
+      ],
+      "meetup_spot": {
+        "id": 4,
+        "name": "Sarratt Student Center"
+      },
+      "owner": {
+        "id": 9,
+        "name": "Theo Brooks",
+        "dorm": "Crawford",
+        "avatar_url": null,
+        "items_shared": 1
+      },
+      "impact": {
+        "textile_kg": 0.8,
+        "water_l": 4400,
+        "co2_kg": 13.6
+      },
+      "is_mine": false,
+      "saved_by_me": false,
+      "my_request_status": null,
+      "my_request_id": null,
+      "pending_request_count": 0,
+      "accepted_request_id": null,
+      "created_at": "2026-10-17T11:00:00Z"
+    },
+    {
+      "id": 44,
+      "title": "Aritzia Effortless pant",
+      "category": "bottoms",
+      "size": "S",
+      "color": "Black",
+      "brand": "Aritzia",
+      "condition": "like_new",
+      "description": "High-rise wide-leg trousers, full length.",
+      "tags": [
+        "trousers",
+        "wide leg",
+        "workwear"
+      ],
+      "share_type": "free",
+      "status": "active",
+      "photos": [
+        {
+          "id": 109,
+          "url": "mock://media/bottoms-44-0.jpg",
+          "kind": "front"
+        }
+      ],
+      "meetup_spot": {
+        "id": 1,
+        "name": "Alumni Lawn"
+      },
+      "owner": {
+        "id": 10,
+        "name": "Ava Nguyen",
+        "dorm": "Rothschild",
+        "avatar_url": null,
+        "items_shared": 5
+      },
+      "impact": {
+        "textile_kg": 0.6,
+        "water_l": 7500,
+        "co2_kg": 16.0
+      },
+      "is_mine": false,
+      "saved_by_me": false,
+      "my_request_status": null,
+      "my_request_id": null,
+      "pending_request_count": 0,
+      "accepted_request_id": null,
+      "created_at": "2026-10-17T08:00:00Z"
+    },
+    {
+      "id": 45,
+      "title": "Reformation floral midi dress",
+      "category": "dresses",
+      "size": "S",
+      "color": "Blue floral",
+      "brand": "Reformation",
+      "condition": "like_new",
+      "description": "Wore it to one formal. Adjustable straps.",
+      "tags": [
+        "floral",
+        "midi",
+        "formal"
+      ],
+      "share_type": "swap",
+      "status": "active",
+      "photos": [
+        {
+          "id": 110,
+          "url": "mock://media/dresses-45-0.jpg",
+          "kind": "front"
+        },
+        {
+          "id": 111,
+          "url": "mock://media/dresses-45-1.jpg",
+          "kind": "back"
+        }
+      ],
+      "meetup_spot": {
+        "id": 2,
+        "name": "Commons Center"
+      },
+      "owner": {
+        "id": 8,
+        "name": "Maya Patel",
+        "dorm": "Warren",
+        "avatar_url": null,
+        "items_shared": 3
+      },
+      "impact": {
+        "textile_kg": 0.45,
+        "water_l": 3600,
+        "co2_kg": 11.0
+      },
+      "is_mine": false,
+      "saved_by_me": false,
+      "my_request_status": null,
+      "my_request_id": null,
+      "pending_request_count": 0,
+      "accepted_request_id": null,
+      "created_at": "2026-10-17T05:00:00Z"
+    },
+    {
+      "id": 46,
+      "title": "Carhartt watch beanie",
+      "category": "accessories",
+      "size": "One size",
+      "color": "Brown",
+      "brand": "Carhartt",
+      "condition": "good",
+      "description": "Acrylic knit beanie. Warm and broken in.",
+      "tags": [
+        "beanie",
+        "knit",
+        "workwear"
+      ],
+      "share_type": "free",
+      "status": "active",
+      "photos": [
+        {
+          "id": 112,
+          "url": "mock://media/accessories-46-0.jpg",
+          "kind": "front"
+        }
+      ],
+      "meetup_spot": {
+        "id": 3,
+        "name": "Rand Hall"
+      },
+      "owner": {
+        "id": 11,
+        "name": "Leo Martinez",
+        "dorm": "Branscomb",
+        "avatar_url": null,
+        "items_shared": 2
+      },
+      "impact": {
+        "textile_kg": 0.1,
+        "water_l": 600,
+        "co2_kg": 2.0
+      },
+      "is_mine": false,
+      "saved_by_me": false,
+      "my_request_status": null,
+      "my_request_id": null,
+      "pending_request_count": 0,
+      "accepted_request_id": null,
+      "created_at": "2026-10-17T02:00:00Z"
+    },
+    {
+      "id": 47,
+      "title": "Fjällräven Kånken backpack",
+      "category": "bags",
+      "size": "One size",
+      "color": "Forest green",
+      "brand": "Fjällräven",
+      "condition": "good",
+      "description": "Classic Kånken. Fits a 13 inch laptop.",
+      "tags": [
+        "backpack",
+        "school",
+        "outdoors"
+      ],
+      "share_type": "donate",
+      "status": "active",
+      "photos": [
+        {
+          "id": 113,
+          "url": "mock://media/bags-47-0.jpg",
+          "kind": "front"
+        }
+      ],
+      "meetup_spot": {
+        "id": 4,
+        "name": "Sarratt Student Center"
+      },
+      "owner": {
+        "id": 7,
+        "name": "Riley Chen",
+        "dorm": "E. Bronson Ingram",
+        "avatar_url": null,
+        "items_shared": 6
+      },
+      "impact": {
+        "textile_kg": 0.5,
+        "water_l": 2000,
+        "co2_kg": 8.0
+      },
+      "is_mine": false,
+      "saved_by_me": false,
+      "my_request_status": null,
+      "my_request_id": null,
+      "pending_request_count": 0,
+      "accepted_request_id": null,
+      "created_at": "2026-10-16T23:00:00Z"
+    },
+    {
+      "id": 48,
+      "title": "Uniqlo oxford button-down",
+      "category": "tops",
+      "size": "M",
+      "color": "Light blue",
+      "brand": "Uniqlo",
+      "condition": "good",
+      "description": "Slim fit oxford shirt, ironed and ready.",
+      "tags": [
+        "shirt",
+        "oxford",
+        "button-down"
+      ],
+      "share_type": "free",
+      "status": "active",
+      "photos": [
+        {
+          "id": 114,
+          "url": "mock://media/tops-48-0.jpg",
+          "kind": "front"
+        }
+      ],
+      "meetup_spot": {
+        "id": 1,
+        "name": "Alumni Lawn"
+      },
+      "owner": {
+        "id": 9,
+        "name": "Theo Brooks",
+        "dorm": "Crawford",
+        "avatar_url": null,
+        "items_shared": 1
+      },
+      "impact": {
+        "textile_kg": 0.25,
+        "water_l": 2700,
+        "co2_kg": 5.5
+      },
+      "is_mine": false,
+      "saved_by_me": false,
+      "my_request_status": null,
+      "my_request_id": null,
+      "pending_request_count": 0,
+      "accepted_request_id": null,
+      "created_at": "2026-10-16T20:00:00Z"
+    },
+    {
+      "id": 49,
+      "title": "The North Face Nuptse puffer",
+      "category": "outerwear",
+      "size": "L",
+      "color": "Black",
+      "brand": "The North Face",
+      "condition": "good",
+      "description": "700-fill down puffer. Zipper works perfectly.",
+      "tags": [
+        "puffer",
+        "winter",
+        "down"
+      ],
+      "share_type": "swap",
+      "status": "active",
+      "photos": [
+        {
+          "id": 115,
+          "url": "mock://media/outerwear-49-0.jpg",
+          "kind": "front"
+        },
+        {
+          "id": 116,
+          "url": "mock://media/outerwear-49-1.jpg",
+          "kind": "back"
+        }
+      ],
+      "meetup_spot": {
+        "id": 2,
+        "name": "Commons Center"
+      },
+      "owner": {
+        "id": 11,
+        "name": "Leo Martinez",
+        "dorm": "Branscomb",
+        "avatar_url": null,
+        "items_shared": 2
+      },
+      "impact": {
+        "textile_kg": 0.9,
+        "water_l": 4200,
+        "co2_kg": 20.0
+      },
+      "is_mine": false,
+      "saved_by_me": false,
+      "my_request_status": null,
+      "my_request_id": null,
+      "pending_request_count": 0,
+      "accepted_request_id": null,
+      "created_at": "2026-10-16T17:00:00Z"
+    },
+    {
+      "id": 50,
+      "title": "Dr. Martens 1460 boots",
+      "category": "shoes",
+      "size": "8",
+      "color": "Black smooth",
+      "brand": "Dr. Martens",
+      "condition": "worn",
+      "description": "Fully broken in, no blisters required. Some scuffs.",
+      "tags": [
+        "boots",
+        "leather",
+        "grunge"
+      ],
+      "share_type": "swap",
+      "status": "active",
+      "photos": [
+        {
+          "id": 117,
+          "url": "mock://media/shoes-50-0.jpg",
+          "kind": "front"
+        },
+        {
+          "id": 118,
+          "url": "mock://media/shoes-50-1.jpg",
+          "kind": "back"
+        }
+      ],
+      "meetup_spot": {
+        "id": 3,
+        "name": "Rand Hall"
+      },
+      "owner": {
+        "id": 10,
+        "name": "Ava Nguyen",
+        "dorm": "Rothschild",
+        "avatar_url": null,
+        "items_shared": 5
+      },
+      "impact": {
+        "textile_kg": 0.8,
+        "water_l": 4400,
+        "co2_kg": 13.6
+      },
+      "is_mine": false,
+      "saved_by_me": false,
+      "my_request_status": null,
+      "my_request_id": null,
+      "pending_request_count": 0,
+      "accepted_request_id": null,
+      "created_at": "2026-10-16T14:00:00Z"
+    },
+    {
+      "id": 51,
+      "title": "Lululemon Align leggings",
+      "category": "bottoms",
+      "size": "S",
+      "color": "Navy",
+      "brand": "Lululemon",
+      "condition": "good",
+      "description": "25 inch Aligns. No pilling.",
+      "tags": [
+        "leggings",
+        "athletic",
+        "yoga"
+      ],
+      "share_type": "donate",
+      "status": "active",
+      "photos": [
+        {
+          "id": 119,
+          "url": "mock://media/bottoms-51-0.jpg",
+          "kind": "front"
+        }
+      ],
+      "meetup_spot": {
+        "id": 4,
+        "name": "Sarratt Student Center"
+      },
+      "owner": {
+        "id": 5,
+        "name": "Sam Lee",
+        "dorm": "Zeppos",
+        "avatar_url": null,
+        "items_shared": 2
+      },
+      "impact": {
+        "textile_kg": 0.6,
+        "water_l": 7500,
+        "co2_kg": 16.0
+      },
+      "is_mine": false,
+      "saved_by_me": false,
+      "my_request_status": null,
+      "my_request_id": null,
+      "pending_request_count": 0,
+      "accepted_request_id": null,
+      "created_at": "2026-10-16T11:00:00Z"
+    },
+    {
+      "id": 52,
+      "title": "Canvas tote bag",
+      "category": "bags",
+      "size": "One size",
+      "color": "Natural",
+      "brand": "Baggu",
+      "condition": "like_new",
+      "description": "Heavyweight canvas tote with an inside pocket.",
+      "tags": [
+        "tote",
+        "canvas",
+        "everyday"
+      ],
+      "share_type": "free",
+      "status": "active",
+      "photos": [
+        {
+          "id": 120,
+          "url": "mock://media/bags-52-0.jpg",
+          "kind": "front"
+        }
+      ],
+      "meetup_spot": {
+        "id": 1,
+        "name": "Alumni Lawn"
+      },
+      "owner": {
+        "id": 8,
+        "name": "Maya Patel",
+        "dorm": "Warren",
+        "avatar_url": null,
+        "items_shared": 3
+      },
+      "impact": {
+        "textile_kg": 0.5,
+        "water_l": 2000,
+        "co2_kg": 8.0
+      },
+      "is_mine": false,
+      "saved_by_me": false,
+      "my_request_status": null,
+      "my_request_id": null,
+      "pending_request_count": 0,
+      "accepted_request_id": null,
+      "created_at": "2026-10-16T08:00:00Z"
+    },
+    {
+      "id": 53,
+      "title": "Black satin slip dress",
+      "category": "dresses",
+      "size": "M",
+      "color": "Black",
+      "brand": "Zara",
+      "condition": "good",
+      "description": "Bias-cut midi slip dress. Great for layering.",
+      "tags": [
+        "slip dress",
+        "satin",
+        "night out"
+      ],
+      "share_type": "donate",
+      "status": "active",
+      "photos": [
+        {
+          "id": 121,
+          "url": "mock://media/dresses-53-0.jpg",
+          "kind": "front"
+        }
+      ],
+      "meetup_spot": {
+        "id": 2,
+        "name": "Commons Center"
+      },
+      "owner": {
+        "id": 10,
+        "name": "Ava Nguyen",
+        "dorm": "Rothschild",
+        "avatar_url": null,
+        "items_shared": 5
+      },
+      "impact": {
+        "textile_kg": 0.45,
+        "water_l": 3600,
+        "co2_kg": 11.0
+      },
+      "is_mine": false,
+      "saved_by_me": false,
+      "my_request_status": null,
+      "my_request_id": null,
+      "pending_request_count": 0,
+      "accepted_request_id": null,
+      "created_at": "2026-10-16T05:00:00Z"
+    },
+    {
+      "id": 54,
+      "title": "Champion reverse weave hoodie",
+      "category": "tops",
+      "size": "XL",
+      "color": "Oxford gray",
+      "brand": "Champion",
+      "condition": "worn",
+      "description": "Oversized, soft from many washes.",
+      "tags": [
+        "hoodie",
+        "cozy",
+        "athletic"
+      ],
+      "share_type": "free",
+      "status": "active",
+      "photos": [
+        {
+          "id": 122,
+          "url": "mock://media/tops-54-0.jpg",
+          "kind": "front"
+        }
+      ],
+      "meetup_spot": {
+        "id": 3,
+        "name": "Rand Hall"
+      },
+      "owner": {
+        "id": 7,
+        "name": "Riley Chen",
+        "dorm": "E. Bronson Ingram",
+        "avatar_url": null,
+        "items_shared": 6
+      },
+      "impact": {
+        "textile_kg": 0.25,
+        "water_l": 2700,
+        "co2_kg": 5.5
+      },
+      "is_mine": false,
+      "saved_by_me": false,
+      "my_request_status": null,
+      "my_request_id": null,
+      "pending_request_count": 0,
+      "accepted_request_id": null,
+      "created_at": "2026-10-16T02:00:00Z"
+    },
+    {
+      "id": 55,
+      "title": "Levi's 501 original jeans",
+      "category": "bottoms",
+      "size": "30",
+      "color": "Medium indigo",
+      "brand": "Levi's",
+      "condition": "good",
+      "description": "Straight-leg 501s, 30x32. Hemmed slightly.",
+      "tags": [
+        "denim",
+        "jeans",
+        "straight leg"
+      ],
+      "share_type": "swap",
+      "status": "active",
+      "photos": [
+        {
+          "id": 123,
+          "url": "mock://media/bottoms-55-0.jpg",
+          "kind": "front"
+        },
+        {
+          "id": 124,
+          "url": "mock://media/bottoms-55-1.jpg",
+          "kind": "back"
+        }
+      ],
+      "meetup_spot": {
+        "id": 4,
+        "name": "Sarratt Student Center"
+      },
+      "owner": {
+        "id": 11,
+        "name": "Leo Martinez",
+        "dorm": "Branscomb",
+        "avatar_url": null,
+        "items_shared": 2
+      },
+      "impact": {
+        "textile_kg": 0.6,
+        "water_l": 7500,
+        "co2_kg": 16.0
+      },
+      "is_mine": false,
+      "saved_by_me": false,
+      "my_request_status": null,
+      "my_request_id": null,
+      "pending_request_count": 0,
+      "accepted_request_id": null,
+      "created_at": "2026-10-15T23:00:00Z"
+    },
+    {
+      "id": 56,
+      "title": "Gray wool scarf",
+      "category": "accessories",
+      "size": "One size",
+      "color": "Charcoal",
+      "brand": "J.Crew",
+      "condition": "like_new",
+      "description": "Soft merino blend, long enough to wrap twice.",
+      "tags": [
+        "scarf",
+        "wool",
+        "winter"
+      ],
+      "share_type": "free",
+      "status": "active",
+      "photos": [
+        {
+          "id": 125,
+          "url": "mock://media/accessories-56-0.jpg",
+          "kind": "front"
+        }
+      ],
+      "meetup_spot": {
+        "id": 1,
+        "name": "Alumni Lawn"
+      },
+      "owner": {
+        "id": 3,
+        "name": "Jordan Park",
+        "dorm": "Kissam",
+        "avatar_url": null,
+        "items_shared": 4
+      },
+      "impact": {
+        "textile_kg": 0.1,
+        "water_l": 600,
+        "co2_kg": 2.0
+      },
+      "is_mine": false,
+      "saved_by_me": false,
+      "my_request_status": null,
+      "my_request_id": null,
+      "pending_request_count": 0,
+      "accepted_request_id": null,
+      "created_at": "2026-10-15T20:00:00Z"
+    },
+    {
+      "id": 57,
+      "title": "Adidas Samba OG",
+      "category": "shoes",
+      "size": "10",
+      "color": "White and black",
+      "brand": "Adidas",
+      "condition": "good",
+      "description": "Gum sole, light creasing. Too small for me now.",
+      "tags": [
+        "sneakers",
+        "samba",
+        "retro"
+      ],
+      "share_type": "swap",
+      "status": "active",
+      "photos": [
+        {
+          "id": 126,
+          "url": "mock://media/shoes-57-0.jpg",
+          "kind": "front"
+        },
+        {
+          "id": 127,
+          "url": "mock://media/shoes-57-1.jpg",
+          "kind": "back"
+        }
+      ],
+      "meetup_spot": {
+        "id": 2,
+        "name": "Commons Center"
+      },
+      "owner": {
+        "id": 3,
+        "name": "Jordan Park",
+        "dorm": "Kissam",
+        "avatar_url": null,
+        "items_shared": 4
+      },
+      "impact": {
+        "textile_kg": 0.8,
+        "water_l": 4400,
+        "co2_kg": 13.6
+      },
+      "is_mine": false,
+      "saved_by_me": false,
+      "my_request_status": null,
+      "my_request_id": null,
+      "pending_request_count": 0,
+      "accepted_request_id": null,
+      "created_at": "2026-10-15T17:00:00Z"
+    }
+  ],
+  "total": 18,
+  "next_offset": null
+}

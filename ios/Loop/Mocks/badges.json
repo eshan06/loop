@@ -1,0 +1,7 @@
+{
+  "items": [
+    { "id": "first_swap", "name": "First Swap", "description": "Complete your first exchange", "earned_at": null, "progress": 0, "goal": 1 },
+    { "id": "giving_back", "name": "Giving Back", "description": "Donate five items", "earned_at": null, "progress": 3, "goal": 5 },
+    { "id": "closet_cleanout", "name": "Closet Cleanout", "description": "List ten items", "earned_at": null, "progress": 6, "goal": 10 }
+  ]
+}

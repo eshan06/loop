@@ -1,0 +1,18 @@
+{
+  "items": [
+    {
+      "id": 120,
+      "request_id": 9,
+      "sender_id": 3,
+      "body": "Thanks for accepting! Commons at 4?",
+      "created_at": "2026-10-17T15:33:10Z"
+    },
+    {
+      "id": 121,
+      "request_id": 9,
+      "sender_id": 7,
+      "body": "Works for me, see you there.",
+      "created_at": "2026-10-17T15:33:40Z"
+    }
+  ]
+}

@@ -1,0 +1,16 @@
+{
+  "token": "3f6c1e0a9b7d4c2e8a51f0d6b2c94e17",
+  "is_new": true,
+  "user": {
+    "id": 3,
+    "name": null,
+    "email": "jordan.park@vanderbilt.edu",
+    "campus": { "id": 1, "name": "Vanderbilt" },
+    "dorm": null,
+    "class_year": null,
+    "sizes": { "top": null, "bottom": null, "shoe": null },
+    "avatar_url": null,
+    "items_shared": 0,
+    "created_at": "2026-10-18T14:00:00Z"
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "items": [
+    {
+      "id": 1,
+      "name": "Alumni Lawn"
+    },
+    {
+      "id": 2,
+      "name": "Commons Center"
+    },
+    {
+      "id": 3,
+      "name": "Rand Hall"
+    },
+    {
+      "id": 4,
+      "name": "Sarratt Student Center"
+    }
+  ]
+}

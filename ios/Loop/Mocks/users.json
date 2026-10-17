@@ -1,0 +1,7 @@
+{
+  "items": [
+    { "id": 3, "name": "Jordan Park", "email": "jordan.park@vanderbilt.edu", "campus": { "id": 1, "name": "Vanderbilt" }, "dorm": "Kissam", "class_year": 2028, "sizes": { "top": "M", "bottom": "30", "shoe": "10" }, "avatar_url": null, "items_shared": 4, "created_at": "2026-10-10T14:00:00Z" },
+    { "id": 5, "name": "Sam Lee", "email": "sam.lee@vanderbilt.edu", "campus": { "id": 1, "name": "Vanderbilt" }, "dorm": "Zeppos", "class_year": 2027, "sizes": { "top": "M", "bottom": "32", "shoe": "10" }, "avatar_url": null, "items_shared": 2, "created_at": "2026-10-11T14:00:00Z" },
+    { "id": 7, "name": "Riley Chen", "email": "riley.chen@vanderbilt.edu", "campus": { "id": 1, "name": "Vanderbilt" }, "dorm": "E. Bronson Ingram", "class_year": 2029, "sizes": { "top": "S", "bottom": "28", "shoe": "8" }, "avatar_url": null, "items_shared": 6, "created_at": "2026-10-12T14:00:00Z" }
+  ]
+}
