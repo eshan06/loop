@@ -67,7 +67,7 @@ The iOS lane builds against mocks, and the server lane builds the real endpoints
 - [ ] S-11 Listings: create, read, update, delete, plus the feed with filters, search, and paging.
 - [ ] S-12 Requests: create, accept, decline, complete, cancel. Accepting one request declines the others on that listing.
 - [ ] S-13 Messages: list after an ID, send.
-- [ ] S-14 Meetup spots per campus.
+- [x] S-14 Meetup spots per campus.
 - [ ] S-15 Seed script with 30 to 40 listings using real photos of the team's clothes, plus three demo accounts.
 
 **Sync point C, integration:** the iOS lane turns mocks off. Both lanes walk the demo path in `docs/FEATURES.md` on a real phone. Each lane logs what broke on its side as tasks below.

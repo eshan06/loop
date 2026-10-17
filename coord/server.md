@@ -42,6 +42,12 @@ None yet.
 
 ## Log
 
+### 2026-10-17 — S-14 done: meetup spots live
+- Done: S-14. `GET /meetup-spots` live: `{"items": [{id, name}]}` for the caller's campus, sorted by name, 401 without token. Every campus has spots: a new campus gets 4 defaults at first login (Campus Center, Main Dining Hall, Main Library entrance, Student Union), and an older campus with none gets them on its first `GET /meetup-spots`. Defaults live in `backend/app/campus.py` (`DEFAULT_MEETUP_SPOTS`, `get_or_create_campus`); `meetup_spot_out` in serializers.py is ready for S-11's Listing.
+- Done: smoke.sh now 71 checks, all pass.
+- Now: S-10 / S-11.
+- Heads-up: spot IDs differ per campus (and S-15 may give the demo campus real spot names), so never hardcode them; a listing `meetup_spot_id` must be one of the IDs from `GET /meetup-spots`.
+
 ### 2026-10-17 — S-9 done: photo uploads live
 - Done: S-9. `POST /photos` live (multipart `file` + `kind`, 201 Photo). Server re-encodes every upload: EXIF orientation applied, RGB, longest side 1600, JPEG q85, random hex filename under `/media/`. Errors per API.md: `photo_too_large` over 5 MB, `bad_request` for non-JPEG/broken file, missing or unknown `kind`, missing file; 401 without token. `kind` is case-insensitive. Photo URLs load with no auth (200 `image/jpeg`).
 - Done: smoke.sh now 63 checks, all pass (uploads, EXIF rotate, resize, error codes, avatar via `PATCH /me` showing in `GET /me`).
