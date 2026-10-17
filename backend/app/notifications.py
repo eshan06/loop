@@ -56,6 +56,7 @@ def notify(
 def mark_read(db: Session, user_id: int, request_id: int, types: tuple[str, ...],
               at: datetime | None = None) -> None:
     """Mark `user_id`'s unread notifications of `types` on `request_id` read (no commit)."""
+    db.flush()  # a bulk UPDATE doesn't autoflush: rows still pending would be missed
     db.execute(
         update(Notification)
         .where(Notification.user_id == user_id, Notification.request_id == request_id,
