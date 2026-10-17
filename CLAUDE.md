@@ -89,11 +89,10 @@ cd backend && source .venv/bin/activate
 uvicorn app.main:app --reload --port 8000
 ```
 
-Deploy to the OCI server:
+Deploy to the OCI server (push first; pulls, installs deps, migrates, restarts `loop-api`, checks `/health`):
 
 ```
-ssh -i key.pem opc@<server-ip>
-cd ~/loop && git pull && sudo systemctl restart loop-api
+bash scripts/deploy.sh
 ```
 
 iOS lane: open `ios/Loop.xcodeproj` and run. The base URL and the mock switch live in `ios/Loop/Config/APIConfig.swift`.
@@ -106,3 +105,4 @@ iOS lane: open `ios/Loop.xcodeproj` and run. The base URL and the mock switch li
 - `No module named oci` means the venv isn't active.
 - `mysql-connector-python` crashes on import under Python 3.13+ (`ssl.PROTOCOL_TLSv1` is gone). Run the backend with Python 3.12; for a quick check through the tunnel on a newer Python, use PyMySQL.
 - The Cohere models often wrap JSON replies in ```json fences even when told not to. Strip fences before parsing.
+- SELinux on the server: systemd can't exec the venv in `~` (203/EXEC) until `.venv/bin` is labeled `bin_t` (`semanage fcontext -a -t bin_t "/home/opc/loop/backend/.venv/bin(/.*)?"` + `restorecon -R`; `deploy.sh` re-runs restorecon), and it can't read `~/loop/backend/.env` as an `EnvironmentFile`, so the unit has none and the app loads `.env` itself.

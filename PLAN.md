@@ -29,7 +29,7 @@ Both lanes work in parallel. Neither needs anything from the other yet.
 - [x] S-3 In the Generative AI Playground, check whether `cohere.command-a-vision` is available. Write the answer in `coord/server.md` because it decides the scan path.
 - [x] S-4 FastAPI skeleton in `backend/` with `GET /health`, `.env.example`, `requirements.txt`, and a venv on the server.
 - [x] S-5 SSH tunnel to MySQL from your Mac, and the schema from `docs/ARCHITECTURE.md` created as a migration script.
-- [ ] S-6 Run the API on the server under systemd (`loop-api` service) so it survives you closing the laptop.
+- [x] S-6 Run the API on the server under systemd (`loop-api` service) so it survives you closing the laptop.
 
 **Sync point A:** the iOS app, with mocks off, calls `GET /health` on the real server from a simulator and gets `{"status":"ok"}`. Both lanes note it in their coord file.
 

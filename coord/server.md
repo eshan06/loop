@@ -6,7 +6,7 @@ Add new log entries at the top of the Log section, newest first. Keep each entry
 
 ## Server status
 
-- API base URL: `http://163.192.218.131:8000` (plain HTTP, so the app needs ATS Allow Arbitrary Loads). The S-4 skeleton answers `GET /health` there, but it is not running permanently until S-6 (systemd).
+- API base URL: `http://163.192.218.131:8000` — LIVE (systemd `loop-api`, restarts itself on crash and on boot). Plain HTTP, so the iOS app needs the ATS exception (Allow Arbitrary Loads). `GET /health` → `{"status":"ok"}`.
 - Vision model (`cohere.command-a-vision`) available on our account: YES, tested 2026-10-17 from the OCI server, ~1-2s per call (1 or 2 JPEGs) → main scan path. `labels` is only needed for the fallback.
 - Demo accounts: not seeded yet
 
@@ -29,6 +29,12 @@ None yet.
 None yet.
 
 ## Log
+
+### 2026-10-17 — S-6 done, server half of Sync point A ready
+- Done: S-6. The API runs under systemd as `loop-api` (enabled, `Restart=always`); killing it brings it back in ~2s. `GET http://163.192.218.131:8000/health` → `{"status":"ok"}` from outside. Unit: `scripts/loop-api.service`. Deploy from the Mac: `bash scripts/deploy.sh` (pull, pip, migrate, restart, health check).
+- Sync point A: server half ready. iOS lane: turn mocks off and call `/health` from the simulator (plain HTTP, needs the ATS exception), then note it in `coord/ios.md`.
+- Now: Phase 1 / S-7 (answer iOS requests, freeze contract v1).
+- Heads-up: every deploy restarts the API, so it's down for a few seconds.
 
 ### 2026-10-17 — S-5 done
 - Done: S-5. MySQL admin login works. `backend/migrations/001_schema.sql` creates all 12 tables from the ARCHITECTURE data model (InnoDB, utf8mb4, VARCHAR enums, FKs, feed/request/message/notification indexes) in database `loop`, applied on the server. Runner: from `backend/` with the venv, `python migrate.py` (idempotent, tracks `schema_migrations`) or `python migrate.py --status`.

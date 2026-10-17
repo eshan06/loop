@@ -16,6 +16,8 @@ echo "== git pull"
 git pull --ff-only
 echo "== pip install"
 backend/.venv/bin/pip install -q -r backend/requirements.txt
+# New or upgraded scripts in .venv/bin get user_home_t; relabel to bin_t or systemd gets 203/EXEC.
+sudo restorecon -R backend/.venv/bin
 echo "== migrate"
 (cd backend && .venv/bin/python migrate.py)
 if ! cmp -s scripts/loop-api.service /etc/systemd/system/loop-api.service; then
