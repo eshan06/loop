@@ -42,6 +42,12 @@ None yet.
 
 ## Log
 
+### 2026-10-17 — S-8 done: auth and profile live
+- Done: S-8. Live on the server: `POST /auth/login` (.edu check, campus from the last two domain labels, new campus named after the domain, 32-char bearer tokens that never expire), `GET /me`, `PATCH /me` (limits per API.md; `dorm` must match `GET /dorms` when the campus has a list, case-insensitive; `avatar_photo_id` must be your own photo), `GET /me/unread` (real counts from notifications, pending requests on my listings, unread messages), `GET /dorms`. All 13 tables have ORM models; shared User/Owner/Photo builders in `backend/app/serializers.py`.
+- Done: `scripts/smoke.sh` (44 checks, all pass against the live server). Run `bash scripts/smoke.sh` anytime; it makes throwaway users on campus `smoke.edu`.
+- Now: S-9 (photos).
+- Heads-up: `is_new` is `true` only on the very first login, per the contract. If someone quits during profile setup, the next login says `is_new: false` with `name: null`, so the app should also show profile setup whenever `user.name` is `null`. Validation errors are `400 bad_request` with the field name at the start of `message` (e.g. `name: must be 1 to 80 characters.`).
+
 ### 2026-10-17 — S-7 done, contract v1 frozen
 - Done: S-7. No iOS requests were filed, so the server lane reviewed `docs/API.md` against every Tier 1 and Tier 2 screen and the demo path, filled the gaps, and froze v1. Migration `002_dorms.sql` (new `dorms` table) is applied on the server; `/health` OK after deploy.
 - Now: Phase 2, starting with S-8 (auth, `/me`).
