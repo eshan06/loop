@@ -22,14 +22,18 @@ fail() {
 ok() { PASS=$((PASS + 1)); echo "  ok  $*"; }
 section() { echo "== $*"; }
 
-# req METHOD PATH [JSON_BODY] [TOKEN] -> sets STATUS, body in $BODY
+# req METHOD PATH [JSON_BODY] [TOKEN] -> sets STATUS and SECS (total time), body in $BODY
 req() {
-  local method="$1" path="$2" data="${3:-}" token="${4:-}"
-  local args=(-sS -o "$BODY" -w '%{http_code}' -X "$method" --max-time 30)
+  local method="$1" path="$2" data="${3:-}" token="${4:-}" out
+  local args=(-sS -o "$BODY" -w '%{http_code} %{time_total}' -X "$method" --max-time 30)
   [[ -n "$token" ]] && args+=(-H "Authorization: Bearer $token")
   [[ -n "$data" ]] && args+=(-H 'Content-Type: application/json' --data "$data")
-  STATUS="$(curl "${args[@]}" "$BASE_URL$path")" || STATUS="curl-error"
+  out="$(curl "${args[@]}" "$BASE_URL$path")" || out="curl-error 0"
+  STATUS="${out%% *}"; SECS="${out##* }"
 }
+
+# faster_than SECONDS -> true if the last req took less than SECONDS
+faster_than() { python3 -c 'import sys; sys.exit(0 if float(sys.argv[1]) < float(sys.argv[2]) else 1)' "$SECS" "$1"; }
 
 # expect STATUS [ERROR_CODE] DESCRIPTION
 expect() {
@@ -1156,6 +1160,40 @@ expect 401 unauthorized "similar without a token"
 # visibility check as GET /listings/{id} and only ranks status 'active'.
 
 # ---------------------------------------------------------------------------
+section "style it (S-20)"
+# One real AI call (~3-7 s), then the cached answer. If the model is down the server
+# returns template ideas and doesn't cache them, so the "cached" check fails loudly.
+STYLE_SHAPE="set(d) == {'ideas'} and 2 <= len(d['ideas']) <= 3 and all(set(i) == {'title', 'description'} and isinstance(i['title'], str) and isinstance(i['description'], str) and 0 < len(i['title']) <= 40 and 0 < len(i['description']) <= 200 for i in d['ideas'])"
+PS="$(up "$SMALL_JPEG" front "$TOKEN_A")" || exit 1
+req POST /listings "{\"title\": \"Smoke style denim trucker jacket $MK\", \"category\": \"outerwear\", \"size\": \"M\", \"color\": \"Light wash blue\", \"condition\": \"good\", \"share_type\": \"swap\", \"tags\": [\"denim\", \"vintage\", \"jacket\"], \"meetup_spot_id\": $SPOT1, \"photo_ids\": [$PS]}" "$TOKEN_A"
+expect 201 "A lists a denim jacket to style"
+SL="$(jget 'd["id"]')"
+req POST "/listings/$SL/style" "" "$TOKEN_B"
+expect 200 "POST /listings/{id}/style (first call, ${SECS}s)"
+check "$STYLE_SHAPE" "2-3 ideas, each a short title and description"
+cp "$BODY" "$TMP/style1.json"
+req POST "/listings/$SL/style" "" "$TOKEN_A"
+expect 200 "style again, as the owner"
+faster_than 1 || fail "cached style call took ${SECS}s (wanted < 1 s; AI fallback not cached?)"
+cmp -s "$BODY" "$TMP/style1.json" || fail "second style call returned different ideas (not cached)"
+ok "second call is cached: identical ideas in ${SECS}s"
+req PATCH "/listings/$SL" '{"color": "Black", "tags": ["denim", "black", "jacket"]}' "$TOKEN_A"
+expect 200 "A changes the jacket's color and tags"
+req POST "/listings/$SL/style" "" "$TOKEN_B"
+expect 200 "style after the edit (${SECS}s)"
+check "$STYLE_SHAPE" "ideas regenerated for the edited listing are well formed"
+faster_than 1 && fail "style after an edit came back in ${SECS}s: stale cache served?"
+ok "edit invalidated the cache (regenerated in ${SECS}s)"
+req POST "/listings/$SL/style" "" "$TOKEN_C"
+expect 404 not_found "style another campus's listing"
+req POST "/listings/$XD/style" "" "$TOKEN_A"
+expect 404 not_found "style a deleted listing"
+req POST "/listings/999999999/style" "" "$TOKEN_A"
+expect 404 not_found "style a missing listing"
+req POST "/listings/$SL/style"
+expect 401 unauthorized "style without a token"
+
+# ---------------------------------------------------------------------------
 section "demo campus vanderbilt.edu (S-15, read-only)"
 # READ-ONLY on purpose: the demo data must survive smoke runs. Logging in only adds a
 # session row. Never call GET /requests/{id}/messages here (it moves read markers), and
@@ -1236,6 +1274,19 @@ else
   req GET "/listings/$DEMO_SAVED/similar" "" "$DEMO_J"
   expect 200 "similar items for Jordan's saved item"
   check "len(d['items']) >= 3 and all(l['status'] == 'active' and not l['is_mine'] and l['id'] != $DEMO_SAVED for l in d['items'])" "demo item has 3+ similar items, active and not Jordan's"
+  req GET "/listings?limit=50" "" "$DEMO_S"
+  DEMO_ACTIVE="$(jget "' '.join(str(l['id']) for l in d['items'])")"
+  n=0; slowest=0
+  for lid in $DEMO_ACTIVE; do
+    req POST "/listings/$lid/style" "" "$DEMO_S"
+    [[ "$STATUS" == 200 ]] || fail "style demo listing $lid"
+    check "$STYLE_SHAPE" "demo listing $lid has style ideas" >/dev/null
+    faster_than 1 || fail "style demo listing $lid took ${SECS}s (not pre-warmed? run seed.style_warm + reseed)"
+    slowest="$(python3 -c 'import sys; print(max(float(sys.argv[1]), float(sys.argv[2])))' "$slowest" "$SECS")"
+    n=$((n + 1))
+  done
+  [[ $n -ge 20 ]] || fail "only $n demo listings styled"
+  ok "all $n active demo listings return cached style ideas (slowest ${slowest}s)"
   req GET /impact/campus "" "$DEMO_J"
   expect 200 "Vanderbilt /impact/campus"
   check "d['items_rehomed'] > 0 and d['textile_kg'] > 0 and d['water_l'] > 0 and d['co2_kg'] > 0 and isinstance(d['top_dorm'], str)" "campus impact this week is > 0 with a top dorm"

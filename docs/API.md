@@ -589,7 +589,9 @@ No body. Returns two or three outfit ideas. The server caches the result per lis
 { "ideas": [ { "title": "Weekend layers", "description": "Over a gray hoodie with black jeans and white sneakers." } ] }
 ```
 
-Returns `ai_unavailable` (502) if the model call fails. The app should hide the sheet and show a short message.
+Each `title` is at most 40 characters and each `description` at most 200. The cache is cleared when the listing's title, category, color, or tags change. Any listing the caller can see can be styled (same visibility as `GET /listings/{id}`: another campus, deleted, or someone else's `hidden` listing is `404 not_found`).
+
+If the model call fails or takes longer than 15 seconds, the server returns three template ideas built from the category and color instead, with the same shape and status 200, and doesn't cache them, so the next call tries the model again. In practice the endpoint doesn't return `ai_unavailable` (502); the app can keep handling it by hiding the sheet and showing a short message. Demo listings come with ideas already cached.
 
 ### GET /leaderboard/dorms
 
