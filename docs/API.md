@@ -595,7 +595,7 @@ If the model call fails or takes longer than 15 seconds, the server returns thre
 
 ### GET /leaderboard/dorms
 
-Covers the last 7 days: completed exchanges, counted by the owner's dorm. Dorms with none are left out, so the list can be empty. Ties share a rank.
+Covers the last 7 days: completed exchanges, counted by the owner's dorm. Dorms with none are left out, so the list can be empty. Ties share a rank and are listed alphabetically, and the next rank skips ahead (1, 1, 3). Owners without a dorm aren't counted. The first row's `dorm` is always `GET /impact/campus`'s `top_dorm`.
 
 ```json
 { "items": [ { "rank": 1, "dorm": "Kissam", "items_shared": 14 }, { "rank": 2, "dorm": "Zeppos", "items_shared": 11 } ] }

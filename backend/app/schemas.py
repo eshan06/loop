@@ -136,6 +136,12 @@ class CampusImpactOut(BaseModel):
     top_dorm: str | None
 
 
+class DormRankOut(BaseModel):
+    rank: int
+    dorm: str
+    items_shared: int
+
+
 class ListingOut(BaseModel):
     id: int
     title: str
