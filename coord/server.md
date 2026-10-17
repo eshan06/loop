@@ -7,7 +7,7 @@ Add new log entries at the top of the Log section, newest first. Keep each entry
 ## Server status
 
 - API base URL: `http://163.192.218.131:8000` — LIVE (systemd `loop-api`, restarts itself on crash and on boot). Plain HTTP, so the iOS app needs the ATS exception (Allow Arbitrary Loads). `GET /health` → `{"status":"ok"}`.
-- Vision model (`cohere.command-a-vision`) available on our account: YES, tested 2026-10-17 from the OCI server, ~1-2s per call (1 or 2 JPEGs) → main scan path. `labels` is only needed for the fallback.
+- Vision model (`cohere.command-a-vision`) available on our account: YES, tested 2026-10-17 from the OCI server, ~1-2s per call (1 or 2 JPEGs) → main scan path. `POST /scan` live: ~3-4.5 s end to end (1-3 photos). `labels` is only needed for the fallback.
 - Demo accounts: not seeded yet
 
 Keep this block current. It's the first thing the iOS lane looks at.
@@ -28,6 +28,7 @@ Every change to `docs/API.md` gets a line here: what changed and whether the iOS
 - 2026-10-17 (S-7): `GET /me/badges` items gain `progress` and `goal`; badge IDs listed as an enum. iOS: add to model and mocks.
 - 2026-10-17 (S-7): placeholder examples (`{"...": "User object"}`, `{"...": "ScanDraft"}`) replaced with full JSON; new full examples for `source: none` scan, messages list, notifications page, meetup spots, PATCH /me body. iOS: re-copy these mocks.
 - 2026-10-17 (S-7): rules spelled out per endpoint (no change to shapes): success statuses, field length limits for listings and profile, `photo_ids` 1 to 5, `PATCH /listings` replaces photos, DELETE/PATCH on completed listings is 409, `role` required on `/me/requests`, `GET /listings/{id}` works in any status, hidden listings visible to their owner, which events send which notification, email normalization and campus from the last two domain labels. iOS: nothing beyond the above.
+- 2026-10-17 (S-10): `POST /scan` `kinds` must each be `front`, `back`, `label`, or `other` (`avatar` is a 400). iOS: nothing to do if it sends front/back/label.
 - Contract v1 frozen (2026-10-17). Changes from now on go through the request process in CLAUDE.md.
 
 ## Open requests to the iOS lane
@@ -41,6 +42,13 @@ None yet.
 None yet.
 
 ## Log
+
+### 2026-10-17 — S-10 done: scan live
+- Done: S-10. Live: `POST /scan` (multipart `photos` 1-3, `kinds` one per photo from front/back/label/other, optional `labels`). Validates every upload first, saves and commits the photos, then asks the AI: vision model on the photos (downscaled to 1024 px) → if that fails and `labels` were sent, text model on the labels → else all-null draft with `source: "none"`. Hard 20 s overall deadline. Replies are fence-stripped, parsed and validated (unknown enums → null, tags lowercase list, lengths capped to the POST /listings limits so a draft always posts). Code in `backend/app/ai.py` (replaces `genai_probe.py`; also has `vision_chat`/`text_chat` for "Style it").
+- Measured: real photos (t-shirt, 2 hoodies, jeans) all came back `vision` with sensible title/category/color/tags; end-to-end from a Mac 3.0-3.6 s for 1 photo, 4.3 s for 3 photos. Labels fallback ~5 s. Size is usually null unless a label photo shows it.
+- Done: smoke.sh now 193 checks, all pass. Fallback (`labels`), both-fail (`none`) and deadline (`none` after the timeout) verified on dev ports with bogus model IDs / a 1 s timeout.
+- Contract: `kinds` values clarified as front/back/label/other (not avatar). No iOS change if it sends front,back,label.
+- Now: S-12.
 
 ### 2026-10-17 — S-11 done: listings live
 - Done: S-11. Live: `GET /listings` (campus feed: `active` only, own listings included with `is_mine: true`, newest first; filters `share_type`, `category`, `size` exact ignoring case; `q` substring over title, brand, tags, case-insensitive; paged, `limit` over 50 is capped to 50, `limit<1`/`offset<0`/unknown enum → 400), `POST /listings` (201; limits and errors per API.md, `too_many_photos` over 5), `GET /listings/{id}` (any status; hidden → 404 except owner; other campus → 404), `PATCH` (partial; `photo_ids` replaces photos in the given order; 403 not owner; 409 `wrong_status` when completed), `DELETE` (204; cascades requests/chats; freed photos can be reused), `GET /me/listings?status=active|completed` (active = active + pending + hidden). Full Listing object incl. `my_request_*`, `pending_request_count`, `accepted_request_id`, `saved_by_me`, owner `items_shared`.
