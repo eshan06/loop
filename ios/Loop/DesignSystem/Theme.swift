@@ -1,0 +1,54 @@
+import SwiftUI
+
+/// Design tokens from .plans/ios-app-ux-spec.md §2: monochrome, Apple-native, light mode only.
+/// The photos carry the color; the only other colors are system ones for status.
+enum Theme {
+    // Color
+    static let accent = Color.black
+    static let background = Color(uiColor: .systemBackground)
+    static let surface = Color(uiColor: .secondarySystemBackground)
+    static let textPrimary = Color(uiColor: .label)
+    static let textSecondary = Color(uiColor: .secondaryLabel)
+    static let hairline = Color(uiColor: .separator)
+    static let success = Color(uiColor: .systemGreen)
+    static let destructive = Color(uiColor: .systemRed)
+    static let warning = Color(uiColor: .systemOrange)
+
+    // Spacing scale
+    enum Space {
+        static let xxs: CGFloat = 4
+        static let xs: CGFloat = 8
+        static let s: CGFloat = 12
+        static let m: CGFloat = 16
+        static let l: CGFloat = 20
+        static let xl: CGFloat = 24
+        static let xxl: CGFloat = 32
+    }
+
+    /// Screen side margins and grid gutter.
+    static let margin: CGFloat = 16
+    static let gutter: CGFloat = 12
+
+    // Corner radius
+    enum Radius {
+        static let card: CGFloat = 12
+        static let field: CGFloat = 10
+        static let sheet: CGFloat = 20
+    }
+
+    /// Feed photos are a uniform 4:5.
+    static let photoAspect: CGFloat = 4.0 / 5.0
+}
+
+extension Font {
+    /// SF Pro Rounded for big numbers (impact, counts, leaderboard ranks).
+    static func roundedNumber(_ size: CGFloat, weight: Font.Weight = .bold) -> Font {
+        .system(size: size, weight: weight, design: .rounded).monospacedDigit()
+    }
+}
+
+extension View {
+    func cardBackground() -> some View {
+        background(Theme.surface, in: RoundedRectangle(cornerRadius: Theme.Radius.card, style: .continuous))
+    }
+}
