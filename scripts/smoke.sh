@@ -66,6 +66,42 @@ sys.exit(0 if eval(sys.argv[2]) else 1)
   ok "$2"
 }
 
+# upload FILE KIND [TOKEN] -> POST /photos multipart (file, kind); sets STATUS, body in $BODY.
+# FILE "-" sends no file part; KIND "-" sends no kind part.
+upload() {
+  local file="$1" kind="$2" token="${3:-}"
+  local args=(-sS -o "$BODY" -w '%{http_code}' -X POST --max-time 60)
+  [[ -n "$token" ]] && args+=(-H "Authorization: Bearer $token")
+  [[ "$file" != "-" ]] && args+=(-F "file=@$file;type=image/jpeg")
+  [[ "$kind" != "-" ]] && args+=(-F "kind=$kind")
+  STATUS="$(curl "${args[@]}" "$BASE_URL/photos")" || STATUS="curl-error"
+}
+
+# fetch URL OUTFILE -> sets STATUS and CTYPE (no auth)
+fetch() {
+  local out
+  out="$(curl -sS -o "$2" -w '%{http_code} %{content_type}' --max-time 30 "$1")" || out="curl-error -"
+  STATUS="${out%% *}"; CTYPE="${out#* }"
+}
+
+# jpeg_size FILE -> prints WIDTHxHEIGHT from the JPEG's SOF marker (stdlib only)
+jpeg_size() {
+  python3 -c '
+import struct, sys
+b = open(sys.argv[1], "rb").read()
+assert b[:2] == b"\xff\xd8", "not a JPEG"
+i = 2
+while i < len(b):
+    if b[i] != 0xFF: i += 1; continue
+    m = b[i + 1]
+    if m in (0xD8, 0x01) or 0xD0 <= m <= 0xD7: i += 2; continue
+    n = struct.unpack(">H", b[i + 2:i + 4])[0]
+    if m in (0xC0, 0xC1, 0xC2):
+        h, w = struct.unpack(">HH", b[i + 5:i + 9]); print(f"{w}x{h}"); break
+    i += 2 + n
+' "$1"
+}
+
 # ---------------------------------------------------------------------------
 section "health"
 req GET /health
@@ -158,6 +194,68 @@ expect 200 "GET /me/unread"
 check 'd == {"notifications": 0, "messages": 0, "incoming_requests": 0}' "new user has nothing unread"
 req GET /me/unread
 expect 401 unauthorized "GET /me/unread without a token"
+
+# ---------------------------------------------------------------------------
+section "photos (S-9)"
+# 64x32 red JPEG with EXIF orientation 6 (displays rotated 90 degrees): the server
+# should store it upright as 32x64.
+SMALL_JPEG_B64='/9j/4AAQSkZJRgABAQAAAQABAAD/4QAiRXhpZgAATU0AKgAAAAgAAQESAAMAAAABAAYAAAAAAAD/2wBDABALDA4MChAODQ4SERATGCgaGBYWGDEjJR0oOjM9PDkzODdASFxOQERXRTc4UG1RV19iZ2hnPk1xeXBkeFxlZ2P/2wBDARESEhgVGC8aGi9jQjhCY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2P/wAARCAAgAEADASIAAhEBAxEB/8QAHwAAAQUBAQEBAQEAAAAAAAAAAAECAwQFBgcICQoL/8QAtRAAAgEDAwIEAwUFBAQAAAF9AQIDAAQRBRIhMUEGE1FhByJxFDKBkaEII0KxwRVS0fAkM2JyggkKFhcYGRolJicoKSo0NTY3ODk6Q0RFRkdISUpTVFVWV1hZWmNkZWZnaGlqc3R1dnd4eXqDhIWGh4iJipKTlJWWl5iZmqKjpKWmp6ipqrKztLW2t7i5usLDxMXGx8jJytLT1NXW19jZ2uHi4+Tl5ufo6erx8vP09fb3+Pn6/8QAHwEAAwEBAQEBAQEBAQAAAAAAAAECAwQFBgcICQoL/8QAtREAAgECBAQDBAcFBAQAAQJ3AAECAxEEBSExBhJBUQdhcRMiMoEIFEKRobHBCSMzUvAVYnLRChYkNOEl8RcYGRomJygpKjU2Nzg5OkNERUZHSElKU1RVVldYWVpjZGVmZ2hpanN0dXZ3eHl6goOEhYaHiImKkpOUlZaXmJmaoqOkpaanqKmqsrO0tba3uLm6wsPExcbHyMnK0tPU1dbX2Nna4uPk5ebn6Onq8vP09fb3+Pn6/9oADAMBAAIRAxEAPwDLoooriPpgooooAKKKKACiiigAooooAKKKKACiiigAooooA//Z'
+SMALL_JPEG="$TMP/small.jpg"
+python3 -c 'import base64, sys; open(sys.argv[2], "wb").write(base64.b64decode(sys.argv[1]))' "$SMALL_JPEG_B64" "$SMALL_JPEG"
+NOT_IMAGE="$TMP/notes.txt"
+echo "definitely not a photo" > "$NOT_IMAGE"
+FAKE_JPEG="$TMP/fake.jpg"
+printf '\xff\xd8\xff\xe0 truncated garbage' > "$FAKE_JPEG"
+HUGE="$TMP/huge.jpg"
+head -c 5300000 /dev/zero > "$HUGE"
+
+upload "$SMALL_JPEG" avatar "$TOKEN_A"
+expect 201 "POST /photos kind=avatar"
+check 'set(d) == {"id", "url", "kind"} and isinstance(d["id"], int) and d["kind"] == "avatar"' "Photo object: id, url, kind"
+check "d['url'].startswith('$BASE_URL/media/') and d['url'].endswith('.jpg')" "url is absolute under /media"
+AVATAR_ID="$(jget 'd["id"]')"
+AVATAR_URL="$(jget 'd["url"]')"
+
+fetch "$AVATAR_URL" "$TMP/got.jpg"
+[[ "$STATUS" == "200" && "$CTYPE" == image/jpeg* ]] || fail "GET photo url (got $STATUS $CTYPE)"
+ok "GET photo url without auth: 200 image/jpeg"
+[[ "$(jpeg_size "$TMP/got.jpg")" == "32x64" ]] || fail "EXIF orientation applied (got $(jpeg_size "$TMP/got.jpg"))"
+ok "EXIF orientation applied (64x32 rotated to 32x64)"
+
+if command -v sips >/dev/null 2>&1 && sips -z 1000 2000 "$SMALL_JPEG" --out "$TMP/big.jpg" >/dev/null 2>&1; then
+  upload "$TMP/big.jpg" FRONT "$TOKEN_A"
+  expect 201 "POST /photos 2000x1000 kind=FRONT"
+  check 'd["kind"] == "front"' "kind normalized to lowercase"
+  fetch "$(jget 'd["url"]')" "$TMP/got-big.jpg"
+  [[ "$STATUS" == "200" && "$(jpeg_size "$TMP/got-big.jpg")" == "1600x800" ]] \
+    || fail "big photo resized to 1600x800 (got $STATUS $(jpeg_size "$TMP/got-big.jpg" 2>/dev/null))"
+  ok "big photo resized to longest side 1600"
+else
+  echo "  skip resize check (no sips)"
+fi
+
+upload "$NOT_IMAGE" front "$TOKEN_A"
+expect 400 bad_request "POST /photos with a text file"
+upload "$FAKE_JPEG" front "$TOKEN_A"
+expect 400 bad_request "POST /photos with a broken JPEG"
+upload "$HUGE" front "$TOKEN_A"
+expect 400 photo_too_large "POST /photos over 5 MB"
+upload "$SMALL_JPEG" - "$TOKEN_A"
+expect 400 bad_request "POST /photos without kind"
+upload "$SMALL_JPEG" sideways "$TOKEN_A"
+expect 400 bad_request "POST /photos with an unknown kind"
+upload - front "$TOKEN_A"
+expect 400 bad_request "POST /photos without a file"
+upload "$SMALL_JPEG" front
+expect 401 unauthorized "POST /photos without a token"
+
+req PATCH /me "{\"avatar_photo_id\": $AVATAR_ID}" "$TOKEN_B"
+expect 400 bad_request "PATCH /me avatar with someone else's photo"
+req PATCH /me "{\"avatar_photo_id\": $AVATAR_ID}" "$TOKEN_A"
+expect 200 "PATCH /me avatar_photo_id"
+check "d['avatar_url'] == '$AVATAR_URL'" "PATCH /me returns the avatar url"
+req GET /me "" "$TOKEN_A"
+check "d['avatar_url'] == '$AVATAR_URL'" "GET /me shows the avatar url"
 
 # ---------------------------------------------------------------------------
 echo
