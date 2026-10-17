@@ -41,9 +41,9 @@ def health() -> Health:
     return Health(status="ok")
 
 
-# Routers are added here as they land (S-8 onward), e.g.:
-# from .routers import auth, me, photos, scan, listings, requests, messages, social, stats
-# app.include_router(auth.router)
-ROUTERS: list = []
+# One router per area; add each new one here as it lands.
+from .routers import auth, me  # noqa: E402
+
+ROUTERS: list = [auth.router, me.router]
 for router in ROUTERS:
     app.include_router(router)
