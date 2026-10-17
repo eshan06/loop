@@ -30,6 +30,11 @@ None yet.
 
 ## Log
 
+### 2026-10-17 — S-2 done
+- Done: S-2. Port 8000/tcp is open in the VCN security list "Allow HTTP(S) to WebServer" (ingress from 0.0.0.0/0, "Loop API") and in firewalld on the server. A test HTTP server on 8000 answered 200 from outside.
+- Now: S-3 (vision model check).
+- Heads-up: nothing listens on 8000 yet, so `http://163.192.218.131:8000` refuses connections until S-4/S-6.
+
 ### 2026-10-17 — S-1 done
 - Done: S-1. The OCI stack is up and SSH works. The repo is cloned to `~/loop` on the server (163.192.218.131). Python 3.12 is installed there.
 - Now: S-2 (open port 8000), then S-3 (vision model check).

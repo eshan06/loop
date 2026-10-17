@@ -25,7 +25,7 @@ Both lanes work in parallel. Neither needs anything from the other yet.
 
 ### Server lane
 - [x] S-1 Confirm the OCI stack is deployed and you can SSH in. Clone this repo to `~/loop` on the server.
-- [ ] S-2 Open port 8000 in the VCN security list and in `firewalld`.
+- [x] S-2 Open port 8000 in the VCN security list and in `firewalld`.
 - [ ] S-3 In the Generative AI Playground, check whether `cohere.command-a-vision` is available. Write the answer in `coord/server.md` because it decides the scan path.
 - [ ] S-4 FastAPI skeleton in `backend/` with `GET /health`, `.env.example`, `requirements.txt`, and a venv on the server.
 - [ ] S-5 SSH tunnel to MySQL from your Mac, and the schema from `docs/ARCHITECTURE.md` created as a migration script.
