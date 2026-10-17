@@ -42,9 +42,11 @@ def health() -> Health:
 
 
 # One router per area; add each new one here as it lands.
-from .routers import auth, listings, me, messages, photos, requests, scan, spots, stats  # noqa: E402
+from .routers import (  # noqa: E402
+    auth, listings, me, messages, notifications, photos, requests, scan, spots, stats,
+)
 
 ROUTERS: list = [auth.router, me.router, photos.router, spots.router, listings.router,
-           scan.router, requests.router, messages.router, stats.router]
+           scan.router, requests.router, messages.router, stats.router, notifications.router]
 for router in ROUTERS:
     app.include_router(router)

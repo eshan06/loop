@@ -1,8 +1,7 @@
 """Shared builders that turn ORM rows into the API objects in docs/API.md.
 
 Every endpoint that returns a User, Owner, Photo, Listing, ... uses these, so the
-shapes stay identical everywhere. A later task adds the Notification builder
-here.
+shapes stay identical everywhere.
 """
 
 from __future__ import annotations
@@ -15,13 +14,14 @@ from sqlalchemy.orm import Session, selectinload
 
 from .config import settings
 from .impact import impact_for
-from .models import Listing, MeetupSpot, Message, Photo, Request, Save, User
+from .models import Listing, MeetupSpot, Message, Notification, Photo, Request, Save, User
 from .schemas import (
     CampusOut,
     ImpactOut,
     ListingOut,
     MeetupSpotOut,
     MessageOut,
+    NotificationOut,
     OwnerOut,
     PhotoOut,
     RequestListingOut,
@@ -291,4 +291,19 @@ def message_out(msg: Message) -> MessageOut:
         sender_id=msg.sender_id,
         body=msg.body,
         created_at=iso(msg.created_at),
+    )
+
+
+# ---- Notification ------------------------------------------------------------
+
+def notification_out(n: Notification) -> NotificationOut:
+    return NotificationOut(
+        id=n.id,
+        type=n.type,
+        title=n.title,
+        body=n.body,
+        request_id=n.request_id,
+        listing_id=n.listing_id,
+        read=n.read_at is not None,
+        created_at=iso(n.created_at),
     )

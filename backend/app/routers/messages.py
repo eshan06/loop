@@ -17,7 +17,7 @@ from fastapi import APIRouter, Body, Depends, Query
 from sqlalchemy import select, update
 from sqlalchemy.orm import Session
 
-from .. import events
+from .. import events, notifications
 from ..auth import current_user
 from ..db import get_db
 from ..errors import ApiError
@@ -62,6 +62,8 @@ def get_messages(
             .values({marker: newest, Request.updated_at: Request.updated_at})
             .execution_options(synchronize_session=False)
         )
+        # Having seen the chat, the reader's new_message notifications for it are read.
+        notifications.mark_read(db, user.id, req.id, ("new_message",))
         db.commit()
     return ItemsList[MessageOut](items=[message_out(m) for m in msgs])
 

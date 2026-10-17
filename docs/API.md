@@ -643,7 +643,14 @@ Always returns every badge, in this order. `earned_at` is `null` until the badge
 }
 ```
 
-`POST /notifications/read` takes `{"ids": [33, 34]}`, or `{"all": true}`, and returns 204. IDs that aren't the user's are ignored.
+`POST /notifications/read` takes `{"ids": [33, 34]}`, or `{"all": true}`, and returns 204. IDs that aren't the user's are ignored. Marking is idempotent. A body with neither (or `{"all": false}`) is `bad_request` (400); `{"ids": []}` is a 204 that changes nothing.
+
+Ordering is newest `created_at` first, ties broken by `id`, newest first. How rows are written (additive detail, nothing for the app to do):
+
+- Nobody is notified about their own action. Titles use the other person's first name; `body` is the listing title, except `new_message`, whose `body` is a preview of the newest message.
+- `new_message` collapses: while you still have an unread `new_message` for a request, another message on it updates that notification (same `id`; the title counts the unread messages, like "Sam sent you 3 messages"; `body` and `created_at` move to the newest message) instead of adding one.
+- Opening the chat (`GET /requests/{id}/messages` returning messages) or replying in it marks your `new_message` notifications for that request read.
+- Accepting or declining a request marks the owner's `request_received` notification for it read.
 
 ### POST /listings/{id}/report
 

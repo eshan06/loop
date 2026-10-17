@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from typing import Generic, TypeVar
 
-from pydantic import BaseModel, StrictInt, StrictStr
+from pydantic import BaseModel, StrictBool, StrictInt, StrictStr
 
 T = TypeVar("T")
 
@@ -255,3 +255,29 @@ class MessageOut(BaseModel):
     sender_id: int
     body: str
     created_at: str
+
+
+# ---- Notifications ---------------------------------------------------------
+
+class NotificationOut(BaseModel):
+    id: int
+    type: str
+    title: str
+    body: str | None
+    request_id: int | None
+    listing_id: int | None
+    read: bool
+    created_at: str
+
+
+class NotificationPage(Page[NotificationOut]):
+    """GET /notifications: a Page plus `unread` (total unread across all pages)."""
+
+    unread: int
+
+
+class NotificationsReadIn(BaseModel):
+    """Body of POST /notifications/read: {"ids": [33, 34]} or {"all": true}."""
+
+    ids: list[StrictInt] | None = None
+    all: StrictBool | None = None
