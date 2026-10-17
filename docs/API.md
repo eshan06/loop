@@ -28,6 +28,7 @@ Errors always have this shape, with a matching HTTP status:
 | 403 | `forbidden` (for example, editing someone else's listing) |
 | 404 | `not_found` |
 | 409 | `conflict` (for example, requesting your own item or an already-claimed item) |
+| 500 | `server_error` (a bug on our side; the app shows `message` and lets the user retry) |
 | 502 | `ai_unavailable` (the AI call failed; the app should fall back) |
 
 `message` is written for users, so the app can show it as is.

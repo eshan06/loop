@@ -1,0 +1,10 @@
+fastapi==0.143.3
+uvicorn[standard]==0.54.0
+sqlalchemy==2.1.5
+mysql-connector-python==26.7.0
+oci==2.188.0
+pydantic==2.14.1
+pydantic-settings==2.16.0
+python-dotenv==1.2.4
+python-multipart==0.0.32
+pillow==13.0.0
