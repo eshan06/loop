@@ -97,7 +97,7 @@ Each feature has an iOS half and a server half. The server lane ships the endpoi
 - [x] S-20 `POST /listings/{id}/style` using the text model, cached per listing.
 - [x] S-21 Dorm leaderboard.
 - [ ] S-22 Badge rules and `GET /me/badges`.
-- [ ] S-23 Notifications written on request and message events, plus list and mark-read.
+- [x] S-23 Notifications written on request and message events, plus list and mark-read.
 - [ ] S-24 Reports, with listings auto-hidden after three reports.
 
 ## Phase 4: Polish and demo

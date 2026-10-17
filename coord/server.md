@@ -37,6 +37,7 @@ Every change to `docs/API.md` gets a line here: what changed and whether the iOS
 - 2026-10-17 (S-19): clarification, no shape change. `GET /listings/{id}/similar` never includes the caller's own listings; score = 3 per shared tag + 2 same category + 1 same size, ties newest; zero-score items only fill when there aren't enough matches; `limit` over 20 treated as 20; source not visible → `404 not_found`. iOS: nothing to do.
 - 2026-10-17 (S-20): clarification, no shape change. `POST /listings/{id}/style`: title <= 40 and description <= 200 chars; cache cleared when title/category/color/tags change; same visibility as `GET /listings/{id}` (else `404 not_found`); if the model fails or takes > 15 s the server returns 3 template ideas (200, same shape, not cached) instead of `502 ai_unavailable`; demo listings are pre-cached. iOS: nothing to do (expect ~5 s on a first, uncached call).
 - 2026-10-17 (S-21): clarification, no shape change. `GET /leaderboard/dorms`: ties are listed alphabetically and the next rank skips ahead (1, 1, 3); owners without a dorm aren't counted; the first row's `dorm` is always `/impact/campus` `top_dorm`. iOS: nothing to do.
+- 2026-10-17 (S-23): clarification, no shape change. Notifications: `GET /notifications` orders by `created_at` then `id`, newest first; `POST /notifications/read` with neither `ids` nor `all: true` (or no body) is `400 bad_request`, `{"ids": []}` is a no-op 204. New_message notifications collapse (one unread per request per person: same `id`, title "Sam sent you 3 messages", newest text in `body`, `created_at` bumped); opening a chat or replying marks your new_message notifications for it read; accept/decline marks the owner's request_received for it read. Titles use first names; `body` is the listing title (new_message: a 140-char message preview). iOS: nothing required; refresh `/me/unread` after leaving a chat so the bell drops.
 
 ## Open requests to the iOS lane
 
@@ -49,6 +50,13 @@ None yet.
 None yet.
 
 ## Log
+
+### 2026-10-17 — S-23 done: notifications live
+
+- Done: S-23. `app/notifications.py` writes them: `notify(db, user_id, type, title, body, request_id=None, listing_id=None, at=None)` (no commit; S-22 badges call it with `"badge_earned"` and both IDs None) plus builders `request_received/accepted/declined` and `new_message` (collapses into the recipient's unread one). `app/events.py` hooks call them: created → owner, accept → requester, decline and auto-decline → requester, message → the other person; complete and cancel send none (API.md). `GET /notifications` (paged, `unread` total) and `POST /notifications/read` (`ids` or `all`, 204) in `app/routers/notifications.py`; `/me/unread` notifications already counted unread rows. Smoke 626 checks, passed twice.
+- Contract: clarification, no shape change (see Contract changes). iOS: nothing required.
+- Heads-up: demo reseeded. Seed writes notifications through the same builders: Jordan has 10, 3 unread (Sam's new message, Riley's and Ethan's requests on his Converse), read ones include Riley accepting his Dr. Martens request; Sam has 1 unread (Ava's request). Opening the Jordan-Sam chat in the app clears that message notification.
+- Now: S-22 (badges).
 
 ### 2026-10-17 — S-21 done: dorm leaderboard live
 - Done: S-21. `GET /leaderboard/dorms` (`app/routers/stats.py`): completed exchanges in the last 7 days on my campus, counted by the listing owner's current dorm (owners with no dorm skipped), most first, ties alphabetical sharing a rank (1, 1, 3). `/impact/campus` `top_dorm` now comes from the same helper (`dorm_board`), so it is always the board's first dorm. Smoke 559 checks, passed twice.
