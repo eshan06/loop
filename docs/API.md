@@ -82,6 +82,19 @@ Validation problems (a missing required field, a value outside an enum, text tha
 
 A listing becomes `pending` when one of its requests is accepted, and `completed` when that request is completed.
 
+### Sizes
+
+`size` on a Listing or ScanDraft, and `sizes` on a User, are free strings (not an enum: any value within the length limit is accepted), but the server writes them in one vocabulary so the feed's exact-match `size` filter works:
+
+| Category | Values |
+| --- | --- |
+| `tops`, `outerwear`, `dresses` | `XS`, `S`, `M`, `L`, `XL`, `XXL` |
+| `bottoms` | the waist `24` to `40` (`32` for 32x30), or a letter size |
+| `shoes` | US size `5` to `14` in halves: `9`, `9.5` |
+| `accessories`, `bags` | `One size` |
+
+The seed data uses only these values. `POST /scan` maps the model's answer into them where it clearly fits (`Large` → `L`, `W32 L30` → `32`, `US 9 1/2` → `9.5`, `one-size` → `One size`) and keeps anything else as is; an accessory or bag with no size gets `One size`. The app shows a value outside the list as "Other: <value>".
+
 ## Objects
 
 ### User

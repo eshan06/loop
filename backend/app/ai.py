@@ -43,7 +43,7 @@ from oci.generative_ai_inference.models import (
     OnDemandServingMode,
 )
 from PIL import Image
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, field_validator, model_validator
 
 from .config import settings
 
@@ -157,6 +157,70 @@ _CONDITION_ALIASES = {
 }
 
 
+# Size vocabulary (IOS-2, docs/API.md "Sizes"): the app's size picker and the feed's
+# exact-match size filter use these values, so drafts are mapped into them.
+LETTER_SIZES = ("XS", "S", "M", "L", "XL", "XXL")
+ONE_SIZE = "One size"
+_LETTER_ALIASES = {
+    "xs": "XS", "x-small": "XS", "xsmall": "XS", "extra small": "XS", "extra-small": "XS",
+    "s": "S", "sm": "S", "small": "S",
+    "m": "M", "med": "M", "medium": "M",
+    "l": "L", "lg": "L", "large": "L",
+    "xl": "XL", "x-large": "XL", "xlarge": "XL", "extra large": "XL", "extra-large": "XL",
+    "xxl": "XXL", "2xl": "XXL", "xx-large": "XXL", "xxlarge": "XXL", "2x": "XXL",
+    "extra extra large": "XXL",
+}
+_ONE_SIZE_ALIASES = {
+    "one size", "onesize", "one-size", "os", "o/s", "osfa", "osfm", "one size fits all",
+    "one size fits most", "free size", "universal", "adjustable",
+}
+_SIZE_PREFIX = re.compile(r"^(?:size|sz|us|usa|men'?s|women'?s|mens|womens|unisex|m|w)\b[\s:.]*")
+_WAIST = (
+    re.compile(r"^w\s*(\d{2})(?:\s*[x/ ]?\s*l\s*\d{2})?$"),     # W32, W32 L30, W32xL30
+    re.compile(r"^(\d{2})\s*w(?:\s*[x/ ]?\s*\d{2}\s*l)?$"),      # 32W, 32W 30L
+    re.compile(r"^(\d{2})\s*[x/]\s*\d{2}$"),                     # 32x30, 32/30
+)
+_SHOE = re.compile(r"^(\d{1,2})(?:\.(\d))?(\s*1/2|½)?$")
+
+
+def normalize_size(size: str | None, category: str | None) -> str | None:
+    """Map a model's size into the IOS-2 vocabulary where it clearly fits.
+
+    "Large" -> "L", "W32 L30" -> "32", "US 9 1/2" -> "9.5" (shoes), "one-size" ->
+    "One size". Anything else is kept as is (the app shows it as "Other"). A bag or
+    accessory with no size gets "One size".
+    """
+    if size is None:
+        return ONE_SIZE if category in ("accessories", "bags") else None
+    key = " ".join(size.lower().replace("_", " ").split()).strip(" .,;")
+    if key in _ONE_SIZE_ALIASES:
+        return ONE_SIZE
+    if key in _LETTER_ALIASES:
+        return _LETTER_ALIASES[key]
+    bare = _SIZE_PREFIX.sub("", key, count=1).strip() if len(key) > 1 else key
+    if bare in _LETTER_ALIASES and bare != key:
+        return _LETTER_ALIASES[bare]
+    # "M (8-10)": a letter size followed by a conversion in brackets.
+    for text in (key, bare):
+        head = re.match(r"^([a-z0-9\-]+(?: [a-z]+)?)\s*\(", text)
+        if head and head.group(1) in _LETTER_ALIASES and category != "shoes":
+            return _LETTER_ALIASES[head.group(1)]
+    for pattern in _WAIST:
+        m = pattern.match(key) or pattern.match(bare)
+        if m and 24 <= int(m.group(1)) <= 40:
+            return m.group(1)
+    if category == "shoes":
+        m = _SHOE.match(bare)
+        if m:
+            value = int(m.group(1)) + (int(m.group(2) or 0) / 10) + (0.5 if m.group(3) else 0)
+            value = round(value * 2) / 2
+            if 5 <= value <= 14:
+                return f"{value:g}"
+    elif category == "bottoms" and re.fullmatch(r"\d{2}", bare) and 24 <= int(bare) <= 40:
+        return bare
+    return size
+
+
 def _clean_str(value: Any, cap: int) -> str | None:
     if value is None or isinstance(value, (dict, list, bool)):
         return None
@@ -216,6 +280,11 @@ class ScanDraft(BaseModel):
                 tags.append(tag)
         return tags[:MAX_TAGS]
 
+    @model_validator(mode="after")
+    def _size_vocabulary(self) -> ScanDraft:
+        self.size = normalize_size(self.size, self.category)
+        return self
+
 
 def parse_draft(reply: str) -> dict[str, Any]:
     """Model reply -> validated draft dict. Raises ValueError if unusable."""
@@ -238,7 +307,10 @@ _SCHEMA_HINT = (
     "(t-shirts, shirts, sweaters and hoodies are tops; jackets and coats are outerwear).\n"
     f"- condition: exactly one of {', '.join(CONDITIONS)} (judge visible wear; "
     "use good if it looks fine but used).\n"
-    "- size: as printed on a size label (like S, M, XL, 30x32, 9), else null. Never guess a size.\n"
+    "- size: only from a visible size label, else null. Never guess a size. Write it in this "
+    "vocabulary: tops, outerwear and dresses XS, S, M, L, XL or XXL; bottoms the waist number "
+    "24 to 40 (32 for 32x30 or W32 L30) or a letter size; shoes the US size 5 to 14 in halves "
+    "(9, 9.5); accessories and bags \"One size\".\n"
     "- color: the main color in plain words, like \"Light wash blue\".\n"
     "- brand: only if a logo or label shows it, else null.\n"
     "- description: one or two friendly sentences about style, material and fit.\n"
