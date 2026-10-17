@@ -18,6 +18,8 @@ final class NotificationStore {
     private var bannerTask: Task<Void, Never>?
 
     static let interval: Duration = .seconds(5)
+    /// How long the in-app banner stays up. UI tests (`-uiTesting YES`) keep it longer so they can find it.
+    static let bannerSeconds: Double = UserDefaults.standard.bool(forKey: "uiTesting") ? 15 : 4
 
     func start(router: Router) {
         guard pollTask == nil else { return }
@@ -71,7 +73,7 @@ final class NotificationStore {
         bannerTask?.cancel()
         withAnimation(.snappy) { banner = (notification, others) }
         bannerTask = Task {
-            try? await Task.sleep(for: .seconds(4))
+            try? await Task.sleep(for: .seconds(Self.bannerSeconds))
             guard !Task.isCancelled else { return }
             dismissBanner()
         }

@@ -1,6 +1,6 @@
 import SwiftUI
 
-struct FeedView: View {
+@MainActor struct FeedView: View {
     @Environment(SessionStore.self) private var session
     @Environment(Router.self) private var router
     @Environment(ListingCache.self) private var cache
@@ -49,6 +49,7 @@ struct FeedView: View {
             FilterSheet(category: $model.category, size: $model.size)
                 .presentationDetents([.medium, .large])
                 .presentationCornerRadius(Theme.Radius.sheet)
+                .presentationBackground(Theme.background)
         }
         .task(id: FilterKey(shareType: model.shareType, category: model.category, size: model.size, search: model.searchText)) {
             // Wait 300 ms after the last keystroke before searching.
@@ -73,14 +74,13 @@ struct FeedView: View {
 
     private var chipRow: some View {
         ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: Theme.Space.xs) {
+            HStack(spacing: 6) {
                 Chip(title: "All", isSelected: model.shareType == nil) { model.shareType = nil }
                 ForEach(ShareType.allCases) { type in
                     Chip(title: type.label, isSelected: model.shareType == type) {
                         model.shareType = model.shareType == type ? nil : type
                     }
                 }
-                Divider().frame(height: 22).padding(.horizontal, 2)
                 Chip(title: model.activeFilterCount > 0 ? "Filters · \(model.activeFilterCount)" : "Filters",
                      isSelected: model.activeFilterCount > 0, systemImage: "chevron.down") {
                     showFilters = true
@@ -134,9 +134,15 @@ struct FeedView: View {
 }
 
 /// "86 items rehomed this week · 61 kg kept out of landfill". Opens the Impact screen.
-struct CampusBanner: View {
+@MainActor struct CampusBanner: View {
     let campus: CampusImpact
     let action: () -> Void
+
+    private var bannerDetail: String {
+        var parts = ["\(ImpactFormat.mass(campus.textileKg)) kept out of landfill"]
+        if let topDorm = campus.topDorm { parts.append("\(topDorm) leads") }
+        return parts.joined(separator: " · ")
+    }
 
     var body: some View {
         Button(action: action) {
@@ -146,15 +152,12 @@ struct CampusBanner: View {
                     .frame(width: 40, height: 40)
                     .background(Theme.background, in: Circle())
                 VStack(alignment: .leading, spacing: 2) {
-                    (Text("\(campus.itemsRehomed)").font(.roundedNumber(15)) + Text(" items rehomed this week · ")
-                        + Text(ImpactFormat.mass(campus.textileKg)).font(.roundedNumber(15)) + Text(" kept out of landfill"))
-                        .font(.subheadline)
-                        .multilineTextAlignment(.leading)
-                    if let topDorm = campus.topDorm {
-                        Text("\(topDorm) leads the leaderboard")
-                            .font(.caption)
-                            .foregroundStyle(Theme.textSecondary)
-                    }
+                    (Text("\(campus.itemsRehomed)").font(.roundedNumber(16)) + Text(" items rehomed this week"))
+                        .font(.subheadline.weight(.medium))
+                    Text(bannerDetail)
+                        .font(.caption)
+                        .foregroundStyle(Theme.textSecondary)
+                        .lineLimit(1)
                 }
                 Spacer(minLength: 0)
                 Image(systemName: "chevron.right")
@@ -170,7 +173,7 @@ struct CampusBanner: View {
 }
 
 /// The bell with an unread count; pushes the notification list.
-struct BellButton: View {
+@MainActor struct BellButton: View {
     @Environment(NotificationStore.self) private var notifications
     @Environment(Router.self) private var router
 

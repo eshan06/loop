@@ -5,8 +5,8 @@ import SwiftUI
 enum Theme {
     // Color
     static let accent = Color.black
-    static let background = Color(uiColor: .systemBackground)
-    static let surface = Color(uiColor: .secondarySystemBackground)
+    static let background = Color(red: 0.980, green: 0.973, blue: 0.957)   // warm off-white #FAF8F4
+    static let surface = Color(red: 0.941, green: 0.929, blue: 0.906)      // warm gray #F0EDE7
     static let textPrimary = Color(uiColor: .label)
     static let textSecondary = Color(uiColor: .secondaryLabel)
     static let hairline = Color(uiColor: .separator)
@@ -48,6 +48,11 @@ extension Font {
 }
 
 extension View {
+    /// The warm off-white page background, behind scroll views, lists, and forms.
+    func screenBackground() -> some View {
+        background(Theme.background.ignoresSafeArea())
+    }
+
     func cardBackground() -> some View {
         background(Theme.surface, in: RoundedRectangle(cornerRadius: Theme.Radius.card, style: .continuous))
     }

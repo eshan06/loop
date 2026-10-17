@@ -2,7 +2,7 @@ import SwiftUI
 
 /// A push-style banner for notifications that arrive while the app is open.
 /// Tap opens the right screen; swipe up dismisses.
-struct InAppBannerOverlay: View {
+@MainActor struct InAppBannerOverlay: View {
     @Environment(NotificationStore.self) private var notifications
     @Environment(Router.self) private var router
     @State private var dragOffset: CGFloat = 0
@@ -18,6 +18,10 @@ struct InAppBannerOverlay: View {
                     BannerContent(notification: banner.notification, others: banner.others)
                 }
                 .buttonStyle(.plain)
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel("\(banner.notification.title). \(banner.notification.body ?? "")")
+                .accessibilityAddTraits(.isButton)
+                .accessibilityIdentifier("inAppBanner")
                 .offset(y: min(0, dragOffset))
                 .gesture(
                     DragGesture()
@@ -38,7 +42,7 @@ struct InAppBannerOverlay: View {
     }
 }
 
-private struct BannerContent: View {
+@MainActor private struct BannerContent: View {
     let notification: AppNotification
     let others: Int
 

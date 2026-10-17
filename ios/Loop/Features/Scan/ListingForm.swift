@@ -58,7 +58,7 @@ struct ListingFormState: Equatable {
 }
 
 /// Form sections for the AI fields. `locked` shows skeletons while the scan is running.
-struct ListingDetailsFields: View {
+@MainActor struct ListingDetailsFields: View {
     @Binding var form: ListingFormState
     var locked = false
 
@@ -198,7 +198,7 @@ struct ListingDetailsFields: View {
 }
 
 /// Share type and meetup spot: the fields the user fills in, editable while the scan runs.
-struct ShareFields: View {
+@MainActor struct ShareFields: View {
     @Binding var form: ListingFormState
     let spots: [MeetupSpot]?
 
@@ -215,6 +215,7 @@ struct ShareFields: View {
                     Text("Choose").tag(Int?.none)
                     ForEach(spots) { Text($0.name).tag(Int?.some($0.id)) }
                 }
+                .accessibilityIdentifier("meetupPicker")
             } else {
                 HStack { Text("Meetup spot"); Spacer(); ProgressView() }
             }

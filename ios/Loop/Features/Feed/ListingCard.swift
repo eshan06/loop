@@ -1,7 +1,7 @@
 import SwiftUI
 
 /// A feed card: 4:5 photo, title, size, share-type capsule, and "Yours" on my own items.
-struct ListingCard: View {
+@MainActor struct ListingCard: View {
     let listing: Listing
 
     @Environment(SavedStore.self) private var saved
@@ -49,7 +49,7 @@ struct ListingCard: View {
     }
 }
 
-struct HeartButton: View {
+@MainActor struct HeartButton: View {
     let isSaved: Bool
     let action: () -> Void
 
@@ -69,7 +69,7 @@ struct HeartButton: View {
 }
 
 /// Two-column grid of listing cards that push item detail.
-struct ListingGrid: View {
+@MainActor struct ListingGrid: View {
     let listings: [Listing]
     var highlightID: Int?
 
@@ -90,7 +90,7 @@ struct ListingGrid: View {
 }
 
 /// Skeleton cards for the first load.
-struct ListingGridSkeleton: View {
+@MainActor struct ListingGridSkeleton: View {
     var count = 6
 
     var body: some View {

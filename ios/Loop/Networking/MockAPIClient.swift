@@ -63,7 +63,7 @@ struct MockAPIClient: APIClient {
 
     func leaderboard() async throws -> [LeaderboardEntry] { try await delay(); return await backend.leaderboard() }
     func badges() async throws -> [Badge] { try await delay(); return try await backend.badges() }
-    func notifications() async throws -> NotificationPage { try await delay(0.1); return try await backend.notifications() }
+    func notifications() async throws -> NotificationPage { try await delay(0.1); return try await backend.notificationPage() }
     func markNotificationsRead(ids: [Int]?) async throws { try await delay(0.1); try await backend.markRead(ids: ids) }
     func report(listingID: Int, reason: String?) async throws { try await delay(); try await backend.report(listingID: listingID) }
 }
@@ -436,6 +436,8 @@ actor MockBackend {
             guard request.owner.id == actor || request.requester.id == actor else { throw forbidden }
             guard request.status == .accepted else { throw wrongStatus }
             request.status = .completed
+            // Store it now: the badge checks below count completed requests.
+            requests[requestID] = request
             listings[request.listing.id]?.status = .completed
             if let listing = listings[request.listing.id] {
                 for person in [request.owner.id, request.requester.id] {
@@ -553,7 +555,7 @@ actor MockBackend {
         notifications[user, default: []].insert(notification, at: 0)
     }
 
-    func notifications() throws -> NotificationPage {
+    func notificationPage() throws -> NotificationPage {
         let items = notifications[try viewerID, default: []]
         return NotificationPage(items: Array(items.prefix(20)), total: items.count, nextOffset: nil,
                                 unread: items.filter { !$0.read }.count)

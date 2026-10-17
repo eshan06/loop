@@ -1,7 +1,7 @@
 import SwiftUI
 
 /// Edit my listing: the Review form without the AI, saved with PATCH /listings/{id}.
-struct EditListingView: View {
+@MainActor struct EditListingView: View {
     let listingID: Int
 
     @Environment(ListingCache.self) private var cache
@@ -22,6 +22,8 @@ struct EditListingView: View {
                 Section { Text(error).foregroundStyle(Theme.destructive) }
             }
         }
+        .scrollContentBackground(.hidden)
+        .screenBackground()
         .navigationTitle("Edit listing")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {

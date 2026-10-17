@@ -2,7 +2,7 @@ import SwiftUI
 
 /// Personal totals, campus totals for the week, and the dorm leaderboard.
 /// Opened from the Profile impact strip and from the feed's campus banner.
-struct ImpactView: View {
+@MainActor struct ImpactView: View {
     @Environment(SessionStore.self) private var session
 
     @State private var mine: MyImpact?
@@ -91,7 +91,7 @@ struct ImpactView: View {
 }
 
 /// Textile, water, CO₂ with a relatable comparison under each.
-struct ImpactStats: View {
+@MainActor struct ImpactStats: View {
     let impact: Impact
     var large = false
 
@@ -124,7 +124,7 @@ struct ImpactStats: View {
     }
 }
 
-struct LeaderboardList: View {
+@MainActor struct LeaderboardList: View {
     let entries: [LeaderboardEntry]
     let myDorm: String?
 

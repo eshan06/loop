@@ -1,6 +1,6 @@
 import SwiftUI
 
-struct NotificationsView: View {
+@MainActor struct NotificationsView: View {
     @Environment(NotificationStore.self) private var notifications
     @Environment(Router.self) private var router
 
@@ -34,7 +34,7 @@ struct NotificationsView: View {
     }
 }
 
-private struct NotificationRow: View {
+@MainActor private struct NotificationRow: View {
     let notification: AppNotification
 
     var body: some View {

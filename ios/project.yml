@@ -44,3 +44,26 @@ targets:
         # The demo server is plain HTTP on a bare IP (docs/ARCHITECTURE.md, "HTTPS and iOS").
         NSAppTransportSecurity:
           NSAllowsArbitraryLoads: true
+  LoopUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources:
+      - path: LoopUITests
+    dependencies:
+      - target: Loop
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.stacked.loop.uitests
+        TEST_TARGET_NAME: Loop
+        GENERATE_INFOPLIST_FILE: YES
+schemes:
+  Loop:
+    build:
+      targets:
+        Loop: all
+    run:
+      config: Debug
+    test:
+      config: Debug
+      targets:
+        - LoopUITests

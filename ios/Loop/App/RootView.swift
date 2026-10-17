@@ -1,6 +1,6 @@
 import SwiftUI
 
-struct RootView: View {
+@MainActor struct RootView: View {
     @Environment(SessionStore.self) private var session
     @Environment(Router.self) private var router
     @Environment(ListingCache.self) private var cache
@@ -37,7 +37,7 @@ struct RootView: View {
     }
 }
 
-private struct LaunchView: View {
+@MainActor private struct LaunchView: View {
     var body: some View {
         Wordmark(size: 44)
             .frame(maxWidth: .infinity, maxHeight: .infinity)

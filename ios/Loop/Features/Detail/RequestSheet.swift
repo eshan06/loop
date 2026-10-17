@@ -1,7 +1,7 @@
 import SwiftUI
 
 /// Send a request with an optional note (280 characters max).
-struct RequestSheet: View {
+@MainActor struct RequestSheet: View {
     let listing: Listing
 
     @Environment(\.dismiss) private var dismiss
@@ -58,6 +58,7 @@ struct RequestSheet: View {
         }
         .presentationDetents([.medium])
         .presentationCornerRadius(Theme.Radius.sheet)
+        .presentationBackground(Theme.background)
         .onAppear { focused = true }
         .sensoryFeedback(.success, trigger: sent)
     }

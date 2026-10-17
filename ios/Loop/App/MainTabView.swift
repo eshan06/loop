@@ -3,7 +3,7 @@ import SwiftUI
 /// Feed · Saved · [Scan] · Requests · Profile.
 /// Scan is a raised black button over a placeholder tab; it opens the scan flow full screen.
 /// Pushed screens hide the tab bar, so the raised button only shows at each tab's root.
-struct MainTabView: View {
+@MainActor struct MainTabView: View {
     @Environment(Router.self) private var router
     @Environment(NotificationStore.self) private var notifications
     @Environment(\.scenePhase) private var scenePhase
@@ -66,6 +66,7 @@ struct MainTabView: View {
     private func tabStack<Content: View>(_ tab: AppTab, @ViewBuilder root: () -> Content) -> some View {
         NavigationStack(path: router.path(for: tab)) {
             root()
+                .screenBackground()
                 .navigationDestination(for: Route.self) { route in
                     RouteView(route: route)
                         .toolbar(.hidden, for: .tabBar)
@@ -75,10 +76,15 @@ struct MainTabView: View {
 }
 
 /// Builds the screen for a route.
-struct RouteView: View {
+@MainActor struct RouteView: View {
     let route: Route
 
     var body: some View {
+        screen.screenBackground()
+    }
+
+    @ViewBuilder
+    private var screen: some View {
         switch route {
         case .listing(let id): ListingDetailView(listingID: id)
         case .thread(let id): ThreadView(requestID: id)
@@ -90,7 +96,7 @@ struct RouteView: View {
     }
 }
 
-private struct ScanTabButton: View {
+@MainActor private struct ScanTabButton: View {
     let action: () -> Void
 
     var body: some View {

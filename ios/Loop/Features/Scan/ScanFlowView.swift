@@ -2,7 +2,7 @@ import PhotosUI
 import SwiftUI
 
 /// Camera → Review, presented full screen from the raised Scan button.
-struct ScanFlowView: View {
+@MainActor struct ScanFlowView: View {
     @State private var scan = ScanSession()
     @State private var path: [ScanStep] = []
 
@@ -20,7 +20,7 @@ struct ScanFlowView: View {
 }
 
 /// Full-screen preview with one continuous flow: Front, then Back, then Label.
-struct CameraView: View {
+@MainActor struct CameraView: View {
     @Bindable var scan: ScanSession
     let onFinish: () -> Void
 
@@ -40,7 +40,7 @@ struct CameraView: View {
             } else {
                 unavailable
             }
-            guide
+            if camera.isAvailable { guide }
             Color.white.opacity(flash ? 0.7 : 0).ignoresSafeArea().allowsHitTesting(false)
             VStack {
                 topBar
@@ -200,6 +200,19 @@ struct CameraView: View {
             Text("Choose photos from your library instead.")
                 .font(.subheadline)
                 .foregroundStyle(.white.opacity(0.7))
+            #if DEBUG
+            Button("Use sample photos") {
+                for (index, kind) in ScanSession.steps.enumerated() {
+                    let url = URL(string: "mock://media/outerwear-sample-\(index).jpg")!
+                    scan.add(PlaceholderArt.image(for: url), for: kind)
+                }
+                onFinish()
+            }
+            .buttonStyle(.borderedProminent)
+            .tint(.white)
+            .foregroundStyle(.black)
+            .accessibilityIdentifier("sampleBtn")
+            #endif
             if camera.authorization == .denied {
                 Button("Open Settings") {
                     if let url = URL(string: UIApplication.openSettingsURLString) { UIApplication.shared.open(url) }

@@ -1,7 +1,7 @@
 import SwiftUI
 
 /// Two or three outfit ideas from the text model. On `ai_unavailable` the sheet closes with a toast.
-struct StyleItSheet: View {
+@MainActor struct StyleItSheet: View {
     let listing: Listing
 
     @Environment(\.dismiss) private var dismiss
@@ -36,6 +36,7 @@ struct StyleItSheet: View {
         }
         .presentationDetents([.medium, .large])
         .presentationCornerRadius(Theme.Radius.sheet)
+        .presentationBackground(Theme.background)
         .task { await load() }
     }
 
@@ -62,7 +63,7 @@ struct StyleItSheet: View {
     }
 }
 
-private struct IdeaCard: View {
+@MainActor private struct IdeaCard: View {
     let number: Int
     let idea: StyleIdea
 

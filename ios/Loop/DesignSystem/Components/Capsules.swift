@@ -1,7 +1,7 @@
 import SwiftUI
 
 /// A neutral text capsule. Share types and "Yours" use the same style; no icons, no color.
-struct TagCapsule: View {
+@MainActor struct TagCapsule: View {
     let text: String
     var filled = false
 
@@ -15,13 +15,13 @@ struct TagCapsule: View {
     }
 }
 
-struct ShareTypeCapsule: View {
+@MainActor struct ShareTypeCapsule: View {
     let shareType: ShareType
     var body: some View { TagCapsule(text: shareType.label) }
 }
 
 /// Request status: pending orange, accepted green, declined and cancelled gray, completed black.
-struct StatusPill: View {
+@MainActor struct StatusPill: View {
     let status: RequestStatus
 
     private var color: Color {
@@ -44,7 +44,7 @@ struct StatusPill: View {
 }
 
 /// A selectable filter chip: black when selected, `surface` otherwise.
-struct Chip: View {
+@MainActor struct Chip: View {
     let title: String
     var isSelected = false
     var systemImage: String?
@@ -58,7 +58,7 @@ struct Chip: View {
             }
             .font(.subheadline.weight(.medium))
             .foregroundStyle(isSelected ? Color.white : Theme.textPrimary)
-            .padding(.horizontal, 14)
+            .padding(.horizontal, 12)
             .padding(.vertical, 8)
             .background(isSelected ? Theme.accent : Theme.surface, in: Capsule())
             .contentShape(Capsule())

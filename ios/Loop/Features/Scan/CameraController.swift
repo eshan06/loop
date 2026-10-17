@@ -22,8 +22,9 @@ final class CameraController: NSObject, ObservableObject, AVCapturePhotoCaptureD
         if status == .notDetermined {
             granted = await AVCaptureDevice.requestAccess(for: .video)
         }
-        await MainActor.run { authorization = granted ? .authorized : .denied }
-        guard granted else { return }
+        let isGranted = granted
+        await MainActor.run { authorization = isGranted ? .authorized : .denied }
+        guard isGranted else { return }
         let available = await withCheckedContinuation { (done: CheckedContinuation<Bool, Never>) in
             queue.async {
                 done.resume(returning: self.configure())

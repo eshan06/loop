@@ -1,6 +1,6 @@
 import SwiftUI
 
-struct ListingDetailView: View {
+@MainActor struct ListingDetailView: View {
     let listingID: Int
 
     @Environment(ListingCache.self) private var cache
@@ -271,7 +271,7 @@ struct ListingDetailView: View {
 
 // MARK: - Pieces
 
-struct PhotoCarousel: View {
+@MainActor struct PhotoCarousel: View {
     let photos: [Photo]
     @State private var index = 0
 
@@ -290,7 +290,7 @@ struct PhotoCarousel: View {
     }
 }
 
-struct DetailRow: View {
+@MainActor struct DetailRow: View {
     let label: String
     let value: String
     var systemImage: String?
@@ -312,7 +312,7 @@ struct DetailRow: View {
     }
 }
 
-struct Avatar: View {
+@MainActor struct Avatar: View {
     let url: URL?
     let name: String
     var size: CGFloat = 44
@@ -337,7 +337,7 @@ struct Avatar: View {
     }
 }
 
-struct OwnerCard: View {
+@MainActor struct OwnerCard: View {
     let owner: Owner
     var isMine = false
 

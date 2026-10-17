@@ -1,6 +1,6 @@
 import SwiftUI
 
-struct SavedView: View {
+@MainActor struct SavedView: View {
     @Environment(ListingCache.self) private var cache
     @Environment(SavedStore.self) private var saved
 

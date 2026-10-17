@@ -47,7 +47,7 @@ final class RequestsModel {
 }
 
 /// Requests tab: Incoming | Outgoing, sectioned by status.
-struct RequestsView: View {
+@MainActor struct RequestsView: View {
     @Environment(NotificationStore.self) private var notifications
     @State private var model = RequestsModel()
 
@@ -71,7 +71,7 @@ struct RequestsView: View {
 }
 
 /// Incoming requests for one of my listings ("N requests" on item detail).
-struct ListingRequestsView: View {
+@MainActor struct ListingRequestsView: View {
     let listingID: Int
     let title: String
     @State private var model = RequestsModel()
@@ -84,7 +84,7 @@ struct ListingRequestsView: View {
     }
 }
 
-struct RequestList: View {
+@MainActor struct RequestList: View {
     @Bindable var model: RequestsModel
     /// Only show incoming requests for this listing.
     let listingID: Int?
@@ -151,6 +151,7 @@ struct RequestList: View {
             }
         }
         .refreshable { await model.load() }
+        .screenBackground()
         .sensoryFeedback(.success, trigger: accepted)
     }
 
@@ -178,7 +179,7 @@ struct RequestList: View {
     }
 }
 
-struct RequestRow: View {
+@MainActor struct RequestRow: View {
     let request: ExchangeRequest
     let myID: Int?
     var isWorking = false

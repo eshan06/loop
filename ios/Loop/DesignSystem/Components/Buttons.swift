@@ -1,7 +1,7 @@
 import SwiftUI
 
 /// Full-width black capsule, 50 pt tall, with a loading state.
-struct PrimaryButton: View {
+@MainActor struct PrimaryButton: View {
     let title: String
     var systemImage: String?
     var isLoading = false
@@ -34,7 +34,7 @@ struct PrimaryButton: View {
 }
 
 /// Outlined or tinted secondary capsule button.
-struct SecondaryButton: View {
+@MainActor struct SecondaryButton: View {
     let title: String
     var systemImage: String?
     var role: ButtonRole?
@@ -68,7 +68,7 @@ struct PressableStyle: ButtonStyle {
 }
 
 /// A round icon button on a material circle, used over photos.
-struct CircleIconButton: View {
+@MainActor struct CircleIconButton: View {
     let systemImage: String
     var tint: Color = Theme.textPrimary
     let action: () -> Void

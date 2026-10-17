@@ -1,7 +1,7 @@
 import SwiftUI
 
 /// Empty list: symbol, one-line title, one-line body, optional action.
-struct EmptyState: View {
+@MainActor struct EmptyState: View {
     let systemImage: String
     let title: String
     var message: String?
@@ -24,7 +24,7 @@ struct EmptyState: View {
 }
 
 /// Error with the server's message and a Retry button.
-struct ErrorState: View {
+@MainActor struct ErrorState: View {
     let message: String
     let retry: () -> Void
 
@@ -83,7 +83,7 @@ private struct ShimmerIf: ViewModifier {
 }
 
 /// A gray rounded block for skeleton layouts.
-struct SkeletonBlock: View {
+@MainActor struct SkeletonBlock: View {
     var width: CGFloat?
     var height: CGFloat = 14
     var radius: CGFloat = 6

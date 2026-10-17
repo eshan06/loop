@@ -66,7 +66,7 @@ final class ImageLoader: @unchecked Sendable {
 }
 
 /// A remote or local image that fills its frame (aspect fill, clipped by the caller).
-struct CachedImage: View {
+@MainActor struct CachedImage: View {
     let url: URL?
     /// Longest side in pixels to decode at. Grid thumbnails use about 400.
     var maxPixel: CGFloat = 800

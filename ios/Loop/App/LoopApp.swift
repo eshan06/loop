@@ -1,7 +1,7 @@
 import SwiftUI
 
 @main
-struct LoopApp: App {
+@MainActor struct LoopApp: App {
     @State private var session = SessionStore()
     @State private var router = Router()
     @State private var listings = ListingCache()
@@ -11,6 +11,8 @@ struct LoopApp: App {
 
     init() {
         ImageLoader.configureURLCache()
+        // `-resetSession YES` starts signed out (UI tests, demo rehearsals).
+        if UserDefaults.standard.bool(forKey: "resetSession") { AuthToken.set(nil) }
     }
 
     var body: some Scene {

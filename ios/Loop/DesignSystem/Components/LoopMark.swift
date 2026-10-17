@@ -23,7 +23,7 @@ struct LoopGlyph: Shape {
 }
 
 /// Lowercase "loop" in SF Pro Rounded Bold, with the glyph.
-struct Wordmark: View {
+@MainActor struct Wordmark: View {
     var size: CGFloat = 34
 
     var body: some View {

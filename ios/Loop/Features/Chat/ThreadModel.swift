@@ -103,7 +103,8 @@ final class ThreadModel {
     func retry(_ pending: Outgoing) {
         guard let index = outgoing.firstIndex(of: pending) else { return }
         outgoing[index].failed = false
-        Task { await deliver(outgoing[index]) }
+        let item = outgoing[index]
+        Task { await deliver(item) }
     }
 
     private func deliver(_ pending: Outgoing) async {

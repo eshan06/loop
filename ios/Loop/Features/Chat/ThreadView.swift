@@ -1,7 +1,7 @@
 import SwiftUI
 
 /// One screen for a request and its chat: header card with actions, the note, then messages.
-struct ThreadView: View {
+@MainActor struct ThreadView: View {
     let requestID: Int
 
     @Environment(SessionStore.self) private var session
@@ -24,48 +24,64 @@ struct ThreadView: View {
 
     private var myID: Int? { session.userID }
 
+    private var title: String {
+        guard let request = model.request else { return "Chat" }
+        return request.otherPerson(for: myID).displayName
+    }
+
+    private var canCancel: Bool {
+        guard let request = model.request else { return false }
+        return !request.isOwner(myID) && (request.status == .pending || request.status == .accepted)
+    }
+
+    private func retryLoad() {
+        model.stop()
+        model.start { notifications.refreshCounts() }
+    }
+
     var body: some View {
-        Group {
-            if let request = model.request {
-                thread(request)
-            } else if let error = model.error {
-                ErrorState(message: error) {
-                    model.stop()
-                    model.start { notifications.refreshCounts() }
-                }
-            } else {
-                ProgressView().frame(maxWidth: .infinity, maxHeight: .infinity)
+        content
+            .navigationTitle(title)
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar { cancelMenu }
+            .onAppear { model.start { notifications.refreshCounts() } }
+            .onDisappear { model.stop() }
+            .confirmationDialog("Mark this exchange as done?", isPresented: $showComplete, titleVisibility: .visible) {
+                Button("Mark as done") { run(.complete) }
+            } message: {
+                Text("This moves the item to Completed.")
             }
+            .confirmationDialog("Cancel this request?", isPresented: $showCancel, titleVisibility: .visible) {
+                Button("Cancel request", role: .destructive) { run(.cancel) }
+                Button("Keep it", role: .cancel) {}
+            }
+            .fullScreenCover(item: $model.celebration) { celebration in
+                CelebrationView(celebration: celebration)
+            }
+            .sensoryFeedback(.success, trigger: model.request?.status)
+    }
+
+    @ViewBuilder
+    private var content: some View {
+        if let request = model.request {
+            thread(request)
+        } else if let error = model.error {
+            ErrorState(message: error, retry: retryLoad)
+        } else {
+            ProgressView().frame(maxWidth: .infinity, maxHeight: .infinity)
         }
-        .navigationTitle(model.request.map { $0.otherPerson(for: myID).displayName } ?? "Chat")
-        .navigationBarTitleDisplayMode(.inline)
-        .toolbar {
-            if let request = model.request, !request.isOwner(myID), [.pending, .accepted].contains(request.status) {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Menu {
-                        Button("Cancel request", role: .destructive) { showCancel = true }
-                    } label: {
-                        Image(systemName: "ellipsis.circle")
-                    }
+    }
+
+    @ToolbarContentBuilder
+    private var cancelMenu: some ToolbarContent {
+        ToolbarItem(placement: .topBarTrailing) {
+            if canCancel {
+                Menu {
+                    Button("Cancel request", role: .destructive) { showCancel = true }
+                } label: {
+                    Image(systemName: "ellipsis.circle")
                 }
             }
-        }
-        .onAppear { model.start { notifications.refreshCounts() } }
-        .onDisappear { model.stop() }
-        .confirmationDialog("Mark this exchange as done?", isPresented: $showComplete, titleVisibility: .visible) {
-            Button("Mark as done") { run(.complete) }
-        } message: {
-            Text("This moves the item to Completed.")
-        }
-        .confirmationDialog("Cancel this request?", isPresented: $showCancel, titleVisibility: .visible) {
-            Button("Cancel request", role: .destructive) { run(.cancel) }
-            Button("Keep it", role: .cancel) {}
-        }
-        .fullScreenCover(item: $model.celebration) { celebration in
-            CelebrationView(celebration: celebration)
-        }
-        .sensoryFeedback(.success, trigger: model.request?.status) { old, new in
-            old != nil && (new == .accepted || new == .completed)
         }
     }
 
@@ -176,6 +192,7 @@ struct ThreadView: View {
                     TextField("Message", text: $draft, axis: .vertical)
                         .lineLimit(1...5)
                         .focused($composerFocused)
+                        .accessibilityIdentifier("composer")
                         .padding(.horizontal, 14)
                         .padding(.vertical, 9)
                         .background(Theme.surface, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
@@ -191,6 +208,7 @@ struct ThreadView: View {
                                         ? Color(uiColor: .systemGray3) : Theme.accent, in: Circle())
                     }
                     .disabled(draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                    .accessibilityLabel("Send message")
                 }
             case .pending:
                 statusNote("Chat opens once the request is accepted.", systemImage: "lock")
@@ -225,7 +243,7 @@ struct ThreadView: View {
 
 // MARK: - Bubbles
 
-struct MessageBubble: View {
+@MainActor struct MessageBubble: View {
     let text: String
     let isMine: Bool
     var groupedWithPrevious = false
@@ -256,7 +274,7 @@ struct MessageBubble: View {
     }
 }
 
-private struct NoteBubble: View {
+@MainActor private struct NoteBubble: View {
     let note: String
     let isMine: Bool
     let name: String

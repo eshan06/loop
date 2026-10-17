@@ -2,7 +2,7 @@ import PhotosUI
 import SwiftUI
 
 /// Profile setup after the first login, and profile editing from settings.
-struct ProfileSetupView: View {
+@MainActor struct ProfileSetupView: View {
     var isEditing = false
 
     @Environment(SessionStore.self) private var session
@@ -73,6 +73,8 @@ struct ProfileSetupView: View {
                     Section { Text(error).foregroundStyle(Theme.destructive) }
                 }
             }
+            .scrollContentBackground(.hidden)
+            .screenBackground()
             .navigationTitle(isEditing ? "Edit profile" : "Set up your profile")
             .navigationBarTitleDisplayMode(isEditing ? .inline : .large)
             .toolbar {

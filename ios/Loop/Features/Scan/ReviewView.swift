@@ -80,7 +80,7 @@ final class ReviewModel {
 }
 
 /// The AI-filled draft. Opens right away; the AI fields are skeletons until the scan returns.
-struct ReviewView: View {
+@MainActor struct ReviewView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(Router.self) private var router
     @Environment(ListingCache.self) private var cache
@@ -103,6 +103,8 @@ struct ReviewView: View {
                 Section { Text(error).foregroundStyle(Theme.destructive) }
             }
         }
+        .scrollContentBackground(.hidden)
+        .screenBackground()
         .animation(.smooth, value: model.isLocked)
         .navigationTitle("Review")
         .navigationBarTitleDisplayMode(.inline)

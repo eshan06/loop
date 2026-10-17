@@ -1,18 +1,35 @@
 {
   "photos": [
-    { "id": 71, "url": "mock://media/outerwear-71-0.jpg", "kind": "front" },
-    { "id": 72, "url": "mock://media/outerwear-71-1.jpg", "kind": "back" },
-    { "id": 73, "url": "mock://media/outerwear-71-2.jpg", "kind": "label" }
+    {
+      "id": 71,
+      "url": "mock://media/outerwear-carhartt-0.jpg",
+      "kind": "front"
+    },
+    {
+      "id": 72,
+      "url": "mock://media/outerwear-carhartt-1.jpg",
+      "kind": "back"
+    },
+    {
+      "id": 73,
+      "url": "mock://media/outerwear-carhartt-2.jpg",
+      "kind": "label"
+    }
   ],
   "draft": {
-    "title": "Levi's denim trucker jacket",
+    "title": "Carhartt chore coat",
     "category": "outerwear",
-    "size": "M",
-    "color": "Light wash blue",
-    "brand": "Levi's",
+    "size": "L",
+    "color": "Faded brown",
+    "brand": "Carhartt",
     "condition": "good",
-    "description": "Classic trucker jacket with button front and chest pockets. Light fading at the cuffs.",
-    "tags": ["denim", "jacket", "light wash", "vintage"]
+    "description": "Heavy canvas chore coat with a corduroy collar and four patch pockets. Broken in and still warm.",
+    "tags": [
+      "canvas",
+      "workwear",
+      "chore coat",
+      "vintage"
+    ]
   },
   "source": "vision"
 }

@@ -1,7 +1,7 @@
 import SwiftUI
 
 /// Category grid and a size picker that adapts to the category.
-struct FilterSheet: View {
+@MainActor struct FilterSheet: View {
     @Binding var category: ItemCategory?
     @Binding var size: String?
     @Environment(\.dismiss) private var dismiss
@@ -77,7 +77,7 @@ struct FilterSheet: View {
 }
 
 /// Wrapping single-select chips.
-struct FlowChips: View {
+@MainActor struct FlowChips: View {
     let options: [String]
     @Binding var selection: String?
 

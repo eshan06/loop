@@ -1,6 +1,6 @@
 import SwiftUI
 
-struct ProfileView: View {
+@MainActor struct ProfileView: View {
     @Environment(SessionStore.self) private var session
     @Environment(Router.self) private var router
     @Environment(ListingCache.self) private var cache
@@ -163,7 +163,7 @@ struct ProfileView: View {
     }
 }
 
-private struct BadgeDetail: View {
+@MainActor private struct BadgeDetail: View {
     let badge: Badge
 
     var body: some View {
@@ -183,7 +183,7 @@ private struct BadgeDetail: View {
     }
 }
 
-struct SettingsSheet: View {
+@MainActor struct SettingsSheet: View {
     @Environment(SessionStore.self) private var session
     @Environment(\.dismiss) private var dismiss
     @State private var showEdit = false

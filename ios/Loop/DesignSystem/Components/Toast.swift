@@ -23,7 +23,7 @@ final class ToastCenter {
     }
 }
 
-struct ToastOverlay: View {
+@MainActor struct ToastOverlay: View {
     @Environment(ToastCenter.self) private var toasts
 
     var body: some View {

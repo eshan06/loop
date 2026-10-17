@@ -2,7 +2,7 @@ import SwiftUI
 
 /// Full-screen moment after an exchange completes: the item's impact counts up from zero,
 /// and any badge just earned flips in. Both phones show it.
-struct CelebrationView: View {
+@MainActor struct CelebrationView: View {
     let celebration: ThreadModel.Celebration
 
     @Environment(\.dismiss) private var dismiss
@@ -96,7 +96,7 @@ struct CelebrationView: View {
 }
 
 /// Earned: black-filled circle with a white glyph. Not earned: gray outline.
-struct BadgeIcon: View {
+@MainActor struct BadgeIcon: View {
     let badge: Badge
     var size: CGFloat = 56
 

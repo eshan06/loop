@@ -1,6 +1,6 @@
 import SwiftUI
 
-struct SignInView: View {
+@MainActor struct SignInView: View {
     @Environment(SessionStore.self) private var session
     @State private var email = ""
     @State private var error: String?
