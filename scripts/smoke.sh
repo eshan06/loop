@@ -495,5 +495,56 @@ req DELETE "/listings/$L4" "" "$TOKEN_A"
 expect 204 "clean up"
 
 # ---------------------------------------------------------------------------
+section "scan (S-10)"
+# scan TOKEN [curl -F args...] -> POST /scan multipart; sets STATUS and SCAN_SECS, body in $BODY
+scan() {
+  local token="$1"; shift
+  local args=(-sS -o "$BODY" -w '%{http_code} %{time_total}' -X POST --max-time 40)
+  [[ -n "$token" ]] && args+=(-H "Authorization: Bearer $token")
+  local out
+  out="$(curl "${args[@]}" "$@" "$BASE_URL/scan")" || out="curl-error 0"
+  STATUS="${out%% *}"; SCAN_SECS="${out#* }"
+}
+
+scan "$TOKEN_A" -F "photos=@$SMALL_JPEG;type=image/jpeg" -F "photos=@$SMALL_JPEG;type=image/jpeg" \
+  -F "kinds=front, LABEL" -F "labels=t-shirt, red, cotton"
+expect 200 "POST /scan with 2 photos and labels (${SCAN_SECS}s)"
+check 'sorted(d) == ["draft", "photos", "source"]' "scan body has photos, draft, source"
+check 'd["source"] in ("vision", "labels", "none")' "source is vision|labels|none ($(jget 'd["source"]'))"
+check 'sorted(d["draft"]) == sorted(["title","category","size","color","brand","condition","description","tags"])' "draft has exactly the ScanDraft keys"
+check 'isinstance(d["draft"]["tags"], list) and all(isinstance(t, str) and t == t.lower() for t in d["draft"]["tags"])' "draft tags is a list of lowercase strings"
+check 'd["draft"]["category"] in (None, "tops", "bottoms", "outerwear", "dresses", "shoes", "accessories", "bags")' "draft category is an enum value or null"
+check 'd["draft"]["condition"] in (None, "new", "like_new", "good", "worn")' "draft condition is an enum value or null"
+check 'all(v is None or isinstance(v, str) for k, v in d["draft"].items() if k != "tags")' "draft text fields are strings or null"
+check 'd["source"] != "none" or (d["draft"]["tags"] == [] and all(v is None for k, v in d["draft"].items() if k != "tags"))' "source none means an all-null draft"
+check "[p['kind'] for p in d['photos']] == ['front', 'label'] and all(p['url'].startswith('$BASE_URL/media/') for p in d['photos'])" "scan returns the saved photos in order"
+SCAN_P1="$(jget 'd["photos"][0]["id"]')"; SCAN_P2="$(jget 'd["photos"][1]["id"]')"
+fetch "$(jget 'd["photos"][0]["url"]')" "$TMP/scan.jpg"
+[[ "$STATUS" == "200" && "$CTYPE" == image/jpeg* ]] || fail "scanned photo URL loads"
+ok "scanned photo URL loads"
+req POST /listings "{\"title\": \"Smoke scanned tee $RUN\", \"category\": \"tops\", \"condition\": \"good\", \"share_type\": \"free\", \"meetup_spot_id\": $SPOT1, \"photo_ids\": [$SCAN_P1, $SCAN_P2]}" "$TOKEN_A"
+expect 201 "scanned photos post as a listing"
+check "[p['id'] for p in d['photos']] == [$SCAN_P1, $SCAN_P2]" "listing keeps the scan's photo order"
+req DELETE "/listings/$(jget 'd["id"]')" "" "$TOKEN_A"
+expect 204 "clean up"
+
+scan "" -F "photos=@$SMALL_JPEG;type=image/jpeg" -F "kinds=front"
+expect 401 unauthorized "POST /scan without a token"
+scan "$TOKEN_A" -F "kinds=front"
+expect 400 bad_request "POST /scan with no photos"
+scan "$TOKEN_A" -F "photos=@$SMALL_JPEG" -F "photos=@$SMALL_JPEG" -F "photos=@$SMALL_JPEG" -F "photos=@$SMALL_JPEG" -F "kinds=front,back,label,other"
+expect 400 too_many_photos "POST /scan with 4 photos"
+scan "$TOKEN_A" -F "photos=@$SMALL_JPEG" -F "photos=@$SMALL_JPEG" -F "kinds=front"
+expect 400 bad_request "POST /scan with kinds that don't match the photos"
+scan "$TOKEN_A" -F "photos=@$SMALL_JPEG"
+expect 400 bad_request "POST /scan without kinds"
+scan "$TOKEN_A" -F "photos=@$SMALL_JPEG" -F "kinds=sideways"
+expect 400 bad_request "POST /scan with an unknown kind"
+scan "$TOKEN_A" -F "photos=@$SMALL_JPEG" -F "photos=@$FAKE_JPEG" -F "kinds=front,back"
+expect 400 bad_request "POST /scan with a broken JPEG"
+scan "$TOKEN_A" -F "photos=@$HUGE;type=image/jpeg" -F "kinds=front"
+expect 400 photo_too_large "POST /scan with a photo over 5 MB"
+
+# ---------------------------------------------------------------------------
 echo
 echo "PASS: $PASS checks against $BASE_URL"
