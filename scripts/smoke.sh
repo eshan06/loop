@@ -1161,8 +1161,8 @@ expect 401 unauthorized "similar without a token"
 
 # ---------------------------------------------------------------------------
 section "style it (S-20)"
-# One real AI call (~3-7 s), then the cached answer. If the model is down the server
-# returns template ideas and doesn't cache them, so the "cached" check fails loudly.
+# Real AI calls take ~4-7 s (occasionally over the server's 15 s limit, which returns
+# template ideas, uncached). If the model is down, the "cached" check fails loudly.
 STYLE_SHAPE="set(d) == {'ideas'} and 2 <= len(d['ideas']) <= 3 and all(set(i) == {'title', 'description'} and isinstance(i['title'], str) and isinstance(i['description'], str) and 0 < len(i['title']) <= 40 and 0 < len(i['description']) <= 200 for i in d['ideas'])"
 PS="$(up "$SMALL_JPEG" front "$TOKEN_A")" || exit 1
 req POST /listings "{\"title\": \"Smoke style denim trucker jacket $MK\", \"category\": \"outerwear\", \"size\": \"M\", \"color\": \"Light wash blue\", \"condition\": \"good\", \"share_type\": \"swap\", \"tags\": [\"denim\", \"vintage\", \"jacket\"], \"meetup_spot_id\": $SPOT1, \"photo_ids\": [$PS]}" "$TOKEN_A"
@@ -1171,6 +1171,15 @@ SL="$(jget 'd["id"]')"
 req POST "/listings/$SL/style" "" "$TOKEN_B"
 expect 200 "POST /listings/{id}/style (first call, ${SECS}s)"
 check "$STYLE_SHAPE" "2-3 ideas, each a short title and description"
+if ! faster_than 14; then
+  # The model hit the server's 15 s limit: those were template ideas (not cached). A late
+  # reply gets cached when it lands; otherwise the retry makes a fresh model call.
+  echo "  ..  model timed out (template ideas); retrying in 8 s"
+  sleep 8
+  req POST "/listings/$SL/style" "" "$TOKEN_B"
+  expect 200 "style retry after a model timeout (${SECS}s)"
+  check "$STYLE_SHAPE" "retry: 2-3 well-formed ideas"
+fi
 cp "$BODY" "$TMP/style1.json"
 req POST "/listings/$SL/style" "" "$TOKEN_A"
 expect 200 "style again, as the owner"
@@ -1183,7 +1192,8 @@ req POST "/listings/$SL/style" "" "$TOKEN_B"
 expect 200 "style after the edit (${SECS}s)"
 check "$STYLE_SHAPE" "ideas regenerated for the edited listing are well formed"
 faster_than 1 && fail "style after an edit came back in ${SECS}s: stale cache served?"
-ok "edit invalidated the cache (regenerated in ${SECS}s)"
+faster_than 14 && how="regenerated" || how="model timed out, template ideas"
+ok "edit invalidated the cache ($how in ${SECS}s)"
 req POST "/listings/$SL/style" "" "$TOKEN_C"
 expect 404 not_found "style another campus's listing"
 req POST "/listings/$XD/style" "" "$TOKEN_A"

@@ -10,7 +10,7 @@ title, category, color and tags, and are cached in `listings.style_ideas` as
 so a repeat call is instant and an edit to those fields regenerates them. If the
 model fails or takes longer than STYLE_TIMEOUT, the caller gets template ideas built
 from the category and color instead; those are never cached, so the next call tries
-the model again.
+the model again (a reply that arrives after the timeout is still cached).
 
 Quick check on the server (from backend/):
     .venv/bin/python -m app.style "Vintage denim jacket" outerwear "Light wash blue" denim,vintage
@@ -23,6 +23,7 @@ import json
 import logging
 import sys
 import time
+from concurrent.futures import Future
 from concurrent.futures import TimeoutError as FutureTimeout
 from typing import Any
 
@@ -30,6 +31,7 @@ from pydantic import BaseModel, field_validator
 from sqlalchemy.orm import Session
 
 from . import ai
+from .db import SessionLocal, get_engine
 from .models import Listing
 
 log = logging.getLogger("loop.style")
@@ -145,16 +147,37 @@ def prompt(title: str, category: str | None, color: str | None, tags: Any) -> st
     )
 
 
+def _submit(title: str, category: str | None, color: str | None, tags: Any) -> Future:
+    return ai._pool.submit(ai.text_chat, prompt(title, category, color, tags), 500, 0.8)
+
+
 def generate(title: str, category: str | None, color: str | None, tags: Any,
              timeout: float = STYLE_TIMEOUT) -> list[dict[str, str]]:
     """Ideas from the text model. Raises on failure, bad JSON or timeout."""
-    text = prompt(title, category, color, tags)
-    future = ai._pool.submit(ai.text_chat, text, 500, 0.8)
+    future = _submit(title, category, color, tags)
     try:
         reply = future.result(timeout=timeout)
     except FutureTimeout as exc:
         raise TimeoutError(f"style: no reply after {timeout:.0f}s") from exc
     return parse_reply(reply)
+
+
+def _cache_late(listing_id: int, b: str, future: Future) -> None:
+    """After a timeout the model call keeps running (the OCI client gives up at
+    SCAN_TIMEOUT); if it still succeeds, cache its ideas so the next tap is instant."""
+    def done(f: Future) -> None:
+        try:
+            ideas = parse_reply(f.result())
+            with SessionLocal(bind=get_engine()) as db:
+                listing = db.get(Listing, listing_id)
+                if listing is not None and listing_basis(listing) == b and cached(listing) is None:
+                    listing.style_ideas = cache_entry(b, ideas)
+                    db.commit()
+                    log.info("style: listing %s cached late", listing_id)
+        except Exception as exc:  # noqa: BLE001 - best effort
+            log.warning("style: listing %s late reply unusable: %s", listing_id, ai._describe(exc))
+
+    future.add_done_callback(done)
 
 
 # --------------------------------------------------------------------------- templates
@@ -220,9 +243,13 @@ def ideas_for(db: Session, listing: Listing) -> list[dict[str, str]]:
         return hit
     start = time.monotonic()
     b = listing_basis(listing)
+    future = _submit(listing.title, listing.category, listing.color, listing.tags)
     try:
-        ideas = generate(listing.title, listing.category, listing.color, listing.tags)
+        ideas = parse_reply(future.result(timeout=STYLE_TIMEOUT))
     except Exception as exc:  # noqa: BLE001 - any failure means "use the templates"
+        if isinstance(exc, FutureTimeout):
+            exc = TimeoutError(f"no reply after {STYLE_TIMEOUT:.0f}s")
+            _cache_late(listing.id, b, future)
         log.warning("style: listing %s failed after %.1fs: %s", listing.id,
                     time.monotonic() - start, ai._describe(exc))
         return template_ideas(listing.category, listing.color)
