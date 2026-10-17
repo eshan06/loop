@@ -1,8 +1,8 @@
 """Shared builders that turn ORM rows into the API objects in docs/API.md.
 
 Every endpoint that returns a User, Owner, Photo, Listing, ... uses these, so the
-shapes stay identical everywhere. Later tasks add Request, Message and
-Notification builders here.
+shapes stay identical everywhere. Later tasks add Message and Notification
+builders here.
 """
 
 from __future__ import annotations
@@ -10,12 +10,12 @@ from __future__ import annotations
 from collections.abc import Iterable
 from datetime import UTC, datetime
 
-from sqlalchemy import func, select
+from sqlalchemy import case, func, select
 from sqlalchemy.orm import Session, selectinload
 
 from .config import settings
 from .impact import impact_for
-from .models import Listing, MeetupSpot, Photo, Request, Save, User
+from .models import Listing, MeetupSpot, Message, Photo, Request, Save, User
 from .schemas import (
     CampusOut,
     ImpactOut,
@@ -23,6 +23,8 @@ from .schemas import (
     MeetupSpotOut,
     OwnerOut,
     PhotoOut,
+    RequestListingOut,
+    RequestOut,
     Sizes,
     UserOut,
 )
@@ -202,3 +204,78 @@ def listings_out(db: Session, listings: list[Listing], viewer: User) -> list[Lis
 def listing_out(db: Session, listing: Listing, viewer: User) -> ListingOut:
     """One Listing as seen by `viewer`."""
     return listings_out(db, [listing], viewer)[0]
+
+
+# ---- Request -----------------------------------------------------------------
+
+def unread_counts(db: Session, request_ids: Iterable[int], viewer_id: int) -> dict[int, int]:
+    """Per request: messages from the other person newer than the viewer's read marker
+    (requester_last_read_id if the viewer is the requester, else owner_last_read_id)."""
+    ids = list(set(request_ids))
+    if not ids:
+        return {}
+    last_read = case(
+        (Request.requester_id == viewer_id, Request.requester_last_read_id),
+        else_=Request.owner_last_read_id,
+    )
+    rows = db.execute(
+        select(Message.request_id, func.count())
+        .join(Request, Request.id == Message.request_id)
+        .where(Message.request_id.in_(ids), Message.sender_id != viewer_id, Message.id > last_read)
+        .group_by(Message.request_id)
+    ).all()
+    return dict(rows)
+
+
+def requests_out(db: Session, reqs: list[Request], viewer: User) -> list[RequestOut]:
+    """Many Requests as seen by `viewer`, in the given order, in a fixed handful of
+    queries (listings, first photos, people with avatars, items_shared, unread)."""
+    if not reqs:
+        return []
+    listing_ids = {r.listing_id for r in reqs}
+    listings = {lst.id: lst for lst in db.scalars(select(Listing).where(Listing.id.in_(listing_ids)))}
+
+    first_photo: dict[int, Photo] = {}
+    for p in db.scalars(
+        select(Photo).where(Photo.listing_id.in_(listing_ids)).order_by(Photo.position, Photo.id)
+    ):
+        first_photo.setdefault(p.listing_id, p)
+
+    user_ids = {r.requester_id for r in reqs} | {lst.owner_id for lst in listings.values()}
+    users = {
+        u.id: u
+        for u in db.scalars(
+            select(User).where(User.id.in_(user_ids)).options(selectinload(User.avatar_photo))
+        )
+    }
+    shared = items_shared_counts(db, user_ids)
+    unread = unread_counts(db, [r.id for r in reqs], viewer.id)
+
+    out = []
+    for r in reqs:
+        lst = listings[r.listing_id]
+        out.append(
+            RequestOut(
+                id=r.id,
+                listing=RequestListingOut(
+                    id=lst.id,
+                    title=lst.title,
+                    photo_url=photo_url(first_photo.get(lst.id)),
+                    share_type=lst.share_type,
+                    status=lst.status,
+                ),
+                requester=owner_out(db, users[r.requester_id], shared.get(r.requester_id, 0)),
+                owner=owner_out(db, users[lst.owner_id], shared.get(lst.owner_id, 0)),
+                note=r.note,
+                status=r.status,
+                unread_messages=unread.get(r.id, 0),
+                created_at=iso(r.created_at),
+                updated_at=iso(r.updated_at),
+            )
+        )
+    return out
+
+
+def request_out(db: Session, req: Request, viewer: User) -> RequestOut:
+    """One Request as seen by `viewer`."""
+    return requests_out(db, [req], viewer)[0]

@@ -178,3 +178,33 @@ class ScanOut(BaseModel):
     photos: list[PhotoOut]
     draft: ScanDraftOut
     source: str
+
+
+# ---- Requests --------------------------------------------------------------
+
+class RequestIn(BaseModel):
+    """Body of POST /listings/{id}/requests. The body can be {} or missing."""
+
+    note: StrictStr | None = None
+
+
+class RequestListingOut(BaseModel):
+    """The short listing summary inside a Request."""
+
+    id: int
+    title: str
+    photo_url: str | None
+    share_type: str
+    status: str
+
+
+class RequestOut(BaseModel):
+    id: int
+    listing: RequestListingOut
+    requester: OwnerOut
+    owner: OwnerOut
+    note: str | None
+    status: str
+    unread_messages: int
+    created_at: str
+    updated_at: str
