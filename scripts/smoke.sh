@@ -897,5 +897,80 @@ req GET "/requests/$RM" "" "$TOKEN_B"
 check "d['unread_messages'] == 0" "B read the long message"
 
 # ---------------------------------------------------------------------------
+section "demo campus vanderbilt.edu (S-15, read-only)"
+# READ-ONLY on purpose: the demo data must survive smoke runs. Logging in only adds a
+# session row. Never call GET /requests/{id}/messages here (it moves read markers), and
+# keep the checks loose enough to pass while people are clicking through the demo.
+# SKIP_DEMO=1 skips this section (e.g. against a dev server with no seed).
+if [[ "${SKIP_DEMO:-}" == 1 ]]; then
+  echo "  (skipped: SKIP_DEMO=1)"
+else
+  SIZE_VOCAB="{'XS','S','M','L','XL','XXL','One size'} | {str(n) for n in range(24, 41)} | {f'{h/2:g}' for h in range(10, 29)}"
+  for who in jordan.park sam.lee riley.chen; do
+    req POST /auth/login "{\"email\": \"$who@vanderbilt.edu\"}"
+    expect 200 "log in as demo account $who"
+    check "d['is_new'] is False and d['user']['name'] and d['user']['dorm'] and d['user']['class_year']" "$who has a seeded profile"
+    check "d['user']['campus']['name'] == 'Vanderbilt' and all(d['user']['sizes'].values())" "$who: campus Vanderbilt, sizes set"
+    tok="$(jget 'd["token"]')"
+    case "$who" in
+      jordan.park) DEMO_J="$tok" ;; sam.lee) DEMO_S="$tok" ;; riley.chen) DEMO_R="$tok" ;;
+    esac
+  done
+  req GET /me "" "$DEMO_J"
+  check "d['name'] == 'Jordan Park' and d['email'] == 'jordan.park@vanderbilt.edu'" "GET /me is Jordan Park"
+
+  req GET /dorms "" "$DEMO_J"
+  expect 200 "demo /dorms"
+  check "len(d['items']) >= 6 and 'Kissam' in d['items'] and d['items'] == sorted(d['items'])" "6+ dorms incl. Kissam, sorted"
+  req GET /meetup-spots "" "$DEMO_J"
+  expect 200 "demo /meetup-spots"
+  check "len(d['items']) >= 6 and 'Commons Center' in [s['name'] for s in d['items']]" "6+ spots incl. Commons Center"
+
+  req GET "/listings?limit=50" "" "$DEMO_J"
+  expect 200 "demo feed"
+  check "d['total'] >= 20 and len(d['items']) >= 20" "feed has 20+ listings"
+  check "all(l['status'] == 'active' and l['photos'] and l['photos'][0]['url'].startswith('http') for l in d['items'])" "every feed listing is active with a photo URL"
+  check "len({l['owner']['id'] for l in d['items']}) >= 6 and any(l['is_mine'] for l in d['items']) and any(not l['is_mine'] for l in d['items'])" "feed mixes owners, incl. Jordan's own"
+  check "len({l['category'] for l in d['items']}) == 7 and len({l['share_type'] for l in d['items']}) == 3" "all 7 categories and 3 share types in the feed"
+  check "all(l['size'] in ($SIZE_VOCAB) for l in d['items'] if l['size'] is not None)" "feed sizes use the IOS-2 vocabulary"
+  check "[l['created_at'] for l in d['items']] == sorted((l['created_at'] for l in d['items']), reverse=True)" "feed newest first"
+  DEMO_LID="$(jget "d['items'][0]['id']")"
+  DEMO_OWNERS="$(jget "sorted({l['owner']['id'] for l in d['items']})")"
+  for idx in 0 7 15; do
+    url="$(jget "d['items'][$idx]['photos'][0]['url']")"
+    fetch "$url" "$TMP/demo_photo.jpg"
+    [[ "$STATUS" == 200 && "$CTYPE" == image/jpeg* ]] || fail "demo photo $url (HTTP $STATUS $CTYPE)"
+    ok "feed photo $idx loads (200 image/jpeg, $(jpeg_size "$TMP/demo_photo.jpg"))"
+  done
+
+  req GET "/me/requests?role=incoming" "" "$DEMO_J"
+  expect 200 "Jordan's incoming requests"
+  check "d['total'] >= 3 and all(r['owner']['id'] != r['requester']['id'] for r in d['items'])" "Jordan has 3+ incoming requests"
+  check "any(r['status'] == 'pending' for r in d['items']) and any(r['status'] in ('accepted', 'completed') for r in d['items'])" "incoming has pending and accepted/completed ones"
+  req GET "/me/requests?role=outgoing" "" "$DEMO_J"
+  expect 200 "Jordan's outgoing requests"
+  check "d['total'] >= 1" "Jordan has an outgoing request"
+  req GET /me/unread "" "$DEMO_J"
+  expect 200 "Jordan's /me/unread"
+  check "all(isinstance(d[k], int) and d[k] >= 0 for k in ('notifications', 'messages', 'incoming_requests'))" "unread counts are numbers"
+
+  req GET "/me/requests?role=incoming" "" "$DEMO_S"
+  check "d['total'] >= 1" "Sam has incoming requests"
+  req GET "/me/requests?role=outgoing" "" "$DEMO_S"
+  check "any(r['owner']['name'] == 'Jordan Park' for r in d['items'])" "Sam has a request with Jordan"
+  DEMO_RID="$(jget "next(r['id'] for r in d['items'] if r['owner']['name'] == 'Jordan Park')")"
+  req GET "/requests/$DEMO_RID" "" "$DEMO_J"
+  expect 200 "Jordan can open the Jordan-Sam request"
+  req GET "/me/listings?status=completed" "" "$DEMO_R"
+  expect 200 "Riley's completed listings"
+  req GET "/requests/$DEMO_RID" "" "$DEMO_R"
+  expect 403 forbidden "Riley can't open the Jordan-Sam request"
+  req GET "/listings/$DEMO_LID" "" "$TOKEN_A"
+  expect 404 not_found "smoke.edu user can't see a Vanderbilt listing"
+  req GET "/listings?limit=50" "" "$TOKEN_A"
+  check "not ({l['owner']['id'] for l in d['items']} & set($DEMO_OWNERS))" "smoke.edu feed has no Vanderbilt owners"
+fi
+
+# ---------------------------------------------------------------------------
 echo
 echo "PASS: $PASS checks against $BASE_URL"
