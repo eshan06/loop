@@ -1,5 +1,6 @@
-"""Listings: the campus feed, create, read, edit, delete, GET /me/listings, and
-saves (PUT/DELETE /listings/{id}/save, GET /me/saved).
+"""Listings: the campus feed, create, read, edit, delete, GET /me/listings,
+saves (PUT/DELETE /listings/{id}/save, GET /me/saved), and similar items
+(GET /listings/{id}/similar).
 
 Every query is scoped to the caller's campus; another campus's listing is 404.
 A `hidden` listing is 404 for everyone but its owner.
@@ -17,7 +18,7 @@ from ..db import get_db
 from ..errors import ApiError
 from ..models import Listing, MeetupSpot, Photo, Save, User
 from ..paging import Paging, paged, paging_params
-from ..schemas import ListingIn, ListingOut, Page
+from ..schemas import ItemsList, ListingIn, ListingOut, Page
 from ..serializers import listing_out, listings_out
 
 router = APIRouter(tags=["listings"])
@@ -32,6 +33,8 @@ MAX_TAG_LEN = 30
 # field -> max length, for the optional free-text fields
 TEXT_LIMITS = {"size": 20, "color": 60, "brand": 80, "description": 2000}
 TITLE_MAX = 120
+SIMILAR_DEFAULT = 6
+SIMILAR_MAX = 20
 
 
 def _bad(message: str) -> ApiError:
@@ -169,6 +172,10 @@ def _editable(db: Session, user: User, listing_id: int) -> Listing:
     return listing
 
 
+def _tag_set(tags) -> set[str]:
+    return {t.strip().lower() for t in (tags or []) if isinstance(t, str) and t.strip()}
+
+
 def _filter(value: str | None, field: str, allowed: tuple[str, ...]) -> str | None:
     if value is None or not value.strip():
         return None
@@ -234,6 +241,49 @@ def get_listing(
     listing_id: int, user: User = Depends(current_user), db: Session = Depends(get_db)
 ) -> ListingOut:
     return listing_out(db, _visible(db, user, listing_id), user)
+
+
+@router.get("/listings/{listing_id}/similar")
+def get_similar(
+    listing_id: int,
+    limit: int = Query(SIMILAR_DEFAULT),
+    user: User = Depends(current_user),
+    db: Session = Depends(get_db),
+) -> ItemsList[ListingOut]:
+    """Active, unhidden listings on the caller's campus ranked against the source:
+    shared tags (case-insensitive) x3 + same category x2 + same size x1, then
+    newest, then id. Never the source itself or the caller's own listings.
+    Zero-score listings only fill the row when there aren't enough matches.
+    Candidates are ranked in Python: demo scale."""
+    if limit < 1:
+        raise _bad("limit: must be at least 1.")
+    limit = min(limit, SIMILAR_MAX)
+    source = _visible(db, user, listing_id)
+    src_tags = _tag_set(source.tags)
+    src_cat = source.category
+    src_size = (source.size or "").strip().lower()
+
+    rows = db.execute(
+        select(Listing.id, Listing.tags, Listing.category, Listing.size, Listing.created_at).where(
+            Listing.campus_id == user.campus_id,
+            Listing.status == "active",
+            Listing.id != source.id,
+            Listing.owner_id != user.id,
+        )
+    ).all()
+
+    def score(r) -> int:
+        s = len(src_tags & _tag_set(r.tags)) * 3
+        if src_cat and r.category == src_cat:
+            s += 2
+        if src_size and (r.size or "").strip().lower() == src_size:
+            s += 1
+        return s
+
+    ranked = sorted(((score(r), r.created_at, r.id) for r in rows), reverse=True)
+    ids = [rid for _, _, rid in ranked[:limit]]
+    by_id = {l.id: l for l in db.scalars(select(Listing).where(Listing.id.in_(ids)))} if ids else {}
+    return ItemsList[ListingOut](items=listings_out(db, [by_id[i] for i in ids], user))
 
 
 @router.patch("/listings/{listing_id}")

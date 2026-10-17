@@ -577,7 +577,9 @@ Saving again keeps the original save time. You can save your own listing. A list
 
 ### GET /listings/{id}/similar
 
-Query: `limit` (default 6, max 20). Returns `{"items": [Listing, ...]}`: active listings on the same campus, ranked by shared tags, then same category. Never includes the listing itself. Can be empty.
+Query: `limit` (default 6, max 20; a larger value is treated as 20). Returns `{"items": [Listing, ...]}`: active listings on the same campus, ranked by shared tags, then same category. Never includes the listing itself or the caller's own listings. Can be empty.
+
+The ranking score is 3 per shared tag (case-insensitive) + 2 for the same category + 1 for the same size, ties newest first. Listings that share nothing only fill the row when there aren't enough matches. The source listing follows `GET /listings/{id}` visibility: another campus, deleted, or someone else's `hidden` listing is `404 not_found`.
 
 ### POST /listings/{id}/style
 

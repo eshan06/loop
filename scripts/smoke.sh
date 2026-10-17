@@ -1065,6 +1065,97 @@ req GET /me/saved
 expect 401 unauthorized "GET /me/saved without a token"
 
 # ---------------------------------------------------------------------------
+section "similar items (S-19)"
+# Score = shared tags (case-insensitive) x3 + same category x2 + same size x1; ties newest
+# first. Tags and size are unique to this run, so old smoke listings can only match on
+# category (score 2), and this run's listings are newer than theirs.
+req POST /auth/login "{\"email\": \"smoke.f${RUN}@smoke.edu\"}"
+expect 200 "login user F on A's campus"
+TOKEN_F="$(jget 'd["token"]')"
+T1="sima${RUN}"; T2="simb${RUN}"; T3="simc${RUN}"; SZ="q${RUN}"
+
+# sim_list TOKEN TITLE CATEGORY SIZE TAGS_JSON -> prints the new listing's id
+sim_list() {
+  local pid size_json="null"
+  pid="$(up "$SMALL_JPEG" front "$1")" || return 1
+  [[ -n "$4" ]] && size_json="\"$4\""
+  req POST /listings "{\"title\": \"Smoke similar $2 $MK\", \"category\": \"$3\", \"size\": $size_json, \"condition\": \"good\", \"share_type\": \"free\", \"tags\": $5, \"meetup_spot_id\": $SPOT1, \"photo_ids\": [$pid]}" "$1"
+  [[ "$STATUS" == 201 ]] || fail "list similar item $2"
+  jget 'd["id"]'
+}
+SRC="$(sim_list "$TOKEN_A" source bags "$SZ" "[\"$T1\", \"$T2\", \"$T3\"]")" || exit 1
+X1="$(sim_list "$TOKEN_A" x1 bags "$SZ" "[\"SIMA${RUN}\", \" $T2 \", \"$T3\"]")" || exit 1   # 9+2+1 = 12
+X2="$(sim_list "$TOKEN_A" x2 tops "$SZ" "[\"$T1\", \"$T2\", \"other\"]")" || exit 1     # 6+1 = 7
+X3="$(sim_list "$TOKEN_A" x3 bags "" "[\"$T2\"]")" || exit 1                              # 3+2 = 5
+X4="$(sim_list "$TOKEN_A" x4 tops "$SZ" "[\"$T3\"]")" || exit 1                           # 3+1 = 4
+X5="$(sim_list "$TOKEN_A" x5 tops "" "[\"$T1\"]")" || exit 1                              # 3
+X6="$(sim_list "$TOKEN_A" x6 shoes "" "[\"$T2\"]")" || exit 1                             # 3, newer than X5
+X7="$(sim_list "$TOKEN_A" x7 bags "" "[]")" || exit 1                                     # 2 (category only)
+XOWN="$(sim_list "$TOKEN_F" own bags "$SZ" "[\"$T1\", \"$T2\", \"$T3\"]")" || exit 1      # F's own: excluded for F
+XP="$(sim_list "$TOKEN_A" pend bags "$SZ" "[\"$T1\", \"$T2\", \"$T3\"]")" || exit 1       # goes pending, then completed
+XD="$(sim_list "$TOKEN_A" del bags "$SZ" "[\"$T1\", \"$T2\", \"$T3\"]")" || exit 1        # deleted
+PC="$(up "$SMALL_JPEG" front "$TOKEN_C")" || exit 1
+req POST /listings "{\"title\": \"Smoke similar other campus $MK\", \"category\": \"bags\", \"size\": \"$SZ\", \"condition\": \"good\", \"share_type\": \"free\", \"tags\": [\"$T1\", \"$T2\", \"$T3\"], \"meetup_spot_id\": $SPOT_C, \"photo_ids\": [$PC]}" "$TOKEN_C"
+[[ "$STATUS" == 201 ]] || fail "C lists a matching item on another campus"
+XC="$(jget 'd["id"]')"
+ok "listed source, 7 candidates, and own/pending/deleted/other-campus decoys"
+
+req POST "/listings/$XP/requests" '{}' "$TOKEN_B"
+[[ "$STATUS" == 201 ]] || fail "B requests the pending decoy"
+RXP="$(jget 'd["id"]')"
+req POST "/requests/$RXP/accept" "" "$TOKEN_A"
+expect 200 "A accepts, decoy listing goes pending"
+req DELETE "/listings/$XD" "" "$TOKEN_A"
+expect 204 "A deletes the deleted decoy"
+EXCL="{$SRC, $XOWN, $XP, $XD, $XC}"
+
+req GET "/listings/$SRC/similar" "" "$TOKEN_F"
+expect 200 "GET /listings/{id}/similar"
+check "set(d) == {'items'}" "response is {items} only (unpaged)"
+check "[l['id'] for l in d['items']] == [$X1, $X2, $X3, $X4, $X6, $X5]" "default 6, ranked by tags x3 + category x2 + size x1, ties newest first"
+check "all(set(l) == $LISTING_KEYS for l in d['items'])" "similar items are full Listings"
+check "all(l['status'] == 'active' and l['is_mine'] is False and l['saved_by_me'] is False for l in d['items'])" "all active, not mine, not saved"
+req GET "/listings/$SRC/similar?limit=20" "" "$TOKEN_F"
+expect 200 "similar limit=20"
+check "[l['id'] for l in d['items']][:7] == [$X1, $X2, $X3, $X4, $X6, $X5, $X7]" "zero-tag same-category item fills in after the tag matches"
+check "not ({l['id'] for l in d['items']} & $EXCL)" "never the source, F's own, pending, deleted, or other-campus listings"
+check "all(l['status'] == 'active' for l in d['items']) and len(d['items']) <= 20" "only active listings, at most 20"
+req GET "/listings/$SRC/similar?limit=2" "" "$TOKEN_F"
+check "[l['id'] for l in d['items']] == [$X1, $X2]" "limit=2 returns the top two"
+req GET "/listings/$SRC/similar?limit=500" "" "$TOKEN_F"
+expect 200 "similar limit over max"
+check "len(d['items']) <= 20" "limit over 20 is treated as 20"
+req GET "/listings/$SRC/similar?limit=0" "" "$TOKEN_F"
+expect 400 bad_request "similar limit=0"
+
+req PUT "/listings/$X2/save" "" "$TOKEN_F"
+expect 204 "F saves X2"
+req GET "/listings/$SRC/similar" "" "$TOKEN_F"
+check "{l['id']: l['saved_by_me'] for l in d['items']}[$X2] is True" "similar items carry saved_by_me"
+
+req POST "/requests/$RXP/complete" "" "$TOKEN_A"
+expect 200 "pending decoy completed"
+req GET "/listings/$SRC/similar?limit=20" "" "$TOKEN_F"
+check "$XP not in [l['id'] for l in d['items']]" "completed listing stays out"
+
+req GET "/listings/$SRC/similar?limit=20" "" "$TOKEN_A"
+expect 200 "owner asks for similar to their own listing"
+check "not ({l['id'] for l in d['items']} & {$SRC, $X1, $X2, $X3, $X4, $X5, $X6, $X7}) and $XOWN in [l['id'] for l in d['items']]" "A's own listings excluded, F's listing included for A"
+check "[l['id'] for l in d['items']][0] == $XOWN" "F's identical listing ranks first for A"
+req GET "/listings/$XP/similar" "" "$TOKEN_F"
+expect 200 "similar to a completed listing still works"
+req GET "/listings/$XD/similar" "" "$TOKEN_F"
+expect 404 not_found "similar to a deleted listing"
+req GET "/listings/$SRC/similar" "" "$TOKEN_C"
+expect 404 not_found "similar to another campus's listing"
+req GET "/listings/999999999/similar" "" "$TOKEN_F"
+expect 404 not_found "similar to a missing listing"
+req GET "/listings/$SRC/similar"
+expect 401 unauthorized "similar without a token"
+# Hidden listings: no API can hide one until reports land (S-24); the route uses the same
+# visibility check as GET /listings/{id} and only ranks status 'active'.
+
+# ---------------------------------------------------------------------------
 section "demo campus vanderbilt.edu (S-15, read-only)"
 # READ-ONLY on purpose: the demo data must survive smoke runs. Logging in only adds a
 # session row. Never call GET /requests/{id}/messages here (it moves read markers), and
@@ -1142,6 +1233,9 @@ else
   check "d['saved_by_me'] is True" "Jordan's saved item shows saved_by_me on detail"
   req GET "/listings/$DEMO_SAVED" "" "$DEMO_S"
   check "d['id'] == $DEMO_SAVED and isinstance(d['saved_by_me'], bool)" "Sam sees the same item with his own saved flag"
+  req GET "/listings/$DEMO_SAVED/similar" "" "$DEMO_J"
+  expect 200 "similar items for Jordan's saved item"
+  check "len(d['items']) >= 3 and all(l['status'] == 'active' and not l['is_mine'] and l['id'] != $DEMO_SAVED for l in d['items'])" "demo item has 3+ similar items, active and not Jordan's"
   req GET /impact/campus "" "$DEMO_J"
   expect 200 "Vanderbilt /impact/campus"
   check "d['items_rehomed'] > 0 and d['textile_kg'] > 0 and d['water_l'] > 0 and d['co2_kg'] > 0 and isinstance(d['top_dorm'], str)" "campus impact this week is > 0 with a top dorm"
