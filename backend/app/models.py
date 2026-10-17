@@ -144,7 +144,9 @@ class Listing(Base):
     campus: Mapped[Campus] = relationship()
     meetup_spot: Mapped[MeetupSpot | None] = relationship()
     photos: Mapped[list[Photo]] = relationship(
-        back_populates="listing", order_by="Photo.id", passive_deletes=True
+        back_populates="listing",
+        order_by=lambda: [Photo.position, Photo.id],
+        passive_deletes=True,
     )
     requests: Mapped[list[Request]] = relationship(
         back_populates="listing", order_by="Request.id", passive_deletes=True
@@ -161,6 +163,8 @@ class Photo(Base):
     listing_id: Mapped[int | None] = mapped_column(
         UInt, ForeignKey("listings.id", ondelete="SET NULL")
     )
+    # Order within the listing (0 = first, the feed card photo); NULL while unattached.
+    position: Mapped[int | None] = mapped_column(USmallInt)
     kind: Mapped[str] = mapped_column(String(10), nullable=False)
     # Relative to MEDIA_DIR, e.g. "71.jpg"; settings.media_url(path) makes the URL.
     path: Mapped[str] = mapped_column(String(255), nullable=False)
