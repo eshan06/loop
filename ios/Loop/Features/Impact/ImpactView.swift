@@ -101,6 +101,7 @@ import SwiftUI
             stat(value: impact.waterL, unit: "L", label: "water", comparison: ImpactComparison.showers(impact.waterL))
             stat(value: impact.co2Kg, unit: "kg", label: "CO₂", comparison: ImpactComparison.miles(impact.co2Kg))
         }
+        .fixedSize(horizontal: false, vertical: true)
     }
 
     private func stat(value: Double, unit: String, label: String, comparison: String?) -> some View {
@@ -118,7 +119,7 @@ import SwiftUI
                 Text(comparison).font(.caption).foregroundStyle(Theme.textSecondary)
             }
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .padding(Theme.Space.s)
         .cardBackground()
     }

@@ -22,6 +22,7 @@ import SwiftUI
                     CachedImage(url: listing.coverURL, maxPixel: 200)
                         .frame(width: 52, height: 65)
                         .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                        .overlay { PhotoHairline(radius: 8) }
                     VStack(alignment: .leading, spacing: 4) {
                         Text(listing.title).font(.headline).lineLimit(2)
                         Text("\(listing.owner.displayName) · \(listing.shareType.label)")

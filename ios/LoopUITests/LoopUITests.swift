@@ -57,6 +57,36 @@ final class LoopUITests: XCTestCase {
 
     // MARK: Tests
 
+    /// Read-only walk through the live server as the seeded demo account Jordan (nothing is created or changed).
+    /// Opt in with `TEST_RUNNER_LOOP_LIVE=1 xcodebuild test ...`.
+    func testLiveServerReadOnly() throws {
+        try XCTSkipUnless(ProcessInfo.processInfo.environment["LOOP_LIVE"] == "1", "set TEST_RUNNER_LOOP_LIVE=1 to hit the live server")
+        app.terminate()
+        app.launchArguments = ["-useMocks", "NO", "-resetSession", "YES", "-uiTesting", "YES"]
+        app.launch()
+        signIn(as: "Jordan")
+        let firstCard = app.buttons.matching(identifier: "listingCard").firstMatch
+        XCTAssertTrue(firstCard.waitForExistence(timeout: 15), "live feed loads listings")
+        Thread.sleep(forTimeInterval: 4)   // photos
+        shot("L1-feed-live")
+        firstCard.tap()
+        XCTAssertTrue(app.buttons["Back"].waitForExistence(timeout: 8))
+        Thread.sleep(forTimeInterval: 3)
+        shot("L2-detail-live")
+        app.buttons["Back"].tap()
+        tab("Requests")
+        Thread.sleep(forTimeInterval: 3)
+        shot("L3-requests-live")
+        tab("Profile")
+        XCTAssertTrue(app.staticTexts["Badges"].waitForExistence(timeout: 10))
+        Thread.sleep(forTimeInterval: 3)
+        shot("L4-profile-live")
+        button(containing: "Your impact").tap()
+        XCTAssertTrue(app.staticTexts["Dorm leaderboard"].waitForExistence(timeout: 10))
+        Thread.sleep(forTimeInterval: 2)
+        shot("L5-impact-live")
+    }
+
     func testSignInRejectsNonEdu() {
         XCTAssertTrue(app.buttons["Jordan"].waitForExistence(timeout: 10))
         shot("01-signin")
@@ -98,7 +128,10 @@ final class LoopUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["Reading your photos…"].waitForExistence(timeout: 5))
         shot("05a-review-loading")
         XCTAssertTrue(app.staticTexts["Filled in by AI. Check before posting."].waitForExistence(timeout: 10))
-        app.segmentedControls.firstMatch.buttons["Swap"].tap()
+        Thread.sleep(forTimeInterval: 1.0)   // let the skeleton → fields cross-fade finish
+        let swap = app.segmentedControls.firstMatch.buttons["Swap"]
+        for _ in 0..<3 where !swap.isSelected { swap.tap(); Thread.sleep(forTimeInterval: 0.4) }
+        XCTAssertTrue(swap.isSelected, "Swap is selected")
         let picker = app.buttons["meetupPicker"]
         XCTAssertTrue(picker.waitForExistence(timeout: 3))
         picker.tap()
@@ -187,5 +220,77 @@ final class LoopUITests: XCTestCase {
         shot("11-banner")
         banner.tap()
         XCTAssertTrue(app.buttons["Mark exchange done"].waitForExistence(timeout: 8), "banner opens the thread")
+    }
+
+    /// Filters, search with no results, notifications, Style it, report, and Edit listing.
+    func testSecondaryScreens() {
+        signIn(as: "Jordan")
+        XCTAssertTrue(app.staticTexts["Vintage Vanderbilt crewneck"].waitForExistence(timeout: 10))
+
+        // Filters sheet → category → results narrow down.
+        app.buttons["Filters"].tap()
+        XCTAssertTrue(app.navigationBars["Filters"].waitForExistence(timeout: 5))
+        shot("12-filters")
+        app.buttons["Outerwear"].tap()
+        app.buttons["Show results"].tap()
+        XCTAssertTrue(app.buttons["Filters · 1"].waitForExistence(timeout: 5))
+        Thread.sleep(forTimeInterval: 1.0)
+        XCTAssertFalse(app.staticTexts["Vintage Vanderbilt crewneck"].exists, "crewneck is hidden by the Outerwear filter")
+        shot("12b-filtered")
+
+        // Search with no results shows the empty state and a way out.
+        let search = app.searchFields.firstMatch
+        search.tap()
+        search.typeText("zzzz")
+        XCTAssertTrue(app.staticTexts["No matches"].waitForExistence(timeout: 5))
+        shot("12c-no-results")
+        app.buttons["Clear filters"].tap()
+        if app.buttons["Cancel"].exists { app.buttons["Cancel"].tap() }
+        XCTAssertTrue(app.staticTexts["Vintage Vanderbilt crewneck"].waitForExistence(timeout: 5))
+
+        // Notifications list.
+        app.buttons.matching(NSPredicate(format: "label BEGINSWITH 'Notifications'")).firstMatch.tap()
+        XCTAssertTrue(app.navigationBars["Notifications"].waitForExistence(timeout: 5))
+        shot("13-notifications")
+        back()
+
+        // Item detail: Style it sheet, then Report.
+        button(containing: "Vintage").tap()
+        let style = app.buttons["Style it"]
+        for _ in 0..<3 where !style.isHittable { app.swipeUp() }
+        style.tap()
+        XCTAssertTrue(app.staticTexts["Weekend layers"].waitForExistence(timeout: 8))
+        shot("14-style-it")
+        app.buttons["Done"].tap()
+        Thread.sleep(forTimeInterval: 1.0)
+        shot("14a-after-style")
+        let more = app.buttons["More options"]
+        if more.isHittable { more.tap() } else { more.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap() }
+        app.buttons["Report"].tap()
+        shot("14b-report")
+        app.buttons["Spam"].tap()
+        XCTAssertTrue(app.staticTexts["Thanks, we'll take a look."].waitForExistence(timeout: 5))
+        back()
+
+        // Edit my own listing.
+        let adidas = button(containing: "Adidas")
+        for _ in 0..<8 where !adidas.exists || !adidas.isHittable { app.swipeUp() }
+        adidas.tap()
+        app.buttons["Edit"].tap()
+        XCTAssertTrue(app.navigationBars["Edit listing"].waitForExistence(timeout: 5))
+        shot("15-edit")
+        app.buttons["Save"].tap()
+        XCTAssertTrue(app.buttons["Edit"].waitForExistence(timeout: 5), "back on detail after saving")
+    }
+
+    func testEmptyStates() {
+        signIn(as: "Riley")
+        tab("Saved")
+        XCTAssertTrue(app.staticTexts["Nothing saved yet"].waitForExistence(timeout: 5))
+        shot("16-saved-empty")
+        tab("Feed")
+        app.buttons.matching(NSPredicate(format: "label BEGINSWITH 'Notifications'")).firstMatch.tap()
+        XCTAssertTrue(app.staticTexts["No notifications"].waitForExistence(timeout: 5))
+        shot("16b-notifications-empty")
     }
 }

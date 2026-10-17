@@ -12,7 +12,7 @@ import SwiftUI
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: Theme.Space.s) {
-                    Text("Outfit ideas built around your \(listing.title.lowercased()).")
+                    Text("Outfit ideas built around this piece.")
                         .font(.subheadline)
                         .foregroundStyle(Theme.textSecondary)
                         .padding(.bottom, Theme.Space.xxs)

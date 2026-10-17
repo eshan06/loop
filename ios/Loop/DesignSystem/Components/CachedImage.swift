@@ -132,3 +132,14 @@ private extension String {
         unicodeScalars.reduce(5381) { ($0 &* 33) &+ Int($1.value) }
     }
 }
+
+/// A faint inner edge so photos with white backgrounds don't dissolve into the page.
+struct PhotoHairline: View {
+    var radius: CGFloat
+
+    var body: some View {
+        RoundedRectangle(cornerRadius: radius, style: .continuous)
+            .strokeBorder(Color.black.opacity(0.07), lineWidth: 0.5)
+            .allowsHitTesting(false)
+    }
+}

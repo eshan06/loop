@@ -56,6 +56,17 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: com.stacked.loop.uitests
         TEST_TARGET_NAME: Loop
         GENERATE_INFOPLIST_FILE: YES
+  LoopTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - path: LoopTests
+    dependencies:
+      - target: Loop
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.stacked.loop.tests
+        GENERATE_INFOPLIST_FILE: YES
 schemes:
   Loop:
     build:
@@ -66,4 +77,5 @@ schemes:
     test:
       config: Debug
       targets:
+        - LoopTests
         - LoopUITests

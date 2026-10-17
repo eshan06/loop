@@ -22,7 +22,7 @@ import SwiftUI
             Spacer()
 
             VStack(alignment: .leading, spacing: Theme.Space.s) {
-                TextField("you@school.edu", text: $email)
+                TextField("Email", text: $email, prompt: Text(verbatim: "you@school.edu").foregroundColor(Color(uiColor: .placeholderText)))
                     .keyboardType(.emailAddress)
                     .textContentType(.emailAddress)
                     .textInputAutocapitalization(.never)

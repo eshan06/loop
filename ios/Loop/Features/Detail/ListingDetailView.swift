@@ -30,8 +30,20 @@ import SwiftUI
             }
         }
         .navigationBarTitleDisplayMode(.inline)
-        .toolbarBackground(.hidden, for: .navigationBar)
-        .toolbar { toolbarContent }
+        .navigationBarBackButtonHidden(true)
+        .toolbar {
+            ToolbarItem(placement: .topBarLeading) {
+                Button { dismiss() } label: {
+                    Image(systemName: "chevron.left")
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundStyle(Theme.textPrimary)
+                        .frame(width: 32, height: 32)
+                        .background(.regularMaterial, in: Circle())
+                }
+                .accessibilityLabel("Back")
+            }
+            toolbarContent
+        }
         .task { await load() }
         .sheet(isPresented: $showRequestSheet) {
             if let listing { RequestSheet(listing: listing) }
@@ -208,6 +220,7 @@ import SwiftUI
                         .frame(width: 32, height: 32)
                         .background(.regularMaterial, in: Circle())
                 }
+                .accessibilityLabel("More options")
             }
         }
     }

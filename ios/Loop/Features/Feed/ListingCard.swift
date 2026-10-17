@@ -14,6 +14,7 @@ import SwiftUI
                 .aspectRatio(Theme.photoAspect, contentMode: .fit)
                 .overlay { CachedImage(url: listing.coverURL, maxPixel: 500) }
                 .clipShape(RoundedRectangle(cornerRadius: Theme.Radius.card, style: .continuous))
+                .overlay { PhotoHairline(radius: Theme.Radius.card) }
                 .overlay(alignment: .topTrailing) {
                     if !listing.isMine {
                         HeartButton(isSaved: saved.isSaved(listing)) {
@@ -46,6 +47,7 @@ import SwiftUI
         }
         .contentShape(Rectangle())
         .accessibilityElement(children: .combine)
+        .accessibilityIdentifier("listingCard")
     }
 }
 

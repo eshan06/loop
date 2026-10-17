@@ -81,11 +81,13 @@ import SwiftUI
                 if isEditing {
                     ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
                 }
-                ToolbarItem(placement: .confirmationAction) {
-                    if isSaving {
-                        ProgressView()
-                    } else {
-                        Button("Done", action: save).bold().disabled(!canSave)
+                if isEditing {
+                    ToolbarItem(placement: .confirmationAction) {
+                        if isSaving {
+                            ProgressView()
+                        } else {
+                            Button("Done", action: save).bold().disabled(!canSave)
+                        }
                     }
                 }
             }

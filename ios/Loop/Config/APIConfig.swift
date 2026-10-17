@@ -12,7 +12,9 @@ enum APIConfig {
     static let baseURL = URL(string: "http://163.192.218.131:8000")!
 
     static var useMocks: Bool {
-        UserDefaults.standard.object(forKey: "useMocks") as? Bool ?? defaultUseMocks
+        // A launch argument arrives as a string ("NO"), so read it with `bool(forKey:)`, not a Bool cast.
+        guard UserDefaults.standard.object(forKey: "useMocks") != nil else { return defaultUseMocks }
+        return UserDefaults.standard.bool(forKey: "useMocks")
     }
 
     static let requestTimeout: TimeInterval = 30

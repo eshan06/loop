@@ -195,6 +195,7 @@ final class RequestsModel {
                 CachedImage(url: request.listing.photoUrl, maxPixel: 200)
                     .frame(width: 48, height: 60)
                     .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                    .overlay { PhotoHairline(radius: 8) }
                 VStack(alignment: .leading, spacing: 3) {
                     Text(request.listing.title).font(.subheadline.weight(.semibold)).lineLimit(1)
                     Text([other.displayName, other.dorm].compactMap { $0 }.joined(separator: " · "))
