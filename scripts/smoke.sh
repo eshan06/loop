@@ -803,7 +803,6 @@ check "d['messages'] == $B_MSG0" "B's own message isn't unread for B"
 req GET "/requests/$RM" "" "$TOKEN_A"
 check "d['unread_messages'] == 1" "A sees unread_messages 1 on the Request"
 check "d['updated_at'] > '$RM_ACCEPTED_AT'" "sending bumps the Request's updated_at"
-RM_SENT_AT="$(jget 'd["updated_at"]')"
 req GET "/requests/$RM" "" "$TOKEN_B"
 check "d['unread_messages'] == 0" "B sees unread_messages 0"
 req GET "/me/requests?role=incoming" "" "$TOKEN_A"
@@ -815,6 +814,7 @@ M2="$(jget 'd["id"]')"
 [[ "$M2" -gt "$M1" ]] || fail "message ids increase"
 req GET "/requests/$RM" "" "$TOKEN_A"
 check "d['unread_messages'] == 2" "A has 2 unread"
+RM_SENT_AT="$(jget 'd["updated_at"]')"
 
 # A reads everything; reading clears unread and doesn't touch updated_at
 sleep 1
