@@ -34,6 +34,7 @@ Every change to `docs/API.md` gets a line here: what changed and whether the iOS
 - 2026-10-17 (S-15, IOS-2): new "Sizes" section after Enums: the size vocabulary (tops/outerwear/dresses `XS`-`XXL`, bottoms waist `24`-`40` or a letter, shoes `5`-`14` in halves, accessories/bags `One size`). Still free strings, no shape change. `POST /scan` now maps the model's size into it (`Large` → `L`, `W32 L30` → `32`, `US 9 1/2` → `9.5`) and gives accessories/bags with no size `One size` instead of `null`. iOS: nothing to do (matches `SizeVocabulary.swift`).
 - 2026-10-17 (S-17): additive, no shape change. New "Where the impact numbers come from" section (after `GET /impact/campus`) with the citation and the per-category table; `GET /impact/campus` rules spelled out (`items_rehomed` = exchanges completed on my campus in the last 7 days, each item counted once; `top_dorm` = owner dorm with the most, ties alphabetical). Listing `impact` values changed (real numbers now) and `water_l` comes back as e.g. `777.0`. iOS: nothing to do (decode as `Double`).
 - 2026-10-17 (S-18): clarification, no shape change. Saves: re-saving keeps the original save time, you can save your own listing, PUT/DELETE on a listing you can't see is `404 not_found`. iOS: nothing to do.
+- 2026-10-17 (S-19): clarification, no shape change. `GET /listings/{id}/similar` never includes the caller's own listings; score = 3 per shared tag + 2 same category + 1 same size, ties newest; zero-score items only fill when there aren't enough matches; `limit` over 20 treated as 20; source not visible → `404 not_found`. iOS: nothing to do.
 
 ## Open requests to the iOS lane
 
@@ -46,6 +47,12 @@ None yet.
 None yet.
 
 ## Log
+
+### 2026-10-17 — S-19 done: similar items live
+- Done: S-19. `GET /listings/{id}/similar` in `app/routers/listings.py`: loads (id, tags, category, size, created_at) for the campus's active listings, minus the source and the caller's own, ranks in Python (3 per shared tag case-insensitive + 2 same category + 1 same size; newest, then id), returns the top `limit` (default 6, max 20) as full Listings via `listings_out`. Source follows GET /listings/{id} visibility (other campus/deleted/someone else's hidden → 404). Smoke 492 checks, passed twice; demo check asserts a Jordan item has 3+ similar items.
+- Contract: clarification only (see Contract changes). iOS: nothing to do for I-20.
+- Heads-up: smoke can't cover hidden-source 404 until reports (S-24) can hide a listing; the code path is the shared `_visible` check.
+- Now: S-20 (style ideas).
 
 ### 2026-10-17 — S-18 done: saves live
 - Done: S-18. `PUT` and `DELETE /listings/{id}/save` (204, idempotent; re-saving keeps the original save time) and `GET /me/saved` (paged, newest save first, tie-break listing id; any status except `hidden`, so pending/completed items stay with their status) in `app/routers/listings.py`. `saved_by_me` was already filled by the batched serializer (one query per page). Saving your own listing is allowed (API.md only forbids requesting/reporting your own). Not visible (other campus, deleted, someone else's hidden) → 404 `not_found` for PUT and DELETE. Smoke 461 checks, passed twice.
