@@ -7,7 +7,7 @@ Add new log entries at the top of the Log section, newest first. Keep each entry
 ## Server status
 
 - API base URL: not deployed yet. It will be `http://163.192.218.131:8000` once S-2 and S-4 land.
-- Vision model (`cohere.command-a-vision`) available on our account: listed in the model catalog, but not called yet. S-3 will confirm it.
+- Vision model (`cohere.command-a-vision`) available on our account: YES, tested 2026-10-17 from the OCI server, ~1-2s per call (1 or 2 JPEGs) → main scan path. `labels` is only needed for the fallback.
 - Demo accounts: not seeded yet
 
 Keep this block current. It's the first thing the iOS lane looks at.
@@ -29,6 +29,11 @@ None yet.
 None yet.
 
 ## Log
+
+### 2026-10-17 — S-3 done
+- Done: S-3. `cohere.command-a-vision` answers on-demand chat calls with images (Cohere V2 format), ~1.1-2.0s per call; `cohere.command-a-03-2025` text works too (~1.5s). Scan uses the main vision path. Request code is in `backend/app/genai_probe.py` for S-10.
+- Now: S-4 (FastAPI skeleton).
+- Heads-up: no contract change. The app can still send `labels` with `/scan` as a backup, but the vision path doesn't need them.
 
 ### 2026-10-17 — S-2 done
 - Done: S-2. Port 8000/tcp is open in the VCN security list "Allow HTTP(S) to WebServer" (ingress from 0.0.0.0/0, "Loop API") and in firewalld on the server. A test HTTP server on 8000 answered 200 from outside.

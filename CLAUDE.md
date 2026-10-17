@@ -97,3 +97,4 @@ iOS lane: open `ios/Loop.xcodeproj` and run. The base URL and the mock switch li
 - iOS blocks plain `http://` by default. See "HTTPS and iOS" in `docs/ARCHITECTURE.md`.
 - The OCI Free Trial may not include every model. If `cohere.command-a-vision` isn't in the Generative AI Playground's model list, use the fallback scan path in `docs/ARCHITECTURE.md`.
 - `No module named oci` means the venv isn't active.
+- The Cohere models often wrap JSON replies in ```json fences even when told not to. Strip fences before parsing.
