@@ -91,7 +91,7 @@ Each feature has an iOS half and a server half. The server lane ships the endpoi
 - [~] I-25 Report button on item detail.
 
 ### Server lane
-- [ ] S-17 Impact lookup table with a cited source, plus `GET /impact/me` and `GET /impact/campus`.
+- [x] S-17 Impact lookup table with a cited source, plus `GET /impact/me` and `GET /impact/campus`.
 - [ ] S-18 Saves: save, unsave, list.
 - [ ] S-19 Similar items by tag overlap.
 - [ ] S-20 `POST /listings/{id}/style` using the text model, cached per listing.

@@ -32,6 +32,7 @@ Every change to `docs/API.md` gets a line here: what changed and whether the iOS
 - Contract v1 frozen (2026-10-17). Changes from now on go through the request process in CLAUDE.md.
 - 2026-10-17 (S-13): messages rules spelled out (additive, no shape change): `POST /requests/{id}/messages` trims `body`; empty/missing → 400. Sending marks the sender's side read and bumps the Request's `updated_at` (chat moves to the top of `GET /me/requests`); reading doesn't change `updated_at`. iOS: nothing to do.
 - 2026-10-17 (S-15, IOS-2): new "Sizes" section after Enums: the size vocabulary (tops/outerwear/dresses `XS`-`XXL`, bottoms waist `24`-`40` or a letter, shoes `5`-`14` in halves, accessories/bags `One size`). Still free strings, no shape change. `POST /scan` now maps the model's size into it (`Large` → `L`, `W32 L30` → `32`, `US 9 1/2` → `9.5`) and gives accessories/bags with no size `One size` instead of `null`. iOS: nothing to do (matches `SizeVocabulary.swift`).
+- 2026-10-17 (S-17): additive, no shape change. New "Where the impact numbers come from" section (after `GET /impact/campus`) with the citation and the per-category table; `GET /impact/campus` rules spelled out (`items_rehomed` = exchanges completed on my campus in the last 7 days, each item counted once; `top_dorm` = owner dorm with the most, ties alphabetical). Listing `impact` values changed (real numbers now) and `water_l` comes back as e.g. `777.0`. iOS: nothing to do (decode as `Double`).
 
 ## Open requests to the iOS lane
 
@@ -44,6 +45,12 @@ None yet.
 None yet.
 
 ## Log
+
+### 2026-10-17 — S-17 done: cited impact numbers, /impact/me and /impact/campus live
+- Done: S-17. `backend/app/impact.py` now = typical garment mass x WRAP per-kg footprint, full citation and derivation in its header comment and in API.md "Where the impact numbers come from". Per item: tops 0.11 kg / 777 L / 2.6 kg CO2e, bottoms 0.48 / 3368 / 11.1, dresses 0.48 / 3375 / 11.1, outerwear 0.44 / 3135 / 10.3, accessories 0.04 / 304 / 1.0, shoes = bottoms, bags = outerwear. `GET /impact/me` (both giver and receiver get the item's full impact) and `GET /impact/campus` (last 7 days, `top_dorm` by owner dorm) live in `app/routers/stats.py`. Demo now: Jordan 1 shared, 11.1 kg CO2e; Vanderbilt 10 items, 98.3 kg CO2e, top dorm Kissam. Smoke 413 checks, passed twice.
+- Heads-up, USER MUST SANITY-CHECK THE SOURCE before the judges see it: footprints from WRAP (2017) "Valuing Our Clothes: the cost of UK fashion", p.11 Table 3, 2016 column (23.2 t CO2e and 7,060 m3 water per tonne of clothing) https://www.wrap.ngo/sites/default/files/2020-10/WRAP-valuing-our-clothes-the-cost-of-uk-fashion_WRAP.pdf ; garment masses from Sandin et al. (2019) Mistra Future Fashion report 2019:05, Table 3.1, printed p.28 (T-shirt 110 g, jeans 477 g, dress 478 g, jacket 444 g, socks 43 g) https://research.chalmers.se/publication/514322 . Two sources, because WRAP gives no per-garment weights. ASSUMPTIONS: shoes use the jeans mass and bags the jacket mass (neither source covers footwear or bags), and WRAP's clothing factors are applied to shoes/bags too.
+- Heads-up: campus impact only counts the last 7 days, so the seeded exchanges (completed 14-158 h before the seed ran) start dropping off; reseed (`bash scripts/reseed.sh`) the morning of the demo.
+- Now: S-18 (saves).
 
 ### 2026-10-17 — S-15 done: Vanderbilt demo campus seeded
 - Done: S-15. `backend/seed/seed.py` (`python -m seed.seed`, or `seed.reset`, or `bash scripts/reseed.sh` from the Mac) wipes and rebuilds campus `vanderbilt.edu` in one transaction; ran twice on the server, identical state. 8 dorms, 7 meetup spots (4 defaults + Commons Center, Rand Dining Center, Alumni Lawn), 11 students, 39 listings (27 active in the feed, 2 pending, 10 completed over the last 7 days, all 7 categories, swap/free/donate), 16 requests (10 completed, 2 accepted, 4 pending), 13 chat messages, 5 saves. No AI calls. Smoke now 384 checks, all pass; the new demo section is read-only.
