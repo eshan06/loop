@@ -1,7 +1,8 @@
 """Settings read from the environment and backend/.env.
 
-Real environment variables win over the file (systemd's EnvironmentFile sets
-them on the server). Blank values in .env fall back to the defaults below.
+Real environment variables win over the file. On the server the systemd unit sets
+none (SELinux blocks EnvironmentFile in the home dir), so backend/.env is the source.
+Blank values in .env fall back to the defaults below.
 """
 
 from __future__ import annotations

@@ -1,0 +1,22 @@
+# systemd unit for the Loop API on the OCI server.
+# Install: sudo cp ~/loop/scripts/loop-api.service /etc/systemd/system/
+#          sudo systemctl daemon-reload && sudo systemctl enable --now loop-api
+# SELinux (enforcing) blocks exec from the home dir (status 203/EXEC) unless the
+# venv's bin/ is labeled bin_t; see Gotchas in CLAUDE.md.
+# No EnvironmentFile: SELinux won't let systemd read ~/loop/backend/.env
+# (user_home_t, "Failed to load environment files: Permission denied").
+# The app loads backend/.env itself (app/config.py, pydantic-settings).
+[Unit]
+Description=Loop API
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=opc
+WorkingDirectory=/home/opc/loop/backend
+ExecStart=/home/opc/loop/backend/.venv/bin/uvicorn app.main:app --host 0.0.0.0 --port 8000
+Restart=always
+RestartSec=2
+
+[Install]
+WantedBy=multi-user.target
