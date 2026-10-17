@@ -36,6 +36,7 @@ Every change to `docs/API.md` gets a line here: what changed and whether the iOS
 - 2026-10-17 (S-18): clarification, no shape change. Saves: re-saving keeps the original save time, you can save your own listing, PUT/DELETE on a listing you can't see is `404 not_found`. iOS: nothing to do.
 - 2026-10-17 (S-19): clarification, no shape change. `GET /listings/{id}/similar` never includes the caller's own listings; score = 3 per shared tag + 2 same category + 1 same size, ties newest; zero-score items only fill when there aren't enough matches; `limit` over 20 treated as 20; source not visible → `404 not_found`. iOS: nothing to do.
 - 2026-10-17 (S-20): clarification, no shape change. `POST /listings/{id}/style`: title <= 40 and description <= 200 chars; cache cleared when title/category/color/tags change; same visibility as `GET /listings/{id}` (else `404 not_found`); if the model fails or takes > 15 s the server returns 3 template ideas (200, same shape, not cached) instead of `502 ai_unavailable`; demo listings are pre-cached. iOS: nothing to do (expect ~5 s on a first, uncached call).
+- 2026-10-17 (S-21): clarification, no shape change. `GET /leaderboard/dorms`: ties are listed alphabetically and the next rank skips ahead (1, 1, 3); owners without a dorm aren't counted; the first row's `dorm` is always `/impact/campus` `top_dorm`. iOS: nothing to do.
 
 ## Open requests to the iOS lane
 
@@ -48,6 +49,12 @@ None yet.
 None yet.
 
 ## Log
+
+### 2026-10-17 — S-21 done: dorm leaderboard live
+- Done: S-21. `GET /leaderboard/dorms` (`app/routers/stats.py`): completed exchanges in the last 7 days on my campus, counted by the listing owner's current dorm (owners with no dorm skipped), most first, ties alphabetical sharing a rank (1, 1, 3). `/impact/campus` `top_dorm` now comes from the same helper (`dorm_board`), so it is always the board's first dorm. Smoke 559 checks, passed twice.
+- Contract: clarification, no shape change (see Contract changes). iOS: nothing to do; `LeaderboardEntry` and the mock's ranking already match.
+- Heads-up: the demo board right now has a tie at the top (Kissam and Zeppos, 2 each, both rank 1; 8 dorms in all). Seeded completions are relative to reseed time, so the board empties a week after the last reseed. S-25 can give one dorm a clear lead if wanted.
+- Now: S-22 (badges).
 
 ### 2026-10-17 — S-20 done: Style it live, demo listings pre-warmed
 - Done: S-20. `POST /listings/{id}/style` (`app/style.py`, route in `app/routers/listings.py`): cached ideas return instantly (~0.07 s); otherwise `cohere.command-a-03-2025` writes 3 ideas as JSON (validated, title <= 40 / description <= 200 chars), cached in `listings.style_ideas` as `{basis, ideas}` where `basis` hashes title/category/color/tags, so an edit regenerates. Model failure or > 15 s → 3 template ideas from category + color, 200, not cached (a reply landing after the timeout still gets cached). Real model calls take ~4-7 s (not 1.5 s), with rare spikes past 15 s. Demo: `backend/seed/style_ideas.json` snapshot for all 39 listings, baked in by `seed.py` (reseed makes no AI calls); `python -m seed.style_warm [--force]` regenerates it on the server. Smoke 533 checks, passed twice.
