@@ -10,6 +10,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from ..auth import new_token
+from ..campus import campus_domain, get_or_create_campus
 from ..db import get_db
 from ..errors import ApiError
 from ..models import Campus, User, UserSession
@@ -19,30 +20,6 @@ from ..serializers import user_out
 router = APIRouter(tags=["auth"])
 
 EDU_EMAIL = re.compile(r"^[^@\s]+@(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+edu$")
-
-
-def campus_domain(email: str) -> str:
-    """Last two labels of the domain: jordan@alumni.vanderbilt.edu -> vanderbilt.edu."""
-    return ".".join(email.rsplit("@", 1)[1].split(".")[-2:])
-
-
-def campus_name(domain: str) -> str:
-    """tufts.edu -> Tufts, cal-poly.edu -> Cal Poly."""
-    return domain.split(".")[0].replace("-", " ").title()
-
-
-def _find_or_create_campus(db: Session, domain: str) -> Campus:
-    campus = db.scalar(select(Campus).where(Campus.email_domain == domain))
-    if campus:
-        return campus
-    try:
-        campus = Campus(name=campus_name(domain), email_domain=domain)
-        db.add(campus)
-        db.commit()
-        return campus
-    except IntegrityError:  # another login created it first
-        db.rollback()
-        return db.scalars(select(Campus).where(Campus.email_domain == domain)).one()
 
 
 def _find_or_create_user(db: Session, email: str, campus: Campus) -> tuple[User, bool]:
@@ -65,7 +42,7 @@ def login(body: LoginIn, db: Session = Depends(get_db)) -> LoginOut:
     if len(email) > 255 or not EDU_EMAIL.match(email):
         raise ApiError(400, "not_edu_email", "Use your college .edu email address.")
 
-    campus = _find_or_create_campus(db, campus_domain(email))
+    campus = get_or_create_campus(db, campus_domain(email))
     user, is_new = _find_or_create_user(db, email, campus)
 
     token = new_token()
