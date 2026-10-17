@@ -8,7 +8,7 @@ Add new log entries at the top of the Log section, newest first. Keep each entry
 
 - API base URL: `http://163.192.218.131:8000` — LIVE (systemd `loop-api`, restarts itself on crash and on boot). Plain HTTP, so the iOS app needs the ATS exception (Allow Arbitrary Loads). `GET /health` → `{"status":"ok"}`.
 - Vision model (`cohere.command-a-vision`) available on our account: YES, tested 2026-10-17 from the OCI server, ~1-2s per call (1 or 2 JPEGs) → main scan path. `POST /scan` live: ~3-4.5 s end to end (1-3 photos). `labels` is only needed for the fallback.
-- Demo accounts: not seeded yet
+- Demo accounts: SEEDED (S-15) on campus Vanderbilt (`vanderbilt.edu`): `jordan.park@vanderbilt.edu` (Jordan Park, Kissam), `sam.lee@vanderbilt.edu` (Sam Lee, Zeppos), `riley.chen@vanderbilt.edu` (Riley Chen, E. Bronson Ingram). Log in with the email only. Plus 8 more students, 39 listings, requests and chats. Reset to the clean demo state anytime: `bash scripts/reseed.sh` (keeps these three accounts' ids and sessions).
 
 Keep this block current. It's the first thing the iOS lane looks at.
 
@@ -31,6 +31,7 @@ Every change to `docs/API.md` gets a line here: what changed and whether the iOS
 - 2026-10-17 (S-10): `POST /scan` `kinds` must each be `front`, `back`, `label`, or `other` (`avatar` is a 400). iOS: nothing to do if it sends front/back/label.
 - Contract v1 frozen (2026-10-17). Changes from now on go through the request process in CLAUDE.md.
 - 2026-10-17 (S-13): messages rules spelled out (additive, no shape change): `POST /requests/{id}/messages` trims `body`; empty/missing → 400. Sending marks the sender's side read and bumps the Request's `updated_at` (chat moves to the top of `GET /me/requests`); reading doesn't change `updated_at`. iOS: nothing to do.
+- 2026-10-17 (S-15, IOS-2): new "Sizes" section after Enums: the size vocabulary (tops/outerwear/dresses `XS`-`XXL`, bottoms waist `24`-`40` or a letter, shoes `5`-`14` in halves, accessories/bags `One size`). Still free strings, no shape change. `POST /scan` now maps the model's size into it (`Large` → `L`, `W32 L30` → `32`, `US 9 1/2` → `9.5`) and gives accessories/bags with no size `One size` instead of `null`. iOS: nothing to do (matches `SizeVocabulary.swift`).
 
 ## Open requests to the iOS lane
 
@@ -43,6 +44,14 @@ None yet.
 None yet.
 
 ## Log
+
+### 2026-10-17 — S-15 done: Vanderbilt demo campus seeded
+- Done: S-15. `backend/seed/seed.py` (`python -m seed.seed`, or `seed.reset`, or `bash scripts/reseed.sh` from the Mac) wipes and rebuilds campus `vanderbilt.edu` in one transaction; ran twice on the server, identical state. 8 dorms, 7 meetup spots (4 defaults + Commons Center, Rand Dining Center, Alumni Lawn), 11 students, 39 listings (27 active in the feed, 2 pending, 10 completed over the last 7 days, all 7 categories, swap/free/donate), 16 requests (10 completed, 2 accepted, 4 pending), 13 chat messages, 5 saves. No AI calls. Smoke now 384 checks, all pass; the new demo section is read-only.
+- IOS-1: done, exactly those three emails (see Server status). Jordan: 3 pending incoming (Converse x2, cap), an accepted swap with Sam with 1 unread message from Sam, an accepted request on Riley's Docs (outgoing), 1 completed. Sam: 1 pending incoming, the chat with Jordan.
+- IOS-2: done. All seed sizes use the vocabulary; scan maps the model's size into it (`backend/app/ai.py` `normalize_size`); documented in API.md "Sizes" (see Contract changes).
+- IOS-3: acknowledged, scheduled for S-28 (Tier 3); nothing added yet.
+- Heads-up: photos are PLACEHOLDERS from Wikimedia Commons (`backend/seed/photos/`, credits in `ATTRIBUTION.md`); the team's real photos replace them in S-25 by swapping files and editing `manifest.json`. Photo URLs look like `/media/seed/<name>-<hash>.jpg` and change when a photo changes. A reseed deletes every other `vanderbilt.edu` user (their tokens 401) and resets the three demo accounts' data, but their tokens keep working.
+- Now: S-16 after the integration run, else S-17.
 
 ### 2026-10-17 — S-13 done: chat live
 - Done: S-13. Live: `GET /requests/{id}/messages[?after_id=N]` (`{"items": [Message]}` oldest first by id, not paged; any request status; marks read up to the newest returned id, never backwards; non-numeric `after_id` → 400) and `POST /requests/{id}/messages` (201 + Message; body trimmed, 1-1000 chars else 400; only while `accepted` else 409 `wrong_status`). Both: the two people only → 403; other campus/no such request → 404 (same `find_request` helper as `GET /requests/{id}`). `unread_messages` on Requests and `GET /me/unread` `messages` now move with chat (smoke-tested both sides). The 3 s poll is 3 PK lookups + one range scan on `(request_id, id)`, and only writes when there's something new.
