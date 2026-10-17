@@ -1,0 +1,46 @@
+# XcodeGen spec for the Loop app. Regenerate the project after adding or removing files:
+#   cd ios && xcodegen
+# Folder-synced groups need Xcode 16, and the iOS Mac runs Xcode 15.2 (macOS 13), so
+# Loop.xcodeproj is generated from this file and committed.
+name: Loop
+options:
+  bundleIdPrefix: com.stacked
+  deploymentTarget:
+    iOS: "17.0"
+  createIntermediateGroups: true
+  developmentLanguage: en
+settings:
+  base:
+    SWIFT_VERSION: "5.0"
+    MARKETING_VERSION: "1.0"
+    CURRENT_PROJECT_VERSION: "1"
+targets:
+  Loop:
+    type: application
+    platform: iOS
+    sources:
+      - path: Loop
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.stacked.loop
+        PRODUCT_NAME: Loop
+        TARGETED_DEVICE_FAMILY: "1"
+        CODE_SIGN_STYLE: Automatic
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
+        ENABLE_PREVIEWS: YES
+    info:
+      path: Loop/Info.plist
+      properties:
+        CFBundleDisplayName: Loop
+        UILaunchScreen:
+          UIColorName: LaunchBackground
+        UIUserInterfaceStyle: Light
+        UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait]
+        UIApplicationSceneManifest:
+          UIApplicationSupportsMultipleScenes: false
+        NSCameraUsageDescription: Loop uses the camera to photograph clothes you want to share.
+        NSPhotoLibraryUsageDescription: Loop lets you pick photos of clothes you want to share.
+        # The demo server is plain HTTP on a bare IP (docs/ARCHITECTURE.md, "HTTPS and iOS").
+        NSAppTransportSecurity:
+          NSAllowsArbitraryLoads: true
