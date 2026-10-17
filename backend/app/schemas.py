@@ -179,6 +179,15 @@ class ListingIn(BaseModel):
     photo_ids: list[StrictInt] | None = None
 
 
+class StyleIdeaOut(BaseModel):
+    title: str
+    description: str
+
+
+class StyleOut(BaseModel):
+    ideas: list[StyleIdeaOut]
+
+
 class ScanDraftOut(BaseModel):
     title: str | None
     category: str | None

@@ -1,6 +1,6 @@
 """Listings: the campus feed, create, read, edit, delete, GET /me/listings,
-saves (PUT/DELETE /listings/{id}/save, GET /me/saved), and similar items
-(GET /listings/{id}/similar).
+saves (PUT/DELETE /listings/{id}/save, GET /me/saved), similar items
+(GET /listings/{id}/similar), and Style it (POST /listings/{id}/style, app/style.py).
 
 Every query is scoped to the caller's campus; another campus's listing is 404.
 A `hidden` listing is 404 for everyone but its owner.
@@ -18,7 +18,8 @@ from ..db import get_db
 from ..errors import ApiError
 from ..models import Listing, MeetupSpot, Photo, Save, User
 from ..paging import Paging, paged, paging_params
-from ..schemas import ItemsList, ListingIn, ListingOut, Page
+from ..schemas import ItemsList, ListingIn, ListingOut, Page, StyleOut
+from ..style import ideas_for
 from ..serializers import listing_out, listings_out
 
 router = APIRouter(tags=["listings"])
@@ -284,6 +285,15 @@ def get_similar(
     ids = [rid for _, _, rid in ranked[:limit]]
     by_id = {l.id: l for l in db.scalars(select(Listing).where(Listing.id.in_(ids)))} if ids else {}
     return ItemsList[ListingOut](items=listings_out(db, [by_id[i] for i in ids], user))
+
+
+@router.post("/listings/{listing_id}/style")
+def style_listing(
+    listing_id: int, user: User = Depends(current_user), db: Session = Depends(get_db)
+) -> StyleOut:
+    """2-3 outfit ideas: cached per listing, else the text model (then cached), else
+    template ideas from category and color (not cached). Never 502."""
+    return StyleOut(ideas=ideas_for(db, _visible(db, user, listing_id)))
 
 
 @router.patch("/listings/{listing_id}")

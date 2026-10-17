@@ -20,13 +20,16 @@ What a run does, in one transaction:
    row (same id, sessions still valid, so a logged-in phone stays logged in);
    their profile is reset.
 2. Rebuild: dorms, meetup spots, USERS, the listings in seed/photos/manifest.json
-   (photos copied to MEDIA_DIR/seed/), then REQUESTS with MESSAGES and SAVES.
+   (photos copied to MEDIA_DIR/seed/, cached "Style it" ideas from
+   seed/style_ideas.json), then REQUESTS with MESSAGES and SAVES.
 After the commit, photo files from the old state that the new state doesn't use
 are deleted from MEDIA_DIR.
 
 Request states follow the API rules (app/routers/requests.py): an accepted
 request makes its listing `pending`, a completed one makes it `completed` with
-`completed_at` set; pending requests only sit on `active` listings. No AI calls.
+`completed_at` set; pending requests only sit on `active` listings. No AI calls:
+style ideas come from the snapshot in seed/style_ideas.json, which
+`python -m seed.style_warm` (re)generates with the text model.
 """
 
 from __future__ import annotations
@@ -49,10 +52,13 @@ from app.models import (
     Campus, Dorm, Listing, MeetupSpot, Message, Photo, Request, Save, User, utcnow,
 )
 from app.photos import MAX_SIDE, normalize_jpeg
+from app.style import basis as style_basis
+from app.style import validate_ideas
 
 DOMAIN = "vanderbilt.edu"
 CAMPUS_NAME = "Vanderbilt"
 PHOTOS_DIR = Path(__file__).resolve().parent / "photos"
+STYLE_FILE = Path(__file__).resolve().parent / "style_ideas.json"
 MEDIA_SUBDIR = "seed"  # seed photos live in MEDIA_DIR/seed/, served at /media/seed/<file>
 KINDS_BY_POSITION = ("front", "back", "label", "other", "other")
 
@@ -182,6 +188,24 @@ def load_manifest() -> list[dict]:
     return listings
 
 
+def item_basis(item: dict) -> str:
+    return style_basis(item["title"], item["category"], item.get("color"), item.get("tags"))
+
+
+def load_style(listings: list[dict]) -> dict[str, dict]:
+    """listing key -> cache entry {"basis", "ideas"} for listings whose snapshot entry is
+    current (an edited title/category/color/tags makes it stale, so it's skipped)."""
+    if not STYLE_FILE.is_file():
+        return {}
+    snapshot = json.loads(STYLE_FILE.read_text())["listings"]
+    out = {}
+    for item in listings:
+        entry = snapshot.get(item["key"])
+        if entry and entry.get("basis") == item_basis(item):
+            out[item["key"]] = {"basis": entry["basis"], "ideas": validate_ideas(entry["ideas"])}
+    return out
+
+
 def request_status(r: dict) -> str:
     if "completed_h" in r:
         return "completed"
@@ -275,7 +299,7 @@ def store_photo(name: str) -> str:
 
 
 def build(db: Session, campus: Campus, listings: list[dict], status: dict[str, str],
-          now: datetime) -> set[str]:
+          now: datetime, style: dict[str, dict]) -> set[str]:
     """Insert the demo campus. Returns the photo paths it uses."""
     def ago(hours: float) -> datetime:
         return (now - timedelta(hours=hours)).replace(microsecond=0)
@@ -309,6 +333,7 @@ def build(db: Session, campus: Campus, listings: list[dict], status: dict[str, s
             owner_id=users[item["owner"]].id, campus_id=campus.id,
             status=status[item["key"]], meetup_spot_id=spots[item["meetup_spot"]].id,
             created_at=created, updated_at=completed_at.get(item["key"], created),
+            style_ideas=style.get(item["key"]),
             **{f: item.get(f) for f in LISTING_FIELDS},
         )
         db.add(listing)
@@ -373,9 +398,14 @@ def remove_files(paths: set[str]) -> int:
 def run(check_only: bool = False) -> int:
     listings = load_manifest()
     status = check_activity(listings)
+    style = load_style(listings)
     counts = {s: list(status.values()).count(s) for s in ("active", "pending", "completed")}
     print(f"manifest ok: {len(listings)} listings {counts}, {len(USERS)} users, "
-          f"{len(REQUESTS)} requests, {len(SAVES)} saves")
+          f"{len(REQUESTS)} requests, {len(SAVES)} saves, "
+          f"{len(style)}/{len(listings)} with style ideas")
+    missing = [item["key"] for item in listings if item["key"] not in style]
+    if missing:
+        print("  no current style ideas (run `python -m seed.style_warm`): " + ", ".join(missing))
     if check_only:
         return 0
 
@@ -387,7 +417,7 @@ def run(check_only: bool = False) -> int:
             db.flush()
         campus.name = CAMPUS_NAME
         old_paths = wipe_campus(db, campus.id)
-        used = build(db, campus, listings, status, utcnow())
+        used = build(db, campus, listings, status, utcnow(), style)
         db.commit()
         campus_id = campus.id
 

@@ -91,14 +91,14 @@ def _client() -> GenerativeAiInferenceClient:
     )
 
 
-def _chat(model_id: str, content: list, max_tokens: int = 700) -> str:
+def _chat(model_id: str, content: list, max_tokens: int = 700, temperature: float = 0.2) -> str:
     details = ChatDetails(
         compartment_id=_compartment_id(),
         serving_mode=OnDemandServingMode(model_id=model_id),
         chat_request=CohereChatRequestV2(
             messages=[CohereUserMessageV2(content=content)],
             max_tokens=max_tokens,
-            temperature=0.2,
+            temperature=temperature,
         ),
     )
     message = _client().chat(details).data.chat_response.message
@@ -116,9 +116,9 @@ def vision_chat(images_b64: list[str], prompt: str) -> str:
     return _chat(settings.genai_vision_model, content)
 
 
-def text_chat(prompt: str, max_tokens: int = 700) -> str:
+def text_chat(prompt: str, max_tokens: int = 700, temperature: float = 0.2) -> str:
     """A text-only prompt to the text model; returns its text."""
-    return _chat(settings.genai_text_model, [CohereTextContentV2(text=prompt)], max_tokens)
+    return _chat(settings.genai_text_model, [CohereTextContentV2(text=prompt)], max_tokens, temperature)
 
 
 # --------------------------------------------------------------------------- parsing
