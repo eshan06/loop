@@ -3,6 +3,8 @@ import SwiftUI
 /// A feed card: 4:5 photo, title, size, share-type capsule, and "Yours" on my own items.
 @MainActor struct ListingCard: View {
     let listing: Listing
+    /// The card just published: a Loop Lime "Just posted" tag, shown for a few seconds. No border, so the photo stays clean.
+    var isJustPosted = false
 
     @Environment(SavedStore.self) private var saved
     @Environment(ListingCache.self) private var cache
@@ -15,6 +17,11 @@ import SwiftUI
                 .overlay { CachedImage(url: listing.coverURL, maxPixel: 500) }
                 .clipShape(RoundedRectangle(cornerRadius: Theme.Radius.card, style: .continuous))
                 .overlay { PhotoHairline(radius: Theme.Radius.card) }
+                .overlay(alignment: .topLeading) {
+                    if isJustPosted {
+                        TagCapsule(text: "Just posted", lime: true).padding(8).transition(.scale(scale: 0.8).combined(with: .opacity))
+                    }
+                }
                 .overlay(alignment: .topTrailing) {
                     if !listing.isMine {
                         HeartButton(isSaved: saved.isSaved(listing)) {
@@ -42,7 +49,7 @@ import SwiftUI
                         .lineLimit(1)
                 }
                 ShareTypeCapsule(shareType: listing.shareType)
-                if listing.isMine { TagCapsule(text: "Yours") }
+                if listing.isMine { TagCapsule(text: "Yours", lime: true) }
             }
         }
         .contentShape(Rectangle())
@@ -82,7 +89,7 @@ import SwiftUI
         LazyVGrid(columns: columns, spacing: Theme.Space.l) {
             ForEach(listings) { listing in
                 NavigationLink(value: Route.listing(listing.id)) {
-                    ListingCard(listing: listing)
+                    ListingCard(listing: listing, isJustPosted: listing.id == highlightID)
                 }
                 .buttonStyle(PressableStyle())
                 .transition(.scale(scale: 0.85).combined(with: .opacity))

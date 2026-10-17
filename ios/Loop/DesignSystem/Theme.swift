@@ -5,6 +5,13 @@ import SwiftUI
 enum Theme {
     // Color
     static let accent = Color.black
+
+    /// Loop Lime #C7E75A, the brand accent. This is the only place the value is written down.
+    /// Use it sparingly (Scan button, welcome mark, publish and completion moments, "You" markers),
+    /// and always put near-black (`onLime`) on top of it.
+    static let lime = Color(red: 199.0 / 255.0, green: 231.0 / 255.0, blue: 90.0 / 255.0)
+    /// Text and icons on lime.
+    static let onLime = Color(red: 0.07, green: 0.07, blue: 0.07)
     static let background = Color(red: 0.980, green: 0.973, blue: 0.957)   // warm off-white #FAF8F4
     static let surface = Color(red: 0.941, green: 0.929, blue: 0.906)      // warm gray #F0EDE7
     static let textPrimary = Color(uiColor: .label)

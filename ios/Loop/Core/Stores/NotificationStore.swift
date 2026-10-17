@@ -13,7 +13,10 @@ final class NotificationStore {
     /// The latest badge_earned notification, for screens that care.
     private(set) var lastBadgeID: Int?
 
-    private var highestSeenID: Int?
+    /// Unread notification IDs already seen, with the `created_at` we saw. A `new_message` notification
+    /// collapses (docs/API.md): more messages update the same row, keeping its `id` but moving
+    /// `created_at`, so a later date counts as fresh too.
+    private var seen: [Int: Date]?
     private var pollTask: Task<Void, Never>?
     private var bannerTask: Task<Void, Never>?
 
@@ -41,7 +44,7 @@ final class NotificationStore {
         items = []
         unread = .zero
         banner = nil
-        highestSeenID = nil
+        seen = nil
     }
 
     func poll(router: Router) async {
@@ -53,11 +56,12 @@ final class NotificationStore {
         items = page.items
         if counts == nil { unread.notifications = page.unread }
 
-        let newest = page.items.map(\.id).max() ?? 0
-        defer { highestSeenID = max(highestSeenID ?? 0, newest) }
+        let unreadNow = page.items.filter { !$0.read }
+        let previous = seen
+        defer { seen = Dictionary(uniqueKeysWithValues: unreadNow.map { ($0.id, $0.createdAt) }).merging(seen ?? [:]) { new, _ in new } }
         // The first poll after launch only sets the starting point.
-        guard let seen = highestSeenID else { return }
-        let fresh = page.items.filter { $0.id > seen && !$0.read }
+        guard let previous else { return }
+        let fresh = Self.freshItems(in: unreadNow, previous: previous)
         guard !fresh.isEmpty else { return }
 
         if fresh.contains(where: { $0.type != .badgeEarned }) { requestsRevision += 1 }
@@ -67,6 +71,15 @@ final class NotificationStore {
             !(notification.type == .newMessage && notification.requestId == router.visibleThreadID)
         }
         if let newest = visible.first { showBanner(newest, others: visible.count - 1) }
+    }
+
+    /// Unread notifications that are new since `previous`: an ID we haven't seen, or a collapsed
+    /// `new_message` whose `created_at` moved forward.
+    nonisolated static func freshItems(in unread: [AppNotification], previous: [Int: Date]) -> [AppNotification] {
+        unread.filter { item in
+            guard let before = previous[item.id] else { return true }
+            return item.createdAt > before
+        }
     }
 
     private func showBanner(_ notification: AppNotification, others: Int) {

@@ -13,15 +13,19 @@ struct ListingFormState: Equatable {
     var shareType: ShareType?
     var meetupSpotID: Int?
 
-    mutating func apply(_ draft: ScanDraft) {
-        title = draft.title ?? ""
-        category = draft.category
-        size = draft.size
-        color = draft.color ?? ""
-        brand = draft.brand ?? ""
-        condition = draft.condition
-        description = draft.description ?? ""
-        tags = Array(draft.tags.prefix(10))
+    /// Fill the AI fields from a scan. With `onlyBlank`, fields the user already filled in are kept.
+    mutating func apply(_ draft: ScanDraft, onlyBlank: Bool = false) {
+        func pick(_ current: String, _ new: String?) -> String {
+            onlyBlank && !current.trimmingCharacters(in: .whitespaces).isEmpty ? current : (new ?? current)
+        }
+        title = pick(title, draft.title)
+        color = pick(color, draft.color)
+        brand = pick(brand, draft.brand)
+        description = pick(description, draft.description)
+        if !onlyBlank || category == nil { category = draft.category ?? category }
+        if !onlyBlank || size == nil { size = draft.size ?? size }
+        if !onlyBlank || condition == nil { condition = draft.condition ?? condition }
+        if !onlyBlank || tags.isEmpty { tags = Array(draft.tags.prefix(10)) }
     }
 
     init() {}
@@ -69,12 +73,13 @@ struct ListingFormState: Equatable {
     var body: some View {
         Group {
             Section("Item") {
-                field { TextField("Title", text: $form.title) }
+                field { TextField("Title", text: $form.title).dismissKeyboardOnDone() }
                 field {
                     Picker("Category", selection: $form.category) {
                         Text("Choose").tag(ItemCategory?.none)
                         ForEach(ItemCategory.allCases) { Text($0.label).tag(ItemCategory?.some($0)) }
                     }
+                    .accessibilityIdentifier("categoryPicker")
                 }
                 field { sizePicker }
                 field {
@@ -91,8 +96,8 @@ struct ListingFormState: Equatable {
             }
 
             Section("Details") {
-                field { TextField("Brand", text: $form.brand) }
-                field { TextField("Color", text: $form.color) }
+                field { TextField("Brand", text: $form.brand).dismissKeyboardOnDone() }
+                field { TextField("Color", text: $form.color).dismissKeyboardOnDone() }
                 field {
                     TextField("Description", text: $form.description, axis: .vertical)
                         .lineLimit(3...8)
@@ -232,6 +237,16 @@ struct ListingFormState: Equatable {
         case .free: "Free: give it to another student."
         case .donate: "Donate: it goes to a campus donation drive."
         case nil: "Choose how you want to share it."
+        }
+    }
+}
+
+extension View {
+    /// Return key says "Done" and puts the keyboard away. Single-line fields keep focus otherwise,
+    /// and the keyboard then covers the rows below.
+    func dismissKeyboardOnDone() -> some View {
+        submitLabel(.done).onSubmit {
+            UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
         }
     }
 }

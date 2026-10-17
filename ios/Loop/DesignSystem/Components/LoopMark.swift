@@ -25,6 +25,8 @@ struct LoopGlyph: Shape {
 /// Lowercase "loop" in SF Pro Rounded Bold, with the glyph.
 @MainActor struct Wordmark: View {
     var size: CGFloat = 34
+    /// A Loop Lime highlighter stroke behind the word. Used on the welcome and launch screens.
+    var highlight = false
 
     var body: some View {
         HStack(spacing: size * 0.22) {
@@ -34,6 +36,16 @@ struct LoopGlyph: Shape {
             Text("loop")
                 .font(.system(size: size, weight: .bold, design: .rounded))
                 .foregroundStyle(Theme.accent)
+                .background(alignment: .bottom) {
+                    if highlight {
+                        Capsule()
+                            .fill(Theme.lime)
+                            .frame(height: size * 0.34)
+                            .rotationEffect(.degrees(-1.5))
+                            .padding(.horizontal, -size * 0.08)
+                            .offset(y: -size * 0.06)
+                    }
+                }
         }
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("Loop")

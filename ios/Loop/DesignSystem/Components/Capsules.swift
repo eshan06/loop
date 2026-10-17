@@ -4,14 +4,16 @@ import SwiftUI
 @MainActor struct TagCapsule: View {
     let text: String
     var filled = false
+    /// Loop Lime fill with near-black text. For "You" and "Yours" markers and the just-posted card.
+    var lime = false
 
     var body: some View {
         Text(text)
             .font(.caption.weight(.semibold))
-            .foregroundStyle(filled ? Color.white : Theme.textPrimary)
+            .foregroundStyle(lime ? Theme.onLime : (filled ? Color.white : Theme.textPrimary))
             .padding(.horizontal, 8)
             .padding(.vertical, 3)
-            .background(filled ? Theme.accent : Theme.surface, in: Capsule())
+            .background(lime ? Theme.lime : (filled ? Theme.accent : Theme.surface), in: Capsule())
     }
 }
 

@@ -6,6 +6,7 @@ import SwiftUI
     @State private var error: String?
     @State private var isLoading = false
     @FocusState private var focused: Bool
+    @State private var useMocks = APIConfig.useMocks
 
     private var trimmed: String { email.trimmingCharacters(in: .whitespaces) }
 
@@ -13,7 +14,7 @@ import SwiftUI
         VStack(spacing: 0) {
             Spacer()
             VStack(spacing: Theme.Space.m) {
-                Wordmark(size: 52)
+                Wordmark(size: 52, highlight: true)
                 Text("Swap, give, and donate clothes\non your campus.")
                     .font(.title3)
                     .multilineTextAlignment(.center)
@@ -71,9 +72,20 @@ import SwiftUI
     #if DEBUG
     private var demoAccounts: some View {
         VStack(spacing: Theme.Space.xs) {
-            Text("Demo accounts\(APIConfig.useMocks ? " · mock data" : "")")
+            Picker("Server", selection: $useMocks) {
+                Text("Mock data").tag(true)
+                Text("Live server").tag(false)
+            }
+            .pickerStyle(.segmented)
+            .accessibilityIdentifier("serverMode")
+            .onChange(of: useMocks) { _, value in
+                APIConfig.setUseMocks(value)
+                error = nil
+            }
+            Text("Demo accounts")
                 .font(.caption.weight(.semibold))
                 .foregroundStyle(Theme.textSecondary)
+                .padding(.top, 4)
             HStack(spacing: Theme.Space.xs) {
                 ForEach(DemoAccounts.all, id: \.email) { account in
                     Chip(title: account.label) {

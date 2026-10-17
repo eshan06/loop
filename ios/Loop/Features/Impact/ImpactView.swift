@@ -142,7 +142,7 @@ import SwiftUI
                     VStack(alignment: .leading, spacing: 6) {
                         HStack {
                             Text(entry.dorm).font(isMine ? .subheadline.bold() : .subheadline)
-                            if isMine { TagCapsule(text: "You", filled: true) }
+                            if isMine { TagCapsule(text: "You", lime: true) }
                             Spacer()
                             Text("\(entry.itemsShared)").font(.roundedNumber(15))
                         }

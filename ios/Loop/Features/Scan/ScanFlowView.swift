@@ -56,7 +56,12 @@ import SwiftUI
         .onChange(of: libraryItem) { _, item in
             guard let item else { return }
             Task {
-                if let data = try? await item.loadTransferable(type: Data.self), let image = UIImage(data: data) {
+                // Decode straight to at most 2400 px with ImageIO, so a huge HEIC from the library never
+                // becomes a full-size bitmap. It also applies the photo's orientation.
+                if let data = try? await item.loadTransferable(type: Data.self),
+                   let image = await Task.detached(priority: .userInitiated, operation: {
+                       ImageLoader.downsample(data, maxPixel: 2400)
+                   }).value {
                     accept(image)
                 }
                 libraryItem = nil

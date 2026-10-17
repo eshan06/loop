@@ -103,10 +103,11 @@ import SwiftUI
         Button(action: action) {
             Image(systemName: "camera.fill")
                 .font(.system(size: 22, weight: .semibold))
-                .foregroundStyle(.white)
+                .foregroundStyle(Theme.onLime)
                 .frame(width: 58, height: 58)
-                .background(Theme.accent, in: Circle())
-                .shadow(color: .black.opacity(0.18), radius: 10, y: 4)
+                .background(Theme.lime, in: Circle())
+                .overlay { Circle().strokeBorder(Color.black.opacity(0.08), lineWidth: 0.5) }
+                .shadow(color: .black.opacity(0.14), radius: 8, y: 3)
         }
         .buttonStyle(PressableStyle())
         .accessibilityLabel("Scan an item")

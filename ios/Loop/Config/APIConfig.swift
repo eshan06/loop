@@ -17,6 +17,11 @@ enum APIConfig {
         return UserDefaults.standard.bool(forKey: "useMocks")
     }
 
+    /// Persist the Mock/Live choice (the sign-in screen's switch). A launch argument still wins.
+    static func setUseMocks(_ value: Bool) {
+        UserDefaults.standard.set(value, forKey: "useMocks")
+    }
+
     static let requestTimeout: TimeInterval = 30
     /// `/scan` gives the AI 20 seconds on the server, plus upload time.
     static let scanTimeout: TimeInterval = 45

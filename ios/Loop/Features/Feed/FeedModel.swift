@@ -10,6 +10,8 @@ final class FeedModel {
     private(set) var ids: [Int] = []
     private(set) var state: LoadState = .idle
     private(set) var campus: CampusImpact?
+    /// The listing just published, highlighted in Loop Lime for a few seconds.
+    var highlightedID: Int?
 
     var activeFilterCount: Int { (category == nil ? 0 : 1) + (size == nil ? 0 : 1) }
     var isSearchingOrFiltered: Bool { activeFilterCount > 0 || !searchText.trimmingCharacters(in: .whitespaces).isEmpty }

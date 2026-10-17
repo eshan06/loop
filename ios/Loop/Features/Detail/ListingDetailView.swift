@@ -7,6 +7,7 @@ import SwiftUI
     @Environment(SavedStore.self) private var saved
     @Environment(ToastCenter.self) private var toasts
     @Environment(Router.self) private var router
+    @Environment(NotificationStore.self) private var notifications
     @Environment(\.dismiss) private var dismiss
 
     @State private var error: String?
@@ -45,6 +46,7 @@ import SwiftUI
             toolbarContent
         }
         .task { await load() }
+        .onChange(of: notifications.requestsRevision) { _, _ in Task { await load() } }
         .sheet(isPresented: $showRequestSheet) {
             if let listing { RequestSheet(listing: listing) }
         }
@@ -113,7 +115,7 @@ import SwiftUI
                 ShareTypeCapsule(shareType: listing.shareType)
                 if let size = listing.size { TagCapsule(text: size) }
                 TagCapsule(text: listing.condition.label)
-                if listing.isMine { TagCapsule(text: "Yours", filled: true) }
+                if listing.isMine { TagCapsule(text: "Yours", lime: true) }
             }
         }
     }

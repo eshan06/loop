@@ -74,6 +74,7 @@ import SwiftUI
                 }
             }
             .scrollContentBackground(.hidden)
+            .scrollDismissesKeyboard(.interactively)
             .screenBackground()
             .navigationTitle(isEditing ? "Edit profile" : "Set up your profile")
             .navigationBarTitleDisplayMode(isEditing ? .inline : .large)

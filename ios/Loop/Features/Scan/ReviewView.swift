@@ -13,6 +13,11 @@ final class ReviewModel {
     var form = ListingFormState()
     private(set) var scanState: ScanState = .loading
     private(set) var photoIDs: [Int]?
+    /// Photos already uploaded one by one (only used when /scan itself failed), so a failed post
+    /// resumes instead of uploading everything again.
+    private var uploadedIDs: [Int] = []
+    /// Resized, compressed JPEGs in upload order (front, back, label). Built once, off the main thread.
+    private var encoded: [(jpeg: Data, kind: PhotoKind)]?
     private(set) var spots: [MeetupSpot]?
     private(set) var isPosting = false
     var postError: String?
@@ -34,9 +39,19 @@ final class ReviewModel {
         }
     }
 
+    private func encodedShots() async -> [(jpeg: Data, kind: PhotoKind)] {
+        if let encoded { return encoded }
+        let shots = self.shots
+        let result = await Task.detached(priority: .userInitiated) {
+            shots.map { (jpeg: ImageProcessing.jpeg($0.image), kind: $0.kind) }
+        }.value
+        encoded = result
+        return result
+    }
+
     func runScan() async {
         withAnimation(.smooth) { scanState = .loading }
-        let jpegs = shots.map { (jpeg: ImageProcessing.jpeg($0.image), kind: $0.kind) }
+        let jpegs = await encodedShots()
         let labels = await labels()
         do {
             let result = try await API.client.scan(photos: jpegs, labels: labels)
@@ -45,7 +60,8 @@ final class ReviewModel {
                 if result.source == .none {
                     scanState = .failed
                 } else {
-                    form.apply(result.draft)
+                    // On a retry, keep whatever the user already typed.
+                    form.apply(result.draft, onlyBlank: true)
                     scanState = .filled(result.source)
                 }
             }
@@ -63,12 +79,13 @@ final class ReviewModel {
             // If /scan itself failed there are no saved photos yet, so upload them now.
             var ids = photoIDs
             if ids == nil {
-                var uploaded: [Int] = []
-                for shot in shots {
-                    uploaded.append(try await API.client.uploadPhoto(ImageProcessing.jpeg(shot.image), kind: shot.kind).id)
+                let jpegs = await encodedShots()
+                while uploadedIDs.count < jpegs.count {
+                    let next = jpegs[uploadedIDs.count]
+                    uploadedIDs.append(try await API.client.uploadPhoto(next.jpeg, kind: next.kind).id)
                 }
-                photoIDs = uploaded
-                ids = uploaded
+                photoIDs = uploadedIDs
+                ids = uploadedIDs
             }
             guard let input = form.input(photoIDs: ids ?? []) else { return nil }
             return try await API.client.createListing(input)
@@ -104,6 +121,7 @@ final class ReviewModel {
             }
         }
         .scrollContentBackground(.hidden)
+        .scrollDismissesKeyboard(.interactively)
         .screenBackground()
         .animation(.smooth, value: model.isLocked)
         .navigationTitle("Review")

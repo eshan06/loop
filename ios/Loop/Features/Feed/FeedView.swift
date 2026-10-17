@@ -28,10 +28,20 @@ import SwiftUI
             }
             .onChange(of: router.justPostedListingID) { _, id in
                 guard let id else { return }
+                // A filter or search could hide the new card, so clear them first.
+                model.shareType = nil
+                model.category = nil
+                model.size = nil
+                model.searchText = ""
                 withAnimation(.snappy) { proxy.scrollTo("top", anchor: .top) }
                 model.insertAtTop(id)
+                model.highlightedID = id
                 postedTrigger += 1
                 router.justPostedListingID = nil
+                Task {
+                    try? await Task.sleep(for: .seconds(6))
+                    if model.highlightedID == id { withAnimation(.smooth) { model.highlightedID = nil } }
+                }
             }
         }
         .navigationTitle("Feed")
@@ -108,7 +118,7 @@ import SwiftUI
             if listings.isEmpty {
                 emptyState.padding(.top, 40)
             } else {
-                ListingGrid(listings: listings)
+                ListingGrid(listings: listings, highlightID: model.highlightedID)
                     .padding(.horizontal, Theme.margin)
             }
         }

@@ -13,9 +13,16 @@ import SwiftUI
     var body: some View {
         VStack(spacing: Theme.Space.xl) {
             Spacer()
-            Image(systemName: "checkmark.seal.fill")
-                .font(.system(size: 64))
-                .symbolEffect(.bounce, value: appeared)
+            Circle()
+                .fill(Theme.lime)
+                .frame(width: 112, height: 112)
+                .overlay {
+                    Image(systemName: "checkmark")
+                        .font(.system(size: 46, weight: .bold))
+                        .foregroundStyle(Theme.onLime)
+                        .symbolEffect(.bounce, value: appeared)
+                }
+                .accessibilityHidden(true)
             VStack(spacing: Theme.Space.xs) {
                 Text("Exchange complete").font(.largeTitle.bold())
                 Text("This item stays in the loop.").font(.title3).foregroundStyle(Theme.textSecondary)

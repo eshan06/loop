@@ -4,21 +4,22 @@ import Security
 /// The bearer token, kept in the Keychain. Tokens never expire; signing out just forgets it.
 enum AuthToken {
     private static let service = "com.stacked.loop"
-    private static let account = APIConfig.useMocks ? "token.mock" : "token.live"
+    /// Mock and live sessions keep separate tokens, so switching modes never sends a mock token to the server.
+    private static var account: String { APIConfig.useMocks ? "token.mock" : "token.live" }
     private static let lock = NSLock()
-    private static var cached: String??
+    private static var cached: [String: String?] = [:]
 
     static var current: String? {
         lock.lock(); defer { lock.unlock() }
-        if let cached { return cached }
+        if let hit = cached[account] { return hit }
         let value = read()
-        cached = .some(value)
+        cached[account] = .some(value)
         return value
     }
 
     static func set(_ token: String?) {
         lock.lock(); defer { lock.unlock() }
-        cached = .some(token)
+        cached[account] = .some(token)
         let query: [String: Any] = [kSecClass as String: kSecClassGenericPassword,
                                     kSecAttrService as String: service,
                                     kSecAttrAccount as String: account]

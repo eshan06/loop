@@ -24,7 +24,8 @@ import SwiftUI
                 VStack(alignment: .leading, spacing: Theme.Space.xl) {
                     header
                     impactStrip
-                    badgeRow.id("badges")
+                    // Hidden until badges load (the server's /me/badges, S-22, may not be live yet).
+                    if !badges.isEmpty { badgeRow.id("badges") }
                     listingsSection
                 }
                 .padding(Theme.margin)

@@ -23,6 +23,7 @@ import SwiftUI
             }
         }
         .scrollContentBackground(.hidden)
+        .scrollDismissesKeyboard(.interactively)
         .screenBackground()
         .navigationTitle("Edit listing")
         .navigationBarTitleDisplayMode(.inline)

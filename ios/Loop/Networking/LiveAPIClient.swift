@@ -52,6 +52,12 @@ struct LiveAPIClient: APIClient {
     }
 
     func scan(photos: [(jpeg: Data, kind: PhotoKind)], labels: [String]) async throws -> ScanResult {
+        try await send("POST", "/scan", multipart: Self.scanForm(photos: photos, labels: labels), timeout: APIConfig.scanTimeout)
+    }
+
+    /// The `POST /scan` body from docs/API.md: one `photos` part per JPEG in order front, back, label,
+    /// `kinds` with one kind per photo, and the optional on-device `labels`.
+    static func scanForm(photos: [(jpeg: Data, kind: PhotoKind)], labels: [String]) -> MultipartForm {
         var form = MultipartForm()
         for (index, photo) in photos.enumerated() {
             form.addFile("photos", filename: "photo\(index).jpg", data: photo.jpeg)
@@ -60,7 +66,7 @@ struct LiveAPIClient: APIClient {
         if !labels.isEmpty {
             form.addField("labels", labels.joined(separator: ","))
         }
-        return try await send("POST", "/scan", multipart: form, timeout: APIConfig.scanTimeout)
+        return form
     }
 
     func meetupSpots() async throws -> [MeetupSpot] {

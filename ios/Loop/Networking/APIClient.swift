@@ -53,7 +53,12 @@ protocol APIClient: Sendable {
 }
 
 enum API {
-    static let client: APIClient = APIConfig.useMocks ? MockAPIClient() : LiveAPIClient()
+    // Both clients live for the whole run: the mock keeps its in-memory state while you flip to live and back.
+    private static let mock = MockAPIClient()
+    private static let live = LiveAPIClient()
+
+    /// Chosen on every call from `APIConfig.useMocks`, so the sign-in screen's Mock/Live switch applies immediately.
+    static var client: APIClient { APIConfig.useMocks ? mock : live }
 }
 
 extension Notification.Name {

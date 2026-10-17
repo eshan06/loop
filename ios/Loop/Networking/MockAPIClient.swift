@@ -31,6 +31,8 @@ struct MockAPIClient: APIClient {
 
     func scan(photos: [(jpeg: Data, kind: PhotoKind)], labels: [String]) async throws -> ScanResult {
         try await delay(2.5)
+        // `-mockScanThrows YES` makes /scan fail like a dropped connection (the app then uploads photos itself).
+        if UserDefaults.standard.bool(forKey: "mockScanThrows") { throw APIError.network }
         return await backend.scan(photos: photos)
     }
 
