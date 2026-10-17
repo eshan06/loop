@@ -208,3 +208,19 @@ class RequestOut(BaseModel):
     unread_messages: int
     created_at: str
     updated_at: str
+
+
+# ---- Messages --------------------------------------------------------------
+
+class MessageIn(BaseModel):
+    """Body of POST /requests/{id}/messages. The router trims and checks length."""
+
+    body: StrictStr | None = None
+
+
+class MessageOut(BaseModel):
+    id: int
+    request_id: int
+    sender_id: int
+    body: str
+    created_at: str

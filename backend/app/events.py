@@ -1,11 +1,12 @@
-"""Hooks for request events. The requests router calls these inside the same
+"""Hooks for request and message events. The requests router calls these inside the same
 transaction as the state change, before commit, so anything they add to `db`
 (notifications, badges) commits or rolls back with it. They must not commit.
 
 Today they do nothing. Later tasks fill them in:
 - S-23 notifications: request_received (created), request_accepted (accepted),
-  request_declined (declined, including every request an accept auto-declines).
-  complete and cancel send none (docs/API.md).
+  request_declined (declined, including every request an accept auto-declines),
+  new_message (message sent, to the other person). complete and cancel send none
+  (docs/API.md).
 - S-22 badges: check first_swap / giving_back on completed; closet_cleanout is
   about listings, not requests.
 
@@ -16,7 +17,7 @@ from __future__ import annotations
 
 from sqlalchemy.orm import Session
 
-from .models import Request, User
+from .models import Message, Request, User
 
 
 def on_request_created(db: Session, req: Request, actor: User) -> None:
@@ -38,3 +39,9 @@ def on_request_completed(db: Session, req: Request, actor: User) -> None:
 
 def on_request_cancelled(db: Session, req: Request, actor: User, was_accepted: bool) -> None:
     """The requester withdrew. If it was accepted, the listing went back to active."""
+
+
+def on_message_sent(db: Session, msg: Message, req: Request, actor: User) -> None:
+    """`actor` sent `msg` on the accepted request `req` (the messages router calls
+    this after flush, so msg.id is set). The other person is req.requester_id or
+    req.listing.owner_id, whichever isn't actor.id."""

@@ -1,8 +1,8 @@
 """Shared builders that turn ORM rows into the API objects in docs/API.md.
 
 Every endpoint that returns a User, Owner, Photo, Listing, ... uses these, so the
-shapes stay identical everywhere. Later tasks add Message and Notification
-builders here.
+shapes stay identical everywhere. A later task adds the Notification builder
+here.
 """
 
 from __future__ import annotations
@@ -21,6 +21,7 @@ from .schemas import (
     ImpactOut,
     ListingOut,
     MeetupSpotOut,
+    MessageOut,
     OwnerOut,
     PhotoOut,
     RequestListingOut,
@@ -279,3 +280,15 @@ def requests_out(db: Session, reqs: list[Request], viewer: User) -> list[Request
 def request_out(db: Session, req: Request, viewer: User) -> RequestOut:
     """One Request as seen by `viewer`."""
     return requests_out(db, [req], viewer)[0]
+
+
+# ---- Message -----------------------------------------------------------------
+
+def message_out(msg: Message) -> MessageOut:
+    return MessageOut(
+        id=msg.id,
+        request_id=msg.request_id,
+        sender_id=msg.sender_id,
+        body=msg.body,
+        created_at=iso(msg.created_at),
+    )
