@@ -29,11 +29,13 @@ class Settings(BaseSettings):
     db_password: str = ""
     db_name: str = "loop"
 
+    oci_config_file: str = "~/.oci/config"
     oci_config_profile: str = "DEFAULT"
     oci_region: str = "us-chicago-1"
     oci_compartment_id: str | None = None
     genai_vision_model: str = "cohere.command-a-vision"
     genai_text_model: str = "cohere.command-a-03-2025"
+    scan_timeout: float = 20.0  # seconds POST /scan gives the AI before returning source "none"
 
     media_dir: str = "/home/opc/loop-media"
     public_base_url: str = ""
