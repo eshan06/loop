@@ -42,6 +42,12 @@ None yet.
 
 ## Log
 
+### 2026-10-17 — S-11 done: listings live
+- Done: S-11. Live: `GET /listings` (campus feed: `active` only, own listings included with `is_mine: true`, newest first; filters `share_type`, `category`, `size` exact ignoring case; `q` substring over title, brand, tags, case-insensitive; paged, `limit` over 50 is capped to 50, `limit<1`/`offset<0`/unknown enum → 400), `POST /listings` (201; limits and errors per API.md, `too_many_photos` over 5), `GET /listings/{id}` (any status; hidden → 404 except owner; other campus → 404), `PATCH` (partial; `photo_ids` replaces photos in the given order; 403 not owner; 409 `wrong_status` when completed), `DELETE` (204; cascades requests/chats; freed photos can be reused), `GET /me/listings?status=active|completed` (active = active + pending + hidden). Full Listing object incl. `my_request_*`, `pending_request_count`, `accepted_request_id`, `saved_by_me`, owner `items_shared`.
+- Done: smoke.sh now 171 checks, all pass. Hidden/pending/completed and request-aggregate fields also checked by hand with DB edits (no request endpoints yet).
+- Now: S-10 / S-12.
+- Heads-up: enum values are accepted case-insensitively and stored lowercase; tags are trimmed and de-duplicated. `impact` numbers are PROVISIONAL (`backend/app/impact.py`) until S-17 swaps in the cited table; shape won't change. New migration `003_photo_position.sql` (applied).
+
 ### 2026-10-17 — S-14 done: meetup spots live
 - Done: S-14. `GET /meetup-spots` live: `{"items": [{id, name}]}` for the caller's campus, sorted by name, 401 without token. Every campus has spots: a new campus gets 4 defaults at first login (Campus Center, Main Dining Hall, Main Library entrance, Student Union), and an older campus with none gets them on its first `GET /meetup-spots`. Defaults live in `backend/app/campus.py` (`DEFAULT_MEETUP_SPOTS`, `get_or_create_campus`); `meetup_spot_out` in serializers.py is ready for S-11's Listing.
 - Done: smoke.sh now 71 checks, all pass.
