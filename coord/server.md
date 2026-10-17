@@ -17,6 +17,18 @@ Keep this block current. It's the first thing the iOS lane looks at.
 Every change to `docs/API.md` gets a line here: what changed and whether the iOS lane needs to update anything.
 
 - 2026-10-17: added status 500 with code `server_error` to the error table. Same error shape; iOS just shows `error.message`, no change needed.
+- 2026-10-17 (S-7): new Conventions rules: timestamps always whole seconds with `Z`; nullable keys always present as `null`; arrays never `null`; decode impact numbers as `Double`; any 401 means sign out; other-campus IDs answer 404. iOS: use `.iso8601`, mark the listed fields optional.
+- 2026-10-17 (S-7): new "Photo URLs" section: every URL is absolute (`PUBLIC_BASE_URL` + `/media/<file>`, live: `http://163.192.218.131:8000/media/71.jpg`), opaque, no auth. iOS: load as is, never build URLs.
+- 2026-10-17 (S-7): Paging section lists which endpoints are paged, with a JSON example. iOS: one generic `Page<T>` type.
+- 2026-10-17 (S-7): new 409 codes `own_listing`, `already_requested`, `listing_unavailable`, `wrong_status` (generic `conflict` stays). iOS: branch on `code`; treat unknown codes as the status's generic one.
+- 2026-10-17 (S-7): nullability spelled out for User, Owner, Listing, Request, Notification, ScanDraft. `ScanDraft.tags` is always an array (empty, not `null`). iOS: optionals in models.
+- 2026-10-17 (S-7): Listing gains `is_mine`, `my_request_id`, `pending_request_count`, `accepted_request_id` (additive). iOS: add to model and mocks; use `my_request_id` to open chat from detail, `accepted_request_id` for "mark exchanged" on My listings.
+- 2026-10-17 (S-7): Request's `listing` summary gains `status` (additive). iOS: add to model and mocks.
+- 2026-10-17 (S-7): new endpoints `GET /me/unread` (bell + Requests tab badge counts), `GET /dorms` (dorm picker; empty list means free text), `GET /requests/{id}` (open from a notification, chat refresh). iOS: add mocks.
+- 2026-10-17 (S-7): `GET /me/badges` items gain `progress` and `goal`; badge IDs listed as an enum. iOS: add to model and mocks.
+- 2026-10-17 (S-7): placeholder examples (`{"...": "User object"}`, `{"...": "ScanDraft"}`) replaced with full JSON; new full examples for `source: none` scan, messages list, notifications page, meetup spots, PATCH /me body. iOS: re-copy these mocks.
+- 2026-10-17 (S-7): rules spelled out per endpoint (no change to shapes): success statuses, field length limits for listings and profile, `photo_ids` 1 to 5, `PATCH /listings` replaces photos, DELETE/PATCH on completed listings is 409, `role` required on `/me/requests`, `GET /listings/{id}` works in any status, hidden listings visible to their owner, which events send which notification, email normalization and campus from the last two domain labels. iOS: nothing beyond the above.
+- Contract v1 frozen (2026-10-17). Changes from now on go through the request process in CLAUDE.md.
 
 ## Open requests to the iOS lane
 
@@ -29,6 +41,12 @@ None yet.
 None yet.
 
 ## Log
+
+### 2026-10-17 — S-7 done, contract v1 frozen
+- Done: S-7. No iOS requests were filed, so the server lane reviewed `docs/API.md` against every Tier 1 and Tier 2 screen and the demo path, filled the gaps, and froze v1. Migration `002_dorms.sql` (new `dorms` table) is applied on the server; `/health` OK after deploy.
+- Now: Phase 2, starting with S-8 (auth, `/me`).
+- Contract: 4 new 409 codes; new `GET /me/unread`, `GET /dorms`, `GET /requests/{id}`; Listing adds `is_mine`, `my_request_id`, `pending_request_count`, `accepted_request_id`; Request.listing adds `status`; badges add `progress`/`goal`; nullability, date format, photo URL and paging rules written down. Full list under Contract changes.
+- Heads-up: iOS should copy mock JSON fresh from `docs/API.md` (several examples changed or are new; all 29 JSON blocks parse). No real conflicts with FEATURES.md; where they read differently, API.md wins: the feed's share-type chips are single-select (`share_type` takes one value), profile setup picks the dorm from `GET /dorms` (free text only when that list is empty), and a hidden listing stays visible to its owner under My listings.
 
 ### 2026-10-17 — S-6 done, server half of Sync point A ready
 - Done: S-6. The API runs under systemd as `loop-api` (enabled, `Restart=always`); killing it brings it back in ~2s. `GET http://163.192.218.131:8000/health` → `{"status":"ok"}` from outside. Unit: `scripts/loop-api.service`. Deploy from the Mac: `bash scripts/deploy.sh` (pull, pip, migrate, restart, health check).

@@ -41,7 +41,7 @@ Short, about 30 minutes. Both lanes read `docs/API.md` start to finish.
 - [ ] I-7 Read `docs/API.md` against the screens you're about to build. Put every missing field or awkward shape in `coord/ios.md` as a request.
 
 ### Server lane
-- [ ] S-7 Answer every iOS request, update `docs/API.md`, and write "Contract v1 frozen" under "Contract changes" in `coord/server.md`.
+- [x] S-7 Answer every iOS request, update `docs/API.md`, and write "Contract v1 frozen" under "Contract changes" in `coord/server.md`.
 
 **Sync point B:** contract v1 is frozen. After this, changes go through the request process in `CLAUDE.md`.
 
