@@ -30,6 +30,7 @@ def get_my_impact(user: User = Depends(current_user), db: Session = Depends(get_
     completed. The totals add up both sides' items."""
     rows = db.execute(
         select(Listing.owner_id, Request.requester_id, Listing.category)
+        .select_from(Request)
         .join(Listing, Listing.id == Request.listing_id)
         .where(
             Request.status == "completed",
@@ -52,6 +53,7 @@ def get_campus_impact(
     since = utcnow() - CAMPUS_WINDOW
     rows = db.execute(
         select(Listing.category, User.dorm)
+        .select_from(Request)
         .join(Listing, Listing.id == Request.listing_id)
         .join(User, User.id == Listing.owner_id)
         .where(
