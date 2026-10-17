@@ -359,7 +359,7 @@ Errors: `photo_too_large` (400) over 5 MB, `bad_request` (400) if the file isn't
 `multipart/form-data`:
 
 - `photos`: 1 to 3 JPEG files, 5 MB max each, in the order front, back, label.
-- `kinds`: matching kinds, comma-separated, like `front,back,label`. Must have one kind per photo.
+- `kinds`: matching kinds, comma-separated, like `front,back,label`. Must have one kind per photo. Each is `front`, `back`, `label`, or `other` (not `avatar`).
 - `labels` (optional): words from Apple's on-device Vision framework, comma-separated. Only used by the fallback path.
 
 Returns status 200:

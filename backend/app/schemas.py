@@ -161,3 +161,20 @@ class ListingIn(BaseModel):
     share_type: StrictStr | None = None
     meetup_spot_id: StrictInt | None = None
     photo_ids: list[StrictInt] | None = None
+
+
+class ScanDraftOut(BaseModel):
+    title: str | None
+    category: str | None
+    size: str | None
+    color: str | None
+    brand: str | None
+    condition: str | None
+    description: str | None
+    tags: list[str]
+
+
+class ScanOut(BaseModel):
+    photos: list[PhotoOut]
+    draft: ScanDraftOut
+    source: str
