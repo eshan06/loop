@@ -33,6 +33,7 @@ Every change to `docs/API.md` gets a line here: what changed and whether the iOS
 - 2026-10-17 (S-13): messages rules spelled out (additive, no shape change): `POST /requests/{id}/messages` trims `body`; empty/missing → 400. Sending marks the sender's side read and bumps the Request's `updated_at` (chat moves to the top of `GET /me/requests`); reading doesn't change `updated_at`. iOS: nothing to do.
 - 2026-10-17 (S-15, IOS-2): new "Sizes" section after Enums: the size vocabulary (tops/outerwear/dresses `XS`-`XXL`, bottoms waist `24`-`40` or a letter, shoes `5`-`14` in halves, accessories/bags `One size`). Still free strings, no shape change. `POST /scan` now maps the model's size into it (`Large` → `L`, `W32 L30` → `32`, `US 9 1/2` → `9.5`) and gives accessories/bags with no size `One size` instead of `null`. iOS: nothing to do (matches `SizeVocabulary.swift`).
 - 2026-10-17 (S-17): additive, no shape change. New "Where the impact numbers come from" section (after `GET /impact/campus`) with the citation and the per-category table; `GET /impact/campus` rules spelled out (`items_rehomed` = exchanges completed on my campus in the last 7 days, each item counted once; `top_dorm` = owner dorm with the most, ties alphabetical). Listing `impact` values changed (real numbers now) and `water_l` comes back as e.g. `777.0`. iOS: nothing to do (decode as `Double`).
+- 2026-10-17 (S-18): clarification, no shape change. Saves: re-saving keeps the original save time, you can save your own listing, PUT/DELETE on a listing you can't see is `404 not_found`. iOS: nothing to do.
 
 ## Open requests to the iOS lane
 
@@ -45,6 +46,12 @@ None yet.
 None yet.
 
 ## Log
+
+### 2026-10-17 — S-18 done: saves live
+- Done: S-18. `PUT` and `DELETE /listings/{id}/save` (204, idempotent; re-saving keeps the original save time) and `GET /me/saved` (paged, newest save first, tie-break listing id; any status except `hidden`, so pending/completed items stay with their status) in `app/routers/listings.py`. `saved_by_me` was already filled by the batched serializer (one query per page). Saving your own listing is allowed (API.md only forbids requesting/reporting your own). Not visible (other campus, deleted, someone else's hidden) → 404 `not_found` for PUT and DELETE. Smoke 461 checks, passed twice.
+- Contract: clarification only, no shape change (see Contract changes). iOS: nothing to do.
+- Heads-up: demo reseeded. Jordan has 3 saved items (puffer, wool coat, flannel), Sam 1, Riley 1; seed `--check` now asserts Jordan has 2+.
+- Now: S-19 (similar items).
 
 ### 2026-10-17 — S-17 done: cited impact numbers, /impact/me and /impact/campus live
 - Done: S-17. `backend/app/impact.py` now = typical garment mass x WRAP per-kg footprint, full citation and derivation in its header comment and in API.md "Where the impact numbers come from". Per item: tops 0.11 kg / 777 L / 2.6 kg CO2e, bottoms 0.48 / 3368 / 11.1, dresses 0.48 / 3375 / 11.1, outerwear 0.44 / 3135 / 10.3, accessories 0.04 / 304 / 1.0, shoes = bottoms, bags = outerwear. `GET /impact/me` (both giver and receiver get the item's full impact) and `GET /impact/campus` (last 7 days, `top_dorm` by owner dorm) live in `app/routers/stats.py`. Demo now: Jordan 1 shared, 11.1 kg CO2e; Vanderbilt 10 items, 98.3 kg CO2e, top dorm Kissam. Smoke 413 checks, passed twice.
