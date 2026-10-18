@@ -255,13 +255,13 @@ Work top to bottom. Tier 1 has to work end to end before Tier 2. Mark tasks here
 - [x] W-2 API client: token handling, 401 → sign in, error shape, paging, the `media` helper, types for every object in `docs/API.md`.
 - [x] W-3 Top bar and layout, responsive, unread badges from `/me/unread`.
 - [x] W-4 Landing, sign in, profile setup.
-- [~] W-5 Vercel project connected; first production deploy; check `/scan` and uploads through the proxy.
+- [x] W-5 Vercel project connected; first production deploy; check `/scan` and uploads through the proxy.
 - [x] W-6 Feed: grid, filters in the URL, search, load more, impact banner.
 - [x] W-7 Item detail with every action state.
 - [x] W-8 Post an item: drop zone, resize to JPEG, scan, review form, post.
 - [x] W-9 Inbox: two panes, accept/decline/cancel, chat polling, mark exchanged, celebration.
 - [x] W-10 Profile with Active/Completed listings, edit listing, edit profile.
-- [~] W-11 Run the demo path below on the deployed site.
+- [x] W-11 Run the demo path below on the deployed site.
 - [x] W-12 Saved, hearts everywhere.
 - [x] W-13 Notifications bell and page.
 - [x] W-14 Impact page, badges on the profile.
@@ -320,6 +320,14 @@ Pull requests get their own preview URL automatically, if you ever work on a bra
 - Checked by hand against the live server through the dev proxy, on a throwaway campus (`webtest.edu`, so the demo data was not touched): sign in, profile setup, drag-and-drop photos, `/scan` (about 6 s, `source: vision`), review form with AI marks, post, "Just posted" tag, request, accept, polling for new messages and the unread badges, chat send, mark exchanged, celebration with count-up and the First Swap badge, profile impact and badges. Read-only on the Vanderbilt demo campus: feed, leaderboard, map pins, mobile feed at 390 px.
 - Not done: W-5 (Vercel project and first deploy: needs the account owner), so `/scan` and uploads through Vercel's proxy are still unchecked there. W-11 (demo path on the deployed site) waits on that. W-17 is partly done (skeletons, focus rings, alt text, reduced motion); a pass at tablet widths and the other screens at 390 px is left.
 - Run locally: `cd web && npm install && npm run dev` (proxies `/api` to the server).
+
+### 2026-10-18: Vercel project and preview checked (W-5, W-11)
+- Vercel project `loop-web` (personal Hobby account, id `prj_DN4PiBQFzEPpvYi3ODenqOoq0y1x`): Vite, root `web`, `npm run build`, output `dist`, Node 24.x (20.x is discontinued on Vercel), skip builds when `web/` is unchanged. `web/vercel.json` is unchanged. Vercel Authentication is on, so the preview needs a Vercel login or a bypass secret.
+- **Vercel can proxy to the plain HTTP backend.** Through the preview, `/api/health`, login, `/photos`, `/scan` (5 to 6 s, `source: vision`), `/media`, publish, request, accept, chat, complete, badges and `/style` all worked. No HTTPS change is needed on the server.
+- Same flow driven in the browser on the preview with throwaway users on `webtest.edu`: no console errors, every `/api/*` call 200, no horizontal overflow at 390 px on any route.
+- **Git link is not set up.** The repo is `eshan06/loop`, but the Vercel GitHub app is installed on the `hwangolise` account only, so the project is not connected to the repo and pushes do not deploy by themselves. To get "every push to `main` deploys": the repo owner installs the Vercel GitHub app on `eshan06/loop`, then connects `loop-web` to it under Settings, Git, and sets the production branch to `main`.
+- Deploys made through the API from a Git ref are tagged `production` unless a target is set, so previews were created with `target: staging`. Do not create a deployment from `main` through the API until the link exists.
+- Not covered: Vercel build logs (the connection can't read them) and a real iPhone or Android browser.
 
 ## Requests to the server lane
 
