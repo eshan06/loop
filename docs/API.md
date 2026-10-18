@@ -145,6 +145,7 @@ The feed and the detail screen use the same object.
   "color": "Light wash blue",
   "brand": "Levi's",
   "condition": "good",
+  "condition_note": "light fading at the cuffs",
   "description": "Classic trucker jacket with button front and chest pockets. Light fading at the cuffs.",
   "tags": ["denim", "jacket", "light wash", "vintage"],
   "share_type": "swap",
@@ -167,7 +168,8 @@ The feed and the detail screen use the same object.
 }
 ```
 
-- Nullable: `size`, `color`, `brand`, `description`, `meetup_spot` (if the spot was removed), `my_request_status`, `my_request_id`, `accepted_request_id`.
+- Nullable: `size`, `color`, `brand`, `condition_note`, `description`, `meetup_spot` (if the spot was removed), `my_request_status`, `my_request_id`, `accepted_request_id`.
+- `condition_note` is one short wear observation, like "light fading at the cuffs" (at most 140 characters, no trailing period). It comes from the scan draft or the owner, and is `null` when there's nothing to note. The key is always present.
 - `photos` has at least one photo, in the order they were attached (front, back, label after a scan). Feed cards show `photos[0]`.
 - `impact` holds the estimate for this one item.
 - `is_mine` is `true` when the current user owns the listing. Item detail shows Edit instead of Request.
@@ -178,6 +180,8 @@ The feed and the detail screen use the same object.
 
 What the AI returns from a scan. Every field except `tags` can be `null` if the model couldn't tell. `tags` is always an array, empty if the model gave none. `category` and `condition` are always one of the enum values or `null`.
 
+`condition_note` is one short, specific wear observation the vision model saw in the photos, like "light fading at the cuffs" or "small pill on the left sleeve": at most 140 characters, no trailing period, so it posts as is. It's `null` when the item looks new or the model can't tell (and always `null` when `condition` is `new` or `source` is `labels` or `none`, since labels can't show wear).
+
 ```json
 {
   "title": "Levi's denim trucker jacket",
@@ -186,6 +190,7 @@ What the AI returns from a scan. Every field except `tags` can be `null` if the 
   "color": "Light wash blue",
   "brand": "Levi's",
   "condition": "good",
+  "condition_note": "light fading at the cuffs",
   "description": "Classic trucker jacket with button front and chest pockets. Light fading at the cuffs.",
   "tags": ["denim", "jacket", "light wash", "vintage"]
 }
@@ -391,6 +396,7 @@ Returns status 200:
     "color": "Light wash blue",
     "brand": "Levi's",
     "condition": "good",
+    "condition_note": "light fading at the cuffs",
     "description": "Classic trucker jacket with button front and chest pockets. Light fading at the cuffs.",
     "tags": ["denim", "jacket", "light wash", "vintage"]
   },
@@ -414,6 +420,7 @@ When `source` is `none`, the response looks like this:
     "color": null,
     "brand": null,
     "condition": null,
+    "condition_note": null,
     "description": null,
     "tags": []
   },
@@ -455,6 +462,7 @@ Returns a paged list of Listings with status `active`, newest first. The current
   "color": "Light wash blue",
   "brand": "Levi's",
   "condition": "good",
+  "condition_note": "light fading at the cuffs",
   "description": "Classic trucker jacket with button front and chest pockets.",
   "tags": ["denim", "jacket"],
   "share_type": "swap",
@@ -465,7 +473,7 @@ Returns a paged list of Listings with status `active`, newest first. The current
 
 Required: `title`, `category`, `condition`, `share_type`, `meetup_spot_id`, and at least one ID in `photo_ids`. The rest are optional and can be `null`.
 
-Limits: `title` 1 to 120 characters, `size` 20, `color` 60, `brand` 80, `description` 2000, up to 10 `tags` of up to 30 characters each, and 1 to 5 `photo_ids`. Every photo must have been uploaded by the current user and not already be on another listing. `meetup_spot_id` must be a spot on the user's campus. Breaking any of these is `400 bad_request` (`too_many_photos` for more than 5 photos).
+Limits: `title` 1 to 120 characters, `size` 20, `color` 60, `brand` 80, `condition_note` 140, `description` 2000, up to 10 `tags` of up to 30 characters each, and 1 to 5 `photo_ids`. Every photo must have been uploaded by the current user and not already be on another listing. `meetup_spot_id` must be a spot on the user's campus. Breaking any of these is `400 bad_request` (`too_many_photos` for more than 5 photos). Optional text fields (`size`, `color`, `brand`, `condition_note`, `description`) are trimmed, and an empty string is stored as `null`.
 
 Returns the new Listing with status 201. It starts out `active`.
 

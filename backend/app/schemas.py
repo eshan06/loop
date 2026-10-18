@@ -150,6 +150,7 @@ class ListingOut(BaseModel):
     color: str | None
     brand: str | None
     condition: str
+    condition_note: str | None
     description: str | None
     tags: list[str]
     share_type: str
@@ -178,6 +179,7 @@ class ListingIn(BaseModel):
     color: StrictStr | None = None
     brand: StrictStr | None = None
     condition: StrictStr | None = None
+    condition_note: StrictStr | None = None
     description: StrictStr | None = None
     tags: list[StrictStr] | None = None
     share_type: StrictStr | None = None
@@ -201,6 +203,7 @@ class ScanDraftOut(BaseModel):
     color: str | None
     brand: str | None
     condition: str | None
+    condition_note: str | None
     description: str | None
     tags: list[str]
 

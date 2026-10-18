@@ -131,6 +131,7 @@ class Listing(Base):
     brand: Mapped[str | None] = mapped_column(String(80))
     # `condition` is a MySQL reserved word; quote it explicitly.
     condition: Mapped[str] = mapped_column("condition", String(20), nullable=False, quote=True)
+    condition_note: Mapped[str | None] = mapped_column(String(140))
     description: Mapped[str | None] = mapped_column(Text)
     tags: Mapped[list | None] = mapped_column(JSON)
     share_type: Mapped[str] = mapped_column(String(10), nullable=False)

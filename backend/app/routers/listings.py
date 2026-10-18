@@ -34,7 +34,7 @@ MAX_PHOTOS = 5
 MAX_TAGS = 10
 MAX_TAG_LEN = 30
 # field -> max length, for the optional free-text fields
-TEXT_LIMITS = {"size": 20, "color": 60, "brand": 80, "description": 2000}
+TEXT_LIMITS = {"size": 20, "color": 60, "brand": 80, "condition_note": 140, "description": 2000}
 TITLE_MAX = 120
 SIMILAR_DEFAULT = 6
 SIMILAR_MAX = 20

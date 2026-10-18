@@ -52,14 +52,15 @@ log = logging.getLogger("loop.ai")
 CATEGORIES = ("tops", "bottoms", "outerwear", "dresses", "shoes", "accessories", "bags")
 CONDITIONS = ("new", "like_new", "good", "worn")
 # Same limits as POST /listings in docs/API.md, so a draft always posts as is.
-MAX_LEN = {"title": 120, "size": 20, "color": 60, "brand": 80, "description": 2000}
+MAX_LEN = {"title": 120, "size": 20, "color": 60, "brand": 80, "condition_note": 140,
+           "description": 2000}
 MAX_TAGS, MAX_TAG_LEN = 10, 30
 AI_SIDE = 1024  # photos sent to the model are downscaled to this (faster, same answers)
 MAX_LABELS_CHARS = 600
 
 EMPTY_DRAFT: dict[str, Any] = {
     "title": None, "category": None, "size": None, "color": None,
-    "brand": None, "condition": None, "description": None, "tags": [],
+    "brand": None, "condition": None, "condition_note": None, "description": None, "tags": [],
 }
 
 
@@ -230,6 +231,32 @@ def _clean_str(value: Any, cap: int) -> str | None:
     return text[:cap].rstrip() or None
 
 
+# Replies that mean "no wear to report" rather than an actual observation.
+_NO_WEAR = re.compile(
+    r"^(?:none|no|n/a|nothing|null|looks (?:new|brand new|great|fine|good)|like new|"
+    r"(?:in )?(?:excellent|great|good|perfect|new) condition|"
+    r"no (?:visible |obvious |noticeable |apparent )?(?:wear|flaws?|damage|issues?|defects?|signs of wear)"
+    r"(?: visible| noted| seen)?|nothing (?:notable|to note)|can'?t tell|cannot tell|not visible)"
+    r"[\s.!]*$",
+    re.IGNORECASE,
+)
+
+
+def clean_condition_note(value: Any) -> str | None:
+    """A model's wear note -> one short phrase (<= 140 chars, cut at a word, no
+    trailing period), or None when it's empty or just says there's no wear."""
+    if value is None or isinstance(value, (dict, list, bool)):
+        return None
+    text = " ".join(str(value).split()).strip(" \"'")
+    if text.lower() in _NULLISH or _NO_WEAR.match(text):
+        return None
+    cap = MAX_LEN["condition_note"]
+    if len(text) > cap:
+        cut = text[: cap + 1].rsplit(" ", 1)[0]
+        text = (cut if len(cut) >= cap // 2 else text[:cap]).rstrip(" ,;:-")
+    return text.rstrip(" .") or None
+
+
 def _enum(value: Any, allowed: tuple[str, ...], aliases: dict[str, str]) -> str | None:
     if not isinstance(value, str):
         return None
@@ -247,6 +274,7 @@ class ScanDraft(BaseModel):
     color: str | None = None
     brand: str | None = None
     condition: str | None = None
+    condition_note: str | None = None
     description: str | None = None
     tags: list[str] = []
 
@@ -264,6 +292,11 @@ class ScanDraft(BaseModel):
     @classmethod
     def _condition(cls, value: Any) -> str | None:
         return _enum(value, CONDITIONS, _CONDITION_ALIASES)
+
+    @field_validator("condition_note", mode="before")
+    @classmethod
+    def _condition_note(cls, value: Any) -> str | None:
+        return clean_condition_note(value)
 
     @field_validator("tags", mode="before")
     @classmethod
@@ -283,6 +316,8 @@ class ScanDraft(BaseModel):
     @model_validator(mode="after")
     def _size_vocabulary(self) -> ScanDraft:
         self.size = normalize_size(self.size, self.category)
+        if self.condition == "new":
+            self.condition_note = None  # a new item has no wear to note
         return self
 
 
@@ -296,11 +331,25 @@ def parse_draft(reply: str) -> dict[str, Any]:
 
 # --------------------------------------------------------------------------- scan
 
-_SCHEMA_HINT = (
-    "Reply with ONLY one JSON object, no markdown and no other text, with exactly these keys:\n"
-    '{"title": string, "category": string, "size": string, "color": string, '
-    '"brand": string, "condition": string, "description": string, "tags": [string]}\n'
-    "Rules:\n"
+
+def _schema_hint(vision: bool) -> str:
+    note_key = '"condition_note": string, ' if vision else ""
+    note_rule = (
+        "- condition_note: ONE short, honest, specific wear observation a buyer would want "
+        "to know, as a lowercase phrase under 80 characters with no period, e.g. "
+        "\"light fading at the cuffs\" or \"small pill on the left sleeve\". Only describe "
+        "wear you can actually see in the photos; never invent flaws. null if the item "
+        "looks new or you can't tell.\n"
+    ) if vision else ""
+    return (
+        "Reply with ONLY one JSON object, no markdown and no other text, with exactly these keys:\n"
+        '{"title": string, "category": string, "size": string, "color": string, '
+        f'"brand": string, "condition": string, {note_key}"description": string, "tags": [string]}}\n'
+        "Rules:\n" + _RULES + note_rule + _RULES_END
+    )
+
+
+_RULES = (
     "- title: short and catchy for a student marketplace, at most 60 characters, "
     "e.g. \"Vintage Levi's denim trucker jacket\". Include the brand if you know it.\n"
     f"- category: exactly one of {', '.join(CATEGORIES)} "
@@ -315,8 +364,8 @@ _SCHEMA_HINT = (
     "- brand: only if a logo or label shows it, else null.\n"
     "- description: one or two friendly sentences about style, material and fit.\n"
     "- tags: 3 to 6 short lowercase tags (style, material, type, color).\n"
-    "Use null for anything you can't tell. Don't invent details."
 )
+_RULES_END = "Use null for anything you can't tell. Don't invent details."
 
 
 def _vision_prompt(kinds: list[str]) -> str:
@@ -324,7 +373,7 @@ def _vision_prompt(kinds: list[str]) -> str:
     return (
         "You write listings for Loop, an app where college students swap and give away "
         f"clothes. The attached photos show ONE clothing item ({order}, in that order; "
-        "a label photo shows its tag). Describe the item.\n" + _SCHEMA_HINT
+        "a label photo shows its tag). Describe the item.\n" + _schema_hint(vision=True)
     )
 
 
@@ -334,7 +383,7 @@ def _labels_prompt(labels: str) -> str:
         "clothes. A phone's on-device image classifier looked at ONE clothing item and "
         "produced these labels and text read off its tag (they may be noisy):\n"
         f"{labels}\n"
-        "Describe the item from these labels only.\n" + _SCHEMA_HINT
+        "Describe the item from these labels only.\n" + _schema_hint(vision=False)
     )
 
 
@@ -378,6 +427,7 @@ def _pipeline(jpegs: list[bytes], kinds: list[str], labels: str,
         start = time.monotonic()
         try:
             draft = parse_draft(text_chat(_labels_prompt(labels)))
+            draft["condition_note"] = None  # labels can't show wear
             log.info("scan: labels ok in %.1fs", time.monotonic() - start)
             return draft, "labels"
         except Exception as exc:  # noqa: BLE001

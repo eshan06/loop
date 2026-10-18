@@ -180,6 +180,7 @@ def listings_out(db: Session, listings: list[Listing], viewer: User) -> list[Lis
                 color=lst.color,
                 brand=lst.brand,
                 condition=lst.condition,
+                condition_note=lst.condition_note,
                 description=lst.description,
                 tags=list(lst.tags or []),
                 share_type=lst.share_type,
