@@ -1,5 +1,5 @@
 {
-  "_about": "Seed listings for the Vanderbilt demo campus (backend/seed/seed.py). Each listing names its photo files in this folder, in order (first = feed card, kind front; then back, label, other). To swap in real photos: drop the new JPEGs here, point each listing's `photos` at them, edit the text fields to match, update ATTRIBUTION.md, and rerun the seed. `owner` is the part of a seed account's email before @vanderbilt.edu (see USERS in seed.py). `hours_ago` is when the listing was posted, relative to the moment the seed runs. Sizes follow the IOS-2 vocabulary in docs/API.md.",
+  "_about": "Seed listings for the Vanderbilt demo campus (backend/seed/seed.py). Each listing names its photo files in this folder, in order (first = feed card, kind front; then back, label, other). To swap in real photos, follow README.md in this folder. `owner` is the part of a seed account's email before @vanderbilt.edu (see USERS in seed.py). `hours_ago` is when the listing was posted, relative to the moment the seed runs. Sizes follow the IOS-2 vocabulary in docs/API.md.",
   "listings": [
     {
       "key": "quarterzip",
@@ -478,7 +478,7 @@
     {
       "key": "hoodie",
       "photos": ["hoodie.jpg"],
-      "owner": "noah.kim",
+      "owner": "jordan.park",
       "title": "Camo pullover hoodie",
       "category": "tops",
       "size": "L",
@@ -608,7 +608,7 @@
     {
       "key": "scarf",
       "photos": ["scarf.jpg"],
-      "owner": "leo.rossi",
+      "owner": "jordan.park",
       "title": "Ralph Lauren camel wool scarf",
       "category": "accessories",
       "size": "One size",

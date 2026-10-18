@@ -3,10 +3,13 @@
 Run on the server, from backend/:
 
     .venv/bin/python -m seed.seed            # wipe vanderbilt.edu and rebuild it
-    .venv/bin/python -m seed.reset           # same thing (the S-25 "reset" command)
-    .venv/bin/python -m seed.seed --check    # validate manifest + activity, touch nothing
+    .venv/bin/python -m seed.seed --check    # validate manifest, photos, activity and the
+                                             # demo story; touch nothing
+    .venv/bin/python -m seed.reset           # the pre-demo command: this reseed, plus
+                                             # deleting smoke data and orphan uploads (S-25)
 
-or from the Mac: `bash scripts/reseed.sh`.
+or from the Mac: `bash scripts/reseed.sh` (seed.reset). Swapping in real photos:
+seed/photos/README.md. The demo story the data is tuned for: DEMO_PHONE_1 below.
 
 Idempotent: every run puts vanderbilt.edu back into the same state, with timestamps
 relative to "now" so the demo always looks fresh. Other campuses (smoke.edu, ...)
@@ -61,7 +64,7 @@ from app.models import (
     Request, Save, User, utcnow,
 )
 from app.routers.campus_life import EVENT_KINDS
-from app.photos import MAX_SIDE, normalize_jpeg
+from app.photos import MAX_BYTES, MAX_SIDE, normalize_jpeg
 from app.style import basis as style_basis
 from app.style import validate_ideas
 
@@ -95,6 +98,27 @@ USERS: dict[str, tuple] = {
 }
 DEMO_ACCOUNTS = tuple(f"{k}@{DOMAIN}" for k in list(USERS)[:3])
 
+# ---- The live demo (docs/FEATURES.md "Demo path", S-25) ----
+# Phone 1 posts the scanned jacket and gives it to Phone 2. The seed is tuned so that run
+# shows wins (check_demo asserts all of it):
+# - Phone 1 has listed 9 items (6 visible + EARLIER_LISTINGS), so posting the jacket earns
+#   Closet Cleanout (step 3), and has no completed exchange yet, so marking it done earns
+#   First Swap (step 6). Phone 2 has none either, so it earns First Swap too.
+# - Phone 1's dorm (Kissam) is tied for #1 on the dorm leaderboard with a dorm that sorts
+#   first (E. Bronson Ingram, so the feed banner's top dorm is EBI); the jacket exchange
+#   counts for the owner's dorm, so Kissam becomes the clear #1 and the banner flips.
+# - No request between the two phones, so their only chat is the one the demo creates.
+# - Only a couple of active listings match "jacket", so the new one tops the search.
+DEMO_PHONE_1 = "jordan.park"
+DEMO_PHONE_2 = "sam.lee"
+DEMO_SEARCH = "jacket"
+# Listings made before and since deleted: they count toward Closet Cleanout
+# (users.listings_created) but have no row.
+EARLIER_LISTINGS: dict[str, int] = {"jordan.park": 3}
+# Completed exchanges must be newer than this many hours so the leaderboard tie holds
+# for a day after a reseed (the board and campus impact count the last 7 days = 168 h).
+BOARD_FRESH_H = 144
+
 # Requests. Times are hours before the seed runs. `events` sets the status:
 #   pending:   no events
 #   accepted:  accepted_h
@@ -104,14 +128,14 @@ DEMO_ACCOUNTS = tuple(f"{k}@{DOMAIN}" for k in list(USERS)[:3])
 # default all of them. A sender has always read their own messages up to the one
 # they sent, so markers are given explicitly only where something is unread.
 REQUESTS: list[dict] = [
-    # --- Jordan (demo): an active chat with Sam on Jordan's pullover, Jordan has 1 unread.
-    {"listing": "quarterzip", "requester": "sam.lee", "created_h": 30, "accepted_h": 26,
-     "note": "Would you swap for my Breton striped top? Happy to throw in a coffee too.",
+    # --- Jordan (Phone 1): an active chat with Marcus on Jordan's pullover, 1 unread.
+    {"listing": "quarterzip", "requester": "marcus.williams", "created_h": 30, "accepted_h": 26,
+     "note": "Would you swap for my olive cargo pants? Happy to throw in a coffee too.",
      "messages": [
-         ("owner", 25.5, "Hey Sam! Yes, happy to swap. What size is the Breton?"),
-         ("requester", 25, "It's an S but it runs roomy. Commons Center tomorrow?"),
+         ("owner", 25.5, "Hey Marcus! Yes, happy to swap. What size are the cargos?"),
+         ("requester", 25, "34 but they have a drawstring. Commons Center tomorrow?"),
          ("owner", 24.5, "Works for me. 4pm?"),
-         ("requester", 0.4, "Perfect, see you at 4! I'll bring the Breton."),
+         ("requester", 0.4, "Perfect, see you at 4! I'll bring the cargos."),
      ],
      "owner_read": 3},
     # --- Jordan asked Riley for the Docs; Riley accepted, chat all read.
@@ -122,41 +146,41 @@ REQUESTS: list[dict] = [
          ("requester", 44, "Amazing, thank you!! Rand at noon on Friday?"),
          ("owner", 43, "See you at Rand Friday at noon."),
      ]},
-    # --- Pending: three on Jordan's listings (incoming), one on Sam's.
+    # --- Pending: two on Jordan's sneakers (incoming), one on Sam's dress, Sam's on a skirt.
     {"listing": "converse", "requester": "riley.chen", "created_h": 5,
      "note": "Are these still available? I'm a 9 too!"},
     {"listing": "converse", "requester": "ethan.brooks", "created_h": 2,
      "note": "Would you swap for my black puffer? It's an L."},
-    {"listing": "cap", "requester": "maya.johnson", "created_h": 9,
-     "note": "Love this cap! I can pick it up anytime this week."},
     {"listing": "sundress", "requester": "ava.thompson", "created_h": 3,
      "note": "This is so cute. Would you take my denim overall dress in a swap?"},
-    # --- Completed over the last 7 days: 10 different owners (impact, leaderboard).
-    {"listing": "maxidress", "requester": "olivia.martinez", "created_h": 170,
-     "accepted_h": 168, "completed_h": 158, "note": "Obsessed with this dress!",
-     "messages": [("owner", 167, "Yay! Alumni Lawn after my 2pm?"),
-                  ("requester", 166.5, "Perfect, see you there.")]},
-    {"listing": "jeans", "requester": "noah.kim", "created_h": 150, "accepted_h": 148,
-     "completed_h": 140, "note": "I'm a 30 too. Could swap for a hoodie?"},
+    {"listing": "skirt", "requester": "sam.lee", "created_h": 5,
+     "note": "Is this still available? It would be perfect for formal!"},
+    # --- Completed over the last 6 days: impact, leaderboard (EBI 2, Kissam 2, six on 1).
+    {"listing": "maxidress", "requester": "olivia.martinez", "created_h": 140,
+     "accepted_h": 138, "completed_h": 128, "note": "Obsessed with this dress!",
+     "messages": [("owner", 137, "Yay! Alumni Lawn after my 2pm?"),
+                  ("requester", 136.5, "Perfect, see you there.")]},
     {"listing": "leather", "requester": "priya.nair", "created_h": 130, "accepted_h": 128,
      "completed_h": 118, "note": "I've been looking for a jacket like this forever.",
      "messages": [("owner", 127, "It's yours! Commons at 6?"),
                   ("requester", 126, "See you at 6, thank you!")]},
     {"listing": "hiking", "requester": "leo.rossi", "created_h": 105, "accepted_h": 104,
      "completed_h": 96, "note": "Perfect for my Radnor Lake trips!"},
+    {"listing": "fleece", "requester": "ava.thompson", "created_h": 100, "accepted_h": 98,
+     "completed_h": 88, "note": "Is this still up for grabs? My room is freezing.",
+     "messages": [("owner", 97, "It is! Campus Center around 5?"),
+                  ("requester", 96.5, "See you there, thank you Riley!")]},
     {"listing": "duffel", "requester": "ethan.brooks", "created_h": 92, "accepted_h": 90,
      "completed_h": 84, "note": "Going home for fall break, this would be perfect."},
-    {"listing": "trackpants", "requester": "riley.chen", "created_h": 80, "accepted_h": 78,
-     "completed_h": 72, "note": "Need these for intramurals!",
-     "messages": [("owner", 77, "They're yours. Student Union around 1?"),
-                  ("requester", 76.5, "Great, thanks Sam!")]},
     {"listing": "chinos", "requester": "marcus.williams", "created_h": 66, "accepted_h": 64,
      "completed_h": 58, "note": "Need khakis for career fair next week."},
     {"listing": "shorts", "requester": "ava.thompson", "created_h": 54, "accepted_h": 52,
      "completed_h": 46, "note": "These are adorable, can I grab them?"},
+    {"listing": "dressshirt", "requester": "noah.kim", "created_h": 40, "accepted_h": 38,
+     "completed_h": 30, "note": "Need a dress shirt for a formal this weekend!"},
     {"listing": "raincoat", "requester": "maya.johnson", "created_h": 34, "accepted_h": 33,
      "completed_h": 22, "note": "I don't own a rain jacket and it's been pouring."},
-    {"listing": "belt", "requester": "sam.lee", "created_h": 20, "accepted_h": 19,
+    {"listing": "belt", "requester": "olivia.martinez", "created_h": 20, "accepted_h": 19,
      "completed_h": 14, "note": "Exactly what I needed for my interview outfit!"},
 ]
 
@@ -307,7 +331,52 @@ def load_manifest() -> list[dict]:
         assert 1 <= len(item["title"]) <= 120, f"{where}: title length"
         assert len(item["tags"]) <= 10 and all(len(t) <= 30 for t in item["tags"]), f"{where}: tags"
         assert item["hours_ago"] > 0, f"{where}: hours_ago must be > 0"
+        assert item.get("size") is None or item["size"] in SIZES[item["category"]], \
+            f"{where}: size {item.get('size')!r} isn't in the docs/API.md vocabulary for {item['category']}"
+        assert len(item.get("description") or "") <= 2000, f"{where}: description too long"
     return listings
+
+
+# docs/API.md "Sizes": the vocabulary per category.
+_LETTERS = ("XS", "S", "M", "L", "XL", "XXL")
+SIZES: dict[str, set[str]] = {
+    **{c: set(_LETTERS) for c in ("tops", "outerwear", "dresses")},
+    "bottoms": {str(n) for n in range(24, 41)} | set(_LETTERS),
+    "shoes": {f"{h / 2:g}" for h in range(10, 29)},
+    **{c: {"One size"} for c in ("accessories", "bags")},
+}
+PHOTO_TYPES = (".jpg", ".jpeg")
+
+
+def check_photos(listings: list[dict]) -> dict[str, int]:
+    """Every listing has 1-5 photos, every named file exists, is a readable JPEG of at most
+    MAX_BYTES (the API's upload limit); files larger than MAX_SIDE px are fine (the seed
+    downscales them) but are counted. Returns counts; prints files no listing uses."""
+    used: set[str] = set()
+    big = 0
+    for item in listings:
+        for name in item["photos"]:
+            path = PHOTOS_DIR / name
+            where = f"manifest listing {item['key']!r}: photo {name}"
+            assert path.suffix.lower() in PHOTO_TYPES and "/" not in name, f"{where}: must be a .jpg in seed/photos/"
+            assert path.is_file(), f"{where}: file missing"
+            size = path.stat().st_size
+            assert 0 < size <= MAX_BYTES, f"{where}: {size} bytes, limit {MAX_BYTES} (5 MB)"
+            try:
+                with Image.open(path) as img:
+                    fmt, dims = img.format, img.size
+                    img.verify()
+            except Exception as exc:  # noqa: BLE001
+                raise AssertionError(f"{where}: can't read it as an image ({exc})") from exc
+            assert fmt == "JPEG", f"{where}: is {fmt}, must be JPEG"
+            assert min(dims) >= 300, f"{where}: {dims[0]}x{dims[1]} is too small (300 px minimum)"
+            big += max(dims) > MAX_SIDE
+            used.add(name)
+    files = {p.name for p in PHOTOS_DIR.iterdir() if p.suffix.lower() in PHOTO_TYPES}
+    unused = sorted(files - used)
+    if unused:
+        print(f"  photos no listing uses (fine, but delete them if they're leftovers): {', '.join(unused)}")
+    return {"photos": len(used), "downscaled": big, "unused": len(unused)}
 
 
 def item_basis(item: dict) -> str:
@@ -365,14 +434,76 @@ def check_activity(listings: list[dict]) -> dict[str, str]:
         assert 0 < hours < by_key[key]["hours_ago"], f"save of {key} before it was posted"
     unread = expected_unread(by_key)
     assert 2 <= unread.get("jordan.park", 0) <= 4, f"Jordan should have 2-4 unread notifications: {unread}"
-    progress = expected_badges(by_key)["jordan.park"]
-    goals = {r.id: r.goal for r in badges.RULES}
-    assert any(n >= goals[b] for b, n in progress.items()), f"Jordan needs an earned badge: {progress}"
-    assert any(0 < n < goals[b] for b, n in progress.items()), f"Jordan needs a badge in progress: {progress}"
     pairs = [(u, k) for u, k, _ in SAVES]
     assert len(pairs) == len(set(pairs)), "duplicate save"
     assert sum(u == "jordan.park" for u, _ in pairs) >= 2, "Jordan's Saved tab needs 2+ items"
+    check_demo(by_key, status)
     return status
+
+
+def expected_board(by_key: dict[str, dict], extra: str | None = None) -> dict[str, int]:
+    """dorm -> exchanges completed in the last 7 days, by the listing owner's dorm (as
+    app/routers/stats.py dorm_board counts them), plus one for `extra`'s dorm."""
+    board: dict[str, int] = {}
+    owners = [by_key[r["listing"]]["owner"] for r in REQUESTS
+              if request_status(r) == "completed" and r["completed_h"] < 168]
+    for owner in owners + ([extra] if extra else []):
+        dorm = USERS[owner][1]
+        board[dorm] = board.get(dorm, 0) + 1
+    return board
+
+
+def board_order(board: dict[str, int]) -> list[tuple[str, int]]:
+    """Leaderboard order: most first, ties by name (dorm_board's sort)."""
+    return sorted(board.items(), key=lambda kv: (-kv[1], kv[0].casefold(), kv[0]))
+
+
+def check_demo(by_key: dict[str, dict], status: dict[str, str]) -> None:
+    """The live demo shows its wins (see DEMO_PHONE_1 above)."""
+    p1, p2 = DEMO_PHONE_1, DEMO_PHONE_2
+    goals = {r.id: r.goal for r in badges.RULES}
+    progress = expected_badges(by_key)
+    assert progress[p1]["closet_cleanout"] == goals["closet_cleanout"] - 1, \
+        f"Phone 1 must be one listing from Closet Cleanout: {progress[p1]}"
+    assert progress[p1]["first_swap"] == 0, f"Phone 1 must have no completed exchange: {progress[p1]}"
+    assert progress[p2]["first_swap"] == 0, f"Phone 2 must have no completed exchange: {progress[p2]}"
+    assert any(0 < n < goals[b] for b, n in progress[p1].items()), "Phone 1 needs a badge in progress"
+    for r in REQUESTS:
+        pair = {by_key[r["listing"]]["owner"], r["requester"]}
+        assert pair != {p1, p2}, f"{r['listing']}: no request between the demo phones"
+    assert all(r["completed_h"] <= BOARD_FRESH_H for r in REQUESTS if "completed_h" in r), \
+        f"completed exchanges must be within {BOARD_FRESH_H} h so the board holds for a day"
+    dorm = USERS[p1][1]
+    before, after = board_order(expected_board(by_key)), board_order(expected_board(by_key, p1))
+    top = before[0][1]
+    assert dict(before).get(dorm) == top, f"{dorm} must be tied for #1 before the demo: {before}"
+    assert sum(n == top for _, n in before) == 2, f"exactly two dorms tied for #1: {before}"
+    assert before[0][0] != dorm, f"the tied rival must sort before {dorm} (banner flips): {before}"
+    assert after[0] == (dorm, top + 1) and after[1][1] == top, f"{dorm} must be the clear #1 after: {after}"
+    hits = [k for k, item in by_key.items() if status[k] == "active" and any(
+        DEMO_SEARCH in (f or "").lower() for f in (item["title"], item.get("brand"), *item["tags"]))]
+    assert len(hits) <= 3, f"too many active {DEMO_SEARCH!r} listings for the demo search: {hits}"
+
+
+def demo_story(listings: list[dict], status: dict[str, str]) -> list[str]:
+    """What the live demo should show, for the reseed summary and the --check output."""
+    by_key = {item["key"]: item for item in listings}
+    p1, p2 = DEMO_PHONE_1, DEMO_PHONE_2
+    prog = expected_badges(by_key)
+    goals = {r.id: r.goal for r in badges.RULES}
+    fmt = lambda b: ", ".join(f"{d} {n}" for d, n in b)  # noqa: E731
+    before, after = board_order(expected_board(by_key)), board_order(expected_board(by_key, p1))
+    hits = sorted(k for k, item in by_key.items() if status[k] == "active" and any(
+        DEMO_SEARCH in (f or "").lower() for f in (item["title"], item.get("brand"), *item["tags"])))
+    return [
+        f"Phone 1 = {p1}@{DOMAIN} ({USERS[p1][1]}), Phone 2 = {p2}@{DOMAIN} ({USERS[p2][1]})",
+        f"step 3 post: Phone 1 Closet Cleanout {prog[p1]['closet_cleanout']}/{goals['closet_cleanout']} -> earned",
+        f"step 6 done: First Swap earned by Phone 1 ({prog[p1]['first_swap']}/1) and Phone 2 ({prog[p2]['first_swap']}/1)",
+        f"leaderboard now: {fmt(before[:3])}, ...  after: {fmt(after[:3])}, ...",
+        f"campus banner: {sum(dict(before).values())} items rehomed, top dorm {before[0][0]}"
+        f" -> {sum(dict(after).values())}, top dorm {after[0][0]}",
+        f"search {DEMO_SEARCH!r}: {len(hits)} active seed listings ({', '.join(hits)}) under the new one",
+    ]
 
 
 def expected_unread(by_key: dict[str, dict]) -> dict[str, int]:
@@ -395,6 +526,8 @@ def expected_unread(by_key: dict[str, dict]) -> dict[str, int]:
 def expected_badges(by_key: dict[str, dict]) -> dict[str, dict[str, int]]:
     """user -> badge id -> progress the seeded activity gives (mirrors app/badges.py)."""
     out = {u: {r.id: 0 for r in badges.RULES} for u in USERS}
+    for user, n in EARLIER_LISTINGS.items():
+        out[user]["closet_cleanout"] += n
     for item in by_key.values():
         out[item["owner"]]["closet_cleanout"] += 1
     for r in REQUESTS:
@@ -505,7 +638,8 @@ def build(db: Session, campus: Campus, listings: list[dict], status: dict[str, s
         user.name, user.dorm, user.class_year = name, dorm, year
         user.size_top, user.size_bottom, user.size_shoe = top, bottom, shoe
         user.avatar_photo_id = None
-        user.listings_created = sum(item["owner"] == key for item in listings)
+        user.listings_created = (sum(item["owner"] == key for item in listings)
+                                 + EARLIER_LISTINGS.get(key, 0))
         user.created_at = ago(24 * days)
         db.add(user)
         users[key] = user
@@ -638,7 +772,12 @@ def run(check_only: bool = False) -> int:
           f"{len(REQUESTS)} requests, {len(SAVES)} saves, "
           f"{len(style)}/{len(listings)} with style ideas")
     print(f"unread notifications expected: {expected_unread({i['key']: i for i in listings})}")
-    print(f"badges expected for jordan.park: {expected_badges({i['key']: i for i in listings})['jordan.park']}")
+    photos = check_photos(listings)
+    print(f"photos ok: {photos['photos']} files exist, JPEG, <= {MAX_BYTES // 2**20} MB "
+          f"({photos['downscaled']} over {MAX_SIDE} px get downscaled), {photos['unused']} unused")
+    print("demo story:")
+    for line in demo_story(listings, status):
+        print(f"  {line}")
     places = check_places(utcnow())
     print(f"map ok: {len(SPOT_COORDS)} spots with coordinates, {len(DONATION_BINS)} bins; "
           f"events {places}")
