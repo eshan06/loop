@@ -55,6 +55,7 @@
 		957C1EE600E520ED65FE48ED /* CameraController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 66FA52AAC17D2D225E17DD41 /* CameraController.swift */; };
 		9A0C7A3B788229C5B786EE3A /* badges.json in Resources */ = {isa = PBXBuildFile; fileRef = 449DB97E83799E865B5AFBB6 /* badges.json */; };
 		9C43A8DD46A0F5B4DE12EDC7 /* login.json in Resources */ = {isa = PBXBuildFile; fileRef = 0853627A170E1527A3AF7AB8 /* login.json */; };
+		9F1B850FD007B35681AAF4A6 /* LiveE2ETests.swift in Sources */ = {isa = PBXBuildFile; fileRef = BDFE02427A31E3A88C35FD85 /* LiveE2ETests.swift */; };
 		A134E4A78CC2336366EEAFA4 /* ProfileSetupView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 10527459891DB0A7B92C5F2B /* ProfileSetupView.swift */; };
 		A6B20B7AD41EAE3FE14A1ECD /* style.json in Resources */ = {isa = PBXBuildFile; fileRef = 488D24699123BF2CE1924087 /* style.json */; };
 		A944B5F68804590FDFAF051D /* messages.json in Resources */ = {isa = PBXBuildFile; fileRef = 7B1A760C58FEC0015B27F98D /* messages.json */; };
@@ -154,6 +155,7 @@
 		BB4D1935F1F8A7F28F27A0B7 /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
 		BBD094C16B736760E1883080 /* DemoAccounts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DemoAccounts.swift; sourceTree = "<group>"; };
 		BC26C81F6B11FC52201E9464 /* LoopMark.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoopMark.swift; sourceTree = "<group>"; };
+		BDFE02427A31E3A88C35FD85 /* LiveE2ETests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveE2ETests.swift; sourceTree = "<group>"; };
 		C61F61CD8E54D74C65D8CFA3 /* LiveAPIClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveAPIClient.swift; sourceTree = "<group>"; };
 		C77E0951FC97DAECC7DB2BBE /* NotificationStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationStore.swift; sourceTree = "<group>"; };
 		CA657A304798A996D878BAF8 /* LoopUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoopUITests.swift; sourceTree = "<group>"; };
@@ -192,6 +194,7 @@
 		171F06943E0F8B5C819DF02F /* LoopUITests */ = {
 			isa = PBXGroup;
 			children = (
+				BDFE02427A31E3A88C35FD85 /* LiveE2ETests.swift */,
 				CA657A304798A996D878BAF8 /* LoopUITests.swift */,
 			);
 			path = LoopUITests;
@@ -582,6 +585,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				9F1B850FD007B35681AAF4A6 /* LiveE2ETests.swift in Sources */,
 				7A6A7B9BCD8CDA758581528F /* LoopUITests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

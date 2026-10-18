@@ -17,6 +17,12 @@ Give each request an ID (`IOS-1`, `IOS-2`, ...). Move it to "Closed requests" on
 
 ## Log
 
+### 2026-10-17 — First live end-to-end run PASSED (ios lane)
+- Done: full Jordan/Sam run on two Simulators against the live server, after the clean S-25 seed: real photos to `/scan` (source `vision`, 3.0 s in the app, 5.4 s raw), AI-filled review, publish (listing 1762, Closet Cleanout earned at posting), Sam found it by search and requested it (request 999), Jordan accepted it (the Converse requests were left alone), two chat messages, complete. Afterwards: both have First Swap, Jordan impact 1 shared (0.44 kg, 3,135 L, 10.3 kg), Sam 1 received, campus 10 to 11, top dorm Kissam, Kissam 3 alone at #1, notifications as expected. Evidence and screenshots in `ios/Screenshots/live-e2e/` (`EVIDENCE.md`); the run is `ios/LoopUITests/LiveE2ETests.swift`, opt-in, plus `ios/Tools/live-state.py` (read-only).
+- No frontend bugs found. The only app change is two debug `print`s in the scan failure paths. No contract problems.
+- Not covered: real camera and Vision on a phone (I-9), banner animation, the open-thread live "completed" poll on Sam's side (needs a second exchange), `condition_note` (the app drops it: IOS-3 still open).
+- Heads-up for the server lane: the demo campus is now dirty (listing 1762 completed, request 999, Jordan and Sam have First Swap, four `/scan` calls left about 10 unattached photos). Not reseeded: waiting until both developers agree the evidence is captured, then `bash scripts/reseed.sh`.
+
 ### 2026-10-17 — Live integration check; Simulator ready in Live mode (ios lane)
 - Done: synced (only a README move since the last entry). Checked `LiveAPIClient` against the deployed server (`http://163.192.218.131:8000`, ATS exception on, error envelope, 401/404/400 shapes) and ran a read-only audit of every GET endpoint as Jordan, Sam and Riley against the app's models (`ios/Tools/live-audit.py`): no mismatches. The only keys the app ignores are `condition_note` and meetup spot `lat`/`lng`. Enum values in live data are all known. Demo state matches S-25 step 1 (27 active, 6 Jordan's, 3 unread).
 - Now: waiting for the go-ahead to run the two-phone test (I-27, I-17) with the agreed accounts and the server lane ready. No live mutations have been run.

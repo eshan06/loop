@@ -73,7 +73,7 @@ The iOS lane builds against mocks, and the server lane builds the real endpoints
 **Sync point C, integration:** the iOS lane turns mocks off. Both lanes walk the demo path in `docs/FEATURES.md` on a real phone. Each lane logs what broke on its side as tasks below.
 
 ### Integration fixes
-- [ ] I-17 Fix whatever the iOS side of the integration run turns up.
+- [~] I-17 Fix whatever the iOS side of the integration run turns up. (Simulator run passed with nothing to fix; two real phones still to do.)
 - [ ] S-16 Fix whatever the server side of the integration run turns up.
 
 ## Phase 3: Tier 2, in parallel pairs

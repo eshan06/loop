@@ -58,6 +58,7 @@ final class ReviewModel {
             photoIDs = result.photos.map(\.id)
             withAnimation(.smooth(duration: 0.35)) {
                 if result.source == .none {
+                    print("Scan returned source none for \(jpegs.count) photos")
                     scanState = .failed
                 } else {
                     // On a retry, keep whatever the user already typed.
@@ -67,6 +68,7 @@ final class ReviewModel {
             }
         } catch {
             guard !error.isCancellation else { return }
+            print("Scan request failed: \(error)")
             withAnimation(.smooth) { scanState = .failed }
         }
     }
