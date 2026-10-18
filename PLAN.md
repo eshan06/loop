@@ -107,7 +107,7 @@ Each feature has an iOS half and a server half. The server lane ships the endpoi
 - [ ] I-27 Install on two phones logged in as two demo accounts.
 
 ### Server lane
-- [ ] S-25 Reseed with the best photos, and reset script so the demo starts from a clean state.
+- [x] S-25 Reseed with the best photos, and reset script so the demo starts from a clean state. (placeholder photos until the team's real photos are added)
 - [ ] S-26 Back up the database and record a screen capture of the full demo in case the network fails.
 
 **Final sync:** both lanes rehearse the demo path twice, start to finish, on the real server.

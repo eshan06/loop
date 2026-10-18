@@ -8,9 +8,24 @@ Add new log entries at the top of the Log section, newest first. Keep each entry
 
 - API base URL: `http://163.192.218.131:8000` — LIVE (systemd `loop-api`, restarts itself on crash and on boot). Plain HTTP, so the iOS app needs the ATS exception (Allow Arbitrary Loads). `GET /health` → `{"status":"ok"}`.
 - Vision model (`cohere.command-a-vision`) available on our account: YES, tested 2026-10-17 from the OCI server, ~1-2s per call (1 or 2 JPEGs) → main scan path. `POST /scan` live: ~3-4.5 s end to end (1-3 photos). `labels` is only needed for the fallback.
-- Demo accounts: SEEDED (S-15) on campus Vanderbilt (`vanderbilt.edu`): `jordan.park@vanderbilt.edu` (Jordan Park, Kissam), `sam.lee@vanderbilt.edu` (Sam Lee, Zeppos), `riley.chen@vanderbilt.edu` (Riley Chen, E. Bronson Ingram). Log in with the email only. Plus 8 more students, 39 listings, requests and chats. Reset to the clean demo state anytime: `bash scripts/reseed.sh` (keeps these three accounts' ids and sessions).
+- Demo accounts: SEEDED (S-15) on campus Vanderbilt (`vanderbilt.edu`): `jordan.park@vanderbilt.edu` (Jordan Park, Kissam), `sam.lee@vanderbilt.edu` (Sam Lee, Zeppos), `riley.chen@vanderbilt.edu` (Riley Chen, E. Bronson Ingram). Log in with the email only. Plus 8 more students, 39 listings, requests and chats. Reset to the clean demo state anytime: `bash scripts/reseed.sh` (keeps these three accounts' ids and sessions). Demo pairing (S-25): Jordan = Phone 1, Sam = Phone 2 (see "Before the demo").
+- Seed photos: PLACEHOLDERS (Wikimedia Commons) until the team adds its own; how to swap them: `backend/seed/photos/README.md`.
 
 Keep this block current. It's the first thing the iOS lane looks at.
+
+## Before the demo
+
+1. Within the last few hours before going on stage (and after every rehearsal): `bash scripts/reseed.sh` from the Mac. It reseeds Vanderbilt, deletes the smoke test's data (smoke.edu, smokeother.edu) and orphan uploads, prints a summary, and must end with `check ok`. `bash scripts/reseed.sh --check` changes nothing and tells you whether the demo campus is still clean (it fails after a rehearsal, or if the seed is over 24 h old: the leaderboard tie and the "live" event drift).
+2. Phones stay logged in across a reseed. Phone 1 signs in as **Jordan** (`jordan.park@vanderbilt.edu`, Kissam), Phone 2 as **Sam** (`sam.lee@vanderbilt.edu`, Zeppos). Pull to refresh after a reseed.
+3. What each step of the demo path (docs/FEATURES.md) should show:
+   1. Phone 1 lands on the feed: 27 active listings, 6 of them Jordan's; bell shows 3 unread (Riley and Ethan want his Converse, Marcus sent a message); banner "10 items rehomed this week, top dorm E. Bronson Ingram". Jordan's profile: no badges yet, Closet Cleanout 9/10, impact 0.
+   2. Scan the real jacket (front, back, label): the AI fills the listing in a few seconds.
+   3. Fix a field, pick Swap and a meetup spot, post: the jacket is first in the feed, and Jordan earns **Closet Cleanout** (10th listing; badge notification).
+   4. Phone 2 searches "jacket": the new jacket is on top (only 2 seed listings match: the puffer and the Levi's trucker jacket). Open it, request it.
+   5. Phone 1 gets "Sam requested your item", accepts; they chat. Jordan and Sam have no other request or chat with each other.
+   6. Phone 1 marks it done: Jordan and Sam both earn **First Swap**. Jordan's impact goes 0 -> 1 item shared (as outerwear: 0.44 kg textiles, 3,135 L water, 10.3 kg CO2e). Campus banner: 10 -> 11 items rehomed, top dorm E. Bronson Ingram -> **Kissam**.
+   7. Leaderboard: before, E. Bronson Ingram 2 and Kissam 2 tied at #1; after, **Kissam 3 alone at #1** (the owner's dorm gets the credit). Profile shows the two new badges.
+4. Don't rehearse on the demo accounts after the last reseed, and don't report demo listings (3 reporters hide one).
 
 ## Contract changes
 
@@ -58,6 +73,11 @@ None yet.
 None yet.
 
 ## Log
+
+### 2026-10-17 — S-25 done: one-command demo reset, seed tuned for the demo story (server lane)
+- Done: S-25 (placeholder photos until the team's real photos are added). `bash scripts/reseed.sh` is the one pre-demo command: reseed + delete smoke.edu/smokeother.edu + orphan uploads + summary + live check; `--check` is read-only. Seed tuned so the live demo shows wins: Jordan (Phone 1) earns Closet Cleanout on posting and First Swap on completing, Sam (Phone 2) earns First Swap, Kissam goes from tied #1 to clear #1 and takes the banner's top dorm. Steps in "Before the demo" above; photo swap steps in `backend/seed/photos/README.md`.
+- Heads-up: demo seed changed. Jordan no longer has First Swap or a chat with Sam (his accepted chat is now with Marcus on the quarter-zip); Sam's only outgoing request is Riley's skirt; Jordan owns the scarf and camo hoodie too. Smoke now 788 checks.
+- Now: S-26 (DB backup + screen capture), S-16 as the integration run turns things up.
 
 ### 2026-10-17 — S-27 done: events and donation bins live (server lane)
 
