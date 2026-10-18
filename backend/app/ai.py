@@ -240,6 +240,8 @@ _NO_WEAR = re.compile(
     r"[\s.!]*$",
     re.IGNORECASE,
 )
+# Wrinkles alone are how the item was laid out for the photo, not wear.
+_ONLY_WRINKLES = re.compile(r"^(?:\w+ )?(?:\w+ )?wrinkl\w*(?: \w+){0,3}$", re.IGNORECASE)
 
 
 def clean_condition_note(value: Any) -> str | None:
@@ -249,6 +251,8 @@ def clean_condition_note(value: Any) -> str | None:
         return None
     text = " ".join(str(value).split()).strip(" \"'")
     if text.lower() in _NULLISH or _NO_WEAR.match(text):
+        return None
+    if _ONLY_WRINKLES.match(text.rstrip(" .")) and not re.search(r",|\b(?:and|with)\b", text):
         return None
     cap = MAX_LEN["condition_note"]
     if len(text) > cap:
@@ -336,9 +340,11 @@ def _schema_hint(vision: bool) -> str:
     note_key = '"condition_note": string, ' if vision else ""
     note_rule = (
         "- condition_note: ONE short, honest, specific wear observation a buyer would want "
-        "to know, as a lowercase phrase under 80 characters with no period, e.g. "
-        "\"light fading at the cuffs\" or \"small pill on the left sleeve\". Only describe "
-        "wear you can actually see in the photos; never invent flaws. null if the item "
+        "to know, as a lowercase phrase under 80 characters with no period. Say what the wear "
+        "is and where it is, e.g. \"light fading at the cuffs\", \"small pill on the left "
+        "sleeve\", \"scuffs on both toe caps\". Only describe wear you can actually see in the "
+        "photos (fading, pilling, scuffs, stains, holes, fraying, creasing of shoes); never "
+        "invent flaws, and ignore wrinkles or folds from how it was laid out. null if the item "
         "looks new or you can't tell.\n"
     ) if vision else ""
     return (
