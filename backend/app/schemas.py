@@ -257,6 +257,17 @@ class MessageOut(BaseModel):
     created_at: str
 
 
+# ---- Badges ----------------------------------------------------------------
+
+class BadgeOut(BaseModel):
+    id: str
+    name: str
+    description: str
+    earned_at: str | None
+    progress: int
+    goal: int
+
+
 # ---- Notifications ---------------------------------------------------------
 
 class NotificationOut(BaseModel):

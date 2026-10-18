@@ -13,6 +13,7 @@ from sqlalchemy import String, cast, delete, func, or_, select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
+from .. import events
 from ..auth import current_user
 from ..db import get_db
 from ..errors import ApiError
@@ -233,6 +234,11 @@ def create_listing(
     db.add(listing)
     db.flush()
     _attach(db, listing, photos or [])
+    db.execute(update(User).where(User.id == user.id)
+               .values(listings_created=User.listings_created + 1)
+               .execution_options(synchronize_session=False))
+    db.refresh(user, ["listings_created"])
+    events.on_listing_created(db, listing, user)
     db.commit()
     return listing_out(db, listing, user)
 

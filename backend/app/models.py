@@ -73,6 +73,10 @@ class User(Base):
     size_shoe: Mapped[str | None] = mapped_column(String(16))
     # No foreign key in the schema (see 001_schema.sql); the API checks ownership.
     avatar_photo_id: Mapped[int | None] = mapped_column(UInt)
+    # Listings ever created, including deleted ones (Closet Cleanout badge, 004_*.sql).
+    listings_created: Mapped[int] = mapped_column(
+        UInt, nullable=False, default=0, server_default="0"
+    )
     created_at: Mapped[datetime] = _created_at()
 
     campus: Mapped[Campus] = relationship(back_populates="users")

@@ -23,7 +23,9 @@ What a run does, in one transaction:
    (photos copied to MEDIA_DIR/seed/, cached "Style it" ideas from
    seed/style_ideas.json), then REQUESTS with MESSAGES and SAVES, and the
    notifications that activity would have sent (written by the same builders the
-   API's event hooks use, app/notifications.py, back-dated with `at=`).
+   API's event hooks use, app/notifications.py, back-dated with `at=`), and the
+   badges it earned (app/badges.py check_badges, back-dated to when each goal was
+   reached; their badge_earned notifications count as seen).
 After the commit, photo files from the old state that the new state doesn't use
 are deleted from MEDIA_DIR.
 
@@ -48,6 +50,7 @@ from sqlalchemy import select, text, update
 from sqlalchemy.orm import Session
 
 from app.campus import DEFAULT_MEETUP_SPOTS
+from app import badges
 from app import notifications as notes
 from app.config import settings
 from app.db import SessionLocal, get_engine
@@ -253,6 +256,10 @@ def check_activity(listings: list[dict]) -> dict[str, str]:
         assert 0 < hours < by_key[key]["hours_ago"], f"save of {key} before it was posted"
     unread = expected_unread(by_key)
     assert 2 <= unread.get("jordan.park", 0) <= 4, f"Jordan should have 2-4 unread notifications: {unread}"
+    progress = expected_badges(by_key)["jordan.park"]
+    goals = {r.id: r.goal for r in badges.RULES}
+    assert any(n >= goals[b] for b, n in progress.items()), f"Jordan needs an earned badge: {progress}"
+    assert any(0 < n < goals[b] for b, n in progress.items()), f"Jordan needs a badge in progress: {progress}"
     pairs = [(u, k) for u, k, _ in SAVES]
     assert len(pairs) == len(set(pairs)), "duplicate save"
     assert sum(u == "jordan.park" for u, _ in pairs) >= 2, "Jordan's Saved tab needs 2+ items"
@@ -274,6 +281,28 @@ def expected_unread(by_key: dict[str, dict]) -> dict[str, int]:
             if any(s != side for s, _, _ in msgs[read_n:]):
                 out[user] = out.get(user, 0) + 1  # one collapsed new_message
     return out
+
+
+def expected_badges(by_key: dict[str, dict]) -> dict[str, dict[str, int]]:
+    """user -> badge id -> progress the seeded activity gives (mirrors app/badges.py)."""
+    out = {u: {r.id: 0 for r in badges.RULES} for u in USERS}
+    for item in by_key.values():
+        out[item["owner"]]["closet_cleanout"] += 1
+    for r in REQUESTS:
+        if request_status(r) != "completed":
+            continue
+        item = by_key[r["listing"]]
+        out[item["owner"]]["first_swap"] += 1
+        out[r["requester"]]["first_swap"] += 1
+        if item["share_type"] == "donate":
+            out[item["owner"]]["giving_back"] += 1
+    return out
+
+
+def expected_earned(by_key: dict[str, dict]) -> dict[str, set[str]]:
+    goals = {r.id: r.goal for r in badges.RULES}
+    return {u: {b for b, n in p.items() if n >= goals[b]}
+            for u, p in expected_badges(by_key).items()}
 
 
 def unread_by_user(db: Session, users: dict[str, User]) -> dict[str, int]:
@@ -352,6 +381,7 @@ def build(db: Session, campus: Campus, listings: list[dict], status: dict[str, s
         user.name, user.dorm, user.class_year = name, dorm, year
         user.size_top, user.size_bottom, user.size_shoe = top, bottom, shoe
         user.avatar_photo_id = None
+        user.listings_created = sum(item["owner"] == key for item in listings)
         user.created_at = ago(24 * days)
         db.add(user)
         users[key] = user
@@ -440,6 +470,20 @@ def build(db: Session, campus: Campus, listings: list[dict], status: dict[str, s
                     created_at=ago(hours)))
     db.flush()
 
+    # Badges the activity earned, dated when each goal was reached; already seen.
+    got = {k: set(badges.check_badges(db, u, at=now, backdate=True)) for k, u in users.items()}
+    want_badges = expected_earned({i["key"]: i for i in listings})
+    assert got == want_badges, f"badges {got} != expected {want_badges}"
+    db.execute(
+        update(Notification)
+        .where(Notification.user_id.in_([u.id for u in users.values()]),
+               Notification.type == "badge_earned", Notification.read_at.is_(None))
+        .values(read_at=now)
+        .execution_options(synchronize_session=False)
+    )
+    print(f"badges: {sum(map(len, got.values()))} earned, "
+          f"jordan.park {sorted(got['jordan.park'])}")
+
     unread = {k: n for k, n in unread_by_user(db, users).items() if n}
     want = {k: n for k, n in expected_unread({i["key"]: i for i in listings}).items() if n}
     assert unread == want, f"unread notifications {unread} != expected {want}"
@@ -470,6 +514,7 @@ def run(check_only: bool = False) -> int:
           f"{len(REQUESTS)} requests, {len(SAVES)} saves, "
           f"{len(style)}/{len(listings)} with style ideas")
     print(f"unread notifications expected: {expected_unread({i['key']: i for i in listings})}")
+    print(f"badges expected for jordan.park: {expected_badges({i['key']: i for i in listings})['jordan.park']}")
     missing = [item["key"] for item in listings if item["key"] not in style]
     if missing:
         print("  no current style ideas (run `python -m seed.style_warm`): " + ", ".join(missing))

@@ -1,4 +1,4 @@
-"""Profile: GET /me, PATCH /me, GET /me/unread, GET /dorms."""
+"""Profile: GET /me, PATCH /me, GET /me/unread, GET /me/badges, GET /dorms."""
 
 from __future__ import annotations
 
@@ -7,11 +7,12 @@ from sqlalchemy import and_, func, or_, select
 from sqlalchemy.orm import Session
 
 from ..auth import current_user
+from ..badges import badges_for
 from ..db import get_db
 from ..errors import ApiError
 from ..models import Dorm, Listing, Message, Notification, Photo, Request, User
-from ..schemas import ItemsList, MePatch, UnreadOut, UserOut
-from ..serializers import user_out
+from ..schemas import BadgeOut, ItemsList, MePatch, UnreadOut, UserOut
+from ..serializers import iso, user_out
 
 router = APIRouter(tags=["me"])
 
@@ -118,6 +119,14 @@ def get_unread(user: User = Depends(current_user), db: Session = Depends(get_db)
     )
     return UnreadOut(
         notifications=notifications or 0, messages=messages or 0, incoming_requests=incoming or 0
+    )
+
+
+@router.get("/me/badges")
+def get_badges(user: User = Depends(current_user), db: Session = Depends(get_db)) -> ItemsList[BadgeOut]:
+    """Every badge, in rule order (app/badges.py), earned or not."""
+    return ItemsList[BadgeOut](
+        items=[BadgeOut(**{**b, "earned_at": iso(b["earned_at"])}) for b in badges_for(db, user)]
     )
 
 
