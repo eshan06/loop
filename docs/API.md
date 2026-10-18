@@ -79,6 +79,8 @@ Validation problems (a missing required field, a value outside an enum, text tha
 | `notification.type` | `request_received`, `request_accepted`, `request_declined`, `new_message`, `badge_earned` |
 | `scan.source` | `vision`, `labels`, `none` |
 | `badge.id` | `first_swap`, `giving_back`, `closet_cleanout` |
+| `event.kind` | `swap_day`, `donation_drive`, `repair_workshop` |
+| `event.status` | `upcoming`, `live`, `ended` |
 
 A listing becomes `pending` when one of its requests is accepted, and `completed` when that request is completed.
 
@@ -155,7 +157,7 @@ The feed and the detail screen use the same object.
     { "id": 72, "url": "https://<server>/media/72.jpg", "kind": "back" },
     { "id": 73, "url": "https://<server>/media/73.jpg", "kind": "label" }
   ],
-  "meetup_spot": { "id": 2, "name": "Commons Center" },
+  "meetup_spot": { "id": 2, "name": "Commons Center", "lat": 36.14155, "lng": -86.79725 },
   "owner": { "id": 3, "name": "Jordan Park", "dorm": "Kissam", "avatar_url": null, "items_shared": 4 },
   "impact": { "textile_kg": 0.8, "water_l": 2500, "co2_kg": 10.0 },
   "is_mine": false,
@@ -170,6 +172,7 @@ The feed and the detail screen use the same object.
 
 - Nullable: `size`, `color`, `brand`, `condition_note`, `description`, `meetup_spot` (if the spot was removed), `my_request_status`, `my_request_id`, `accepted_request_id`.
 - `condition_note` is one short wear observation, like "light fading at the cuffs" (at most 140 characters, no trailing period). It comes from the scan draft or the owner, and is `null` when there's nothing to note. The key is always present.
+- `meetup_spot` is the same object `GET /meetup-spots` returns, including `lat` and `lng` (either can be `null`).
 - `photos` has at least one photo, in the order they were attached (front, back, label after a scan). Feed cards show `photos[0]`.
 - `impact` holds the estimate for this one item.
 - `is_mine` is `true` when the current user owns the listing. Item detail shows Edit instead of Request.
@@ -280,6 +283,8 @@ Nullable: `body`, `request_id`, `listing_id`. Where a tap goes: `request_receive
 | GET | `/notifications` | My notifications | 2 |
 | POST | `/notifications/read` | Mark notifications read | 2 |
 | POST | `/listings/{id}/report` | Report a listing | 2 |
+| GET | `/events` | Campus events: Swap Day and friends | 3 |
+| GET | `/donation-bins` | Donation bins for the campus map | 3 |
 
 ### GET /health
 
@@ -437,8 +442,15 @@ Errors: `too_many_photos` (400) for more than 3, `photo_too_large` (400) over 5 
 Meetup spots for the user's campus, sorted by name:
 
 ```json
-{ "items": [ { "id": 2, "name": "Commons Center" }, { "id": 5, "name": "Rand Hall" } ] }
+{
+  "items": [
+    { "id": 2, "name": "Commons Center", "lat": 36.14155, "lng": -86.79725 },
+    { "id": 5, "name": "Student Union", "lat": null, "lng": null }
+  ]
+}
 ```
+
+`lat` and `lng` (added for the campus map, Tier 3) are WGS84 degrees as JSON numbers; decode them as `Double?`. They are both set or both `null`. A spot without coordinates still works everywhere else; the map just leaves it off. A new campus's default spots have none; every Vanderbilt demo spot has them.
 
 ### GET /listings
 
@@ -676,3 +688,80 @@ How it works (additive detail, nothing for the app to do):
 - The third distinct reporter hides an `active` or `pending` listing. A `completed` listing keeps its reports but stays visible, since it's exchange history.
 - Open requests on a hidden listing stay as they are. The owner can't accept a `pending` one (`wrong_status`, because the listing isn't `active`) but can decline it, and the requester can cancel. An `accepted` exchange can still chat and complete (completing moves the listing to `completed` as usual). Cancelling an accepted request doesn't unhide the listing.
 - The owner gets no notification (there is no notification type for it). The owner still sees the listing in `GET /listings/{id}` and the `active` tab of `GET /me/listings` with `status: "hidden"`, and can edit or delete it.
+
+### GET /events
+
+The Swap Day tab (Tier 3). Events on the user's campus, sorted by `starts_at`, oldest first (ties by `id`). By default the list holds everything that hasn't ended yet plus anything that ended in the last 24 hours, so it shows what's coming up, what's on right now, and what happened yesterday. `?include_past=true` returns every event, however old, in the same order. Not paged: `{"items": [...]}`.
+
+```json
+{
+  "items": [
+    {
+      "id": 4,
+      "title": "Fall Clothing Drive",
+      "description": "Two weeks of collecting gently used clothes for Nashville shelters.",
+      "kind": "donation_drive",
+      "status": "live",
+      "is_live": true,
+      "starts_at": "2026-10-14T14:00:00Z",
+      "ends_at": "2026-10-28T22:00:00Z",
+      "location_name": "Commons Center",
+      "lat": 36.14155,
+      "lng": -86.79725
+    },
+    {
+      "id": 6,
+      "title": "Fall Swap Day",
+      "description": "Bring up to five clean items and leave with new favorites.",
+      "kind": "swap_day",
+      "status": "upcoming",
+      "is_live": false,
+      "starts_at": "2026-10-20T16:00:00Z",
+      "ends_at": "2026-10-20T20:00:00Z",
+      "location_name": "Alumni Lawn",
+      "lat": 36.14605,
+      "lng": -86.8019
+    }
+  ]
+}
+```
+
+- `kind` is one of `swap_day`, `donation_drive`, `repair_workshop`. Treat an unknown value like `swap_day`.
+- `status` is worked out from the server's clock when the response is built: `upcoming` before `starts_at`, `live` from `starts_at` until `ends_at`, `ended` after. `is_live` is `true` exactly when `status` is `live` (a convenience for the "Happening now" badge).
+- `starts_at` and `ends_at` are UTC like every timestamp; the app shows them in the phone's time zone. `ends_at` is always after `starts_at`.
+- Nullable: `description`, `lat`, `lng` (`lat` and `lng` are both set or both `null`). `location_name` is always a string, so the app can show it even without a pin.
+- `include_past` takes `true` or `false` (default `false`); anything else is `400 bad_request`.
+- Events are read-only for the app; the demo campus's come from the seed, with times relative to when it was seeded. Another campus usually has none, and gets `{"items": []}`.
+
+### GET /donation-bins
+
+Donation bins on the user's campus for the map (Tier 3), sorted by name (ties by `id`). Not paged:
+
+```json
+{
+  "items": [
+    {
+      "id": 1,
+      "name": "Commons Center bin",
+      "description": "Inside the main doors, next to the mailroom.",
+      "accepts": "Clean clothes, shoes tied in pairs, bags and belts",
+      "hours": "7am to 11pm daily",
+      "lat": 36.14142,
+      "lng": -86.79748
+    },
+    {
+      "id": 3,
+      "name": "Branscomb Quad bin",
+      "description": "Outdoor bin by the Branscomb Quad bike racks.",
+      "accepts": "Clean clothes and linens, bagged",
+      "hours": null,
+      "lat": 36.1428,
+      "lng": -86.8048
+    }
+  ]
+}
+```
+
+- `lat` and `lng` are never `null` here (a bin is only useful on the map). Decode them as `Double`.
+- Nullable: `description` (where exactly the bin is), `accepts` (what goes in it), `hours` (free text; `null` means no posted hours, like an outdoor bin).
+- The campus map (I-28) shows these together with the meetup spots from `GET /meetup-spots` that have coordinates. Another campus usually has no bins and gets `{"items": []}`.
