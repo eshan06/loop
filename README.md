@@ -15,8 +15,6 @@ This README covers the backend: the server behind the app. It's a FastAPI app on
 | **Resource Manager** | CloudFormation | The starter-kit stack that created the VM, network and database. |
 | **IAM** | IAM | API signing keys, so the server can call Generative AI. |
 
-We don't use Object Storage. Photos are saved to the VM's disk and served by the API at `/media`. That's plenty for a demo.
-
 ## How a scan works
 
 1. The app uploads 1 to 3 photos (front, back, label) to `POST /scan`.
