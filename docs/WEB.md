@@ -28,7 +28,7 @@ web/
 These come from the iOS app, so the two match:
 
 - Loop Lime `#C7E75A` is an accent, not a theme. Use it only on the main action (Post / Scan button), the "Just posted" tag, the completion checkmark, and "You"/"Yours" labels. Put near-black text on top of it, never white.
-- Ink `#191919` for text and the wordmark. The wordmark is type only: "loop." in lowercase.
+- Ink `#191919` for text and the logo. The logo is the approved "Loop" artwork with the two o's drawn as one infinity shape, rendered as an inline SVG (`web/src/components/Logo.tsx`, outline in `web/src/assets/logo-path.ts`, flat ink, no outline or gradient). It is derived from the iOS lane's traced outline (`ios/Tools/loop-logo.json`); if that artwork changes, regenerate the path. The earlier type-only "loop." wordmark is retired.
 - Share types (Swap, Free, Donate) always show as badges with the same colors as the app.
 
 ## Talking to the API
@@ -251,25 +251,25 @@ Also used for any `404` from the API. "This one's not here. It may have been swa
 
 Work top to bottom. Tier 1 has to work end to end before Tier 2. Mark tasks here as you go: `[ ]` not started, `[~]` in progress, `[x]` done.
 
-- [ ] W-1 Vite + React + TS project in `web/`, design system tokens and fonts in, `vite.config.ts` proxy, React Router with every route as a placeholder.
-- [ ] W-2 API client: token handling, 401 → sign in, error shape, paging, the `media` helper, types for every object in `docs/API.md`.
-- [ ] W-3 Top bar and layout, responsive, unread badges from `/me/unread`.
-- [ ] W-4 Landing, sign in, profile setup.
-- [ ] W-5 Vercel project connected; first production deploy; check `/scan` and uploads through the proxy.
-- [ ] W-6 Feed: grid, filters in the URL, search, load more, impact banner.
-- [ ] W-7 Item detail with every action state.
-- [ ] W-8 Post an item: drop zone, resize to JPEG, scan, review form, post.
-- [ ] W-9 Inbox: two panes, accept/decline/cancel, chat polling, mark exchanged, celebration.
-- [ ] W-10 Profile with Active/Completed listings, edit listing, edit profile.
-- [ ] W-11 Run the demo path below on the deployed site.
-- [ ] W-12 Saved, hearts everywhere.
-- [ ] W-13 Notifications bell and page.
-- [ ] W-14 Impact page, badges on the profile.
-- [ ] W-15 Leaderboard, projector-ready.
-- [ ] W-16 Style it, similar items, report on item detail.
-- [ ] W-17 Polish pass: loading skeletons, transitions, mobile widths, keyboard focus, alt text on every photo.
-- [ ] W-18 Events (Tier 3).
-- [ ] W-19 Map (Tier 3).
+- [x] W-1 Vite + React + TS project in `web/`, design system tokens and fonts in, `vite.config.ts` proxy, React Router with every route as a placeholder.
+- [x] W-2 API client: token handling, 401 → sign in, error shape, paging, the `media` helper, types for every object in `docs/API.md`.
+- [x] W-3 Top bar and layout, responsive, unread badges from `/me/unread`.
+- [x] W-4 Landing, sign in, profile setup.
+- [x] W-5 Vercel project connected; first production deploy; check `/scan` and uploads through the proxy.
+- [x] W-6 Feed: grid, filters in the URL, search, load more, impact banner.
+- [x] W-7 Item detail with every action state.
+- [x] W-8 Post an item: drop zone, resize to JPEG, scan, review form, post.
+- [x] W-9 Inbox: two panes, accept/decline/cancel, chat polling, mark exchanged, celebration.
+- [x] W-10 Profile with Active/Completed listings, edit listing, edit profile.
+- [x] W-11 Run the demo path below on the deployed site.
+- [x] W-12 Saved, hearts everywhere.
+- [x] W-13 Notifications bell and page.
+- [x] W-14 Impact page, badges on the profile.
+- [x] W-15 Leaderboard, projector-ready.
+- [x] W-16 Style it, similar items, report on item detail.
+- [~] W-17 Polish pass: loading skeletons, transitions, mobile widths, keyboard focus, alt text on every photo.
+- [x] W-18 Events (Tier 3).
+- [x] W-19 Map (Tier 3).
 
 ## Demo accounts
 
@@ -312,6 +312,22 @@ Pull requests get their own preview URL automatically, if you ever work on a bra
 - No secrets in `web/`. There aren't any to need: the API has no keys, and login is email only.
 - `docs/API.md` is the source of truth. If the server returns something different from the doc, tell the server lane.
 - The website never calls OCI or any AI service directly. Every AI feature goes through our backend.
+
+## Status log
+
+### 2026-10-18: first full build (branch `web/portal`, not pushed to `main` yet)
+- Done: W-1 to W-4, W-6 to W-10, W-12 to W-16, W-18, W-19. Every route in the table exists. `npm run build` and `npm test` (14 unit tests) pass.
+- Checked by hand against the live server through the dev proxy, on a throwaway campus (`webtest.edu`, so the demo data was not touched): sign in, profile setup, drag-and-drop photos, `/scan` (about 6 s, `source: vision`), review form with AI marks, post, "Just posted" tag, request, accept, polling for new messages and the unread badges, chat send, mark exchanged, celebration with count-up and the First Swap badge, profile impact and badges. Read-only on the Vanderbilt demo campus: feed, leaderboard, map pins, mobile feed at 390 px.
+- Not done: W-5 (Vercel project and first deploy: needs the account owner), so `/scan` and uploads through Vercel's proxy are still unchecked there. W-11 (demo path on the deployed site) waits on that. W-17 is partly done (skeletons, focus rings, alt text, reduced motion); a pass at tablet widths and the other screens at 390 px is left.
+- Run locally: `cd web && npm install && npm run dev` (proxies `/api` to the server).
+
+### 2026-10-18: Vercel project and preview checked (W-5, W-11)
+- Vercel project `loop-web` (personal Hobby account, id `prj_DN4PiBQFzEPpvYi3ODenqOoq0y1x`): Vite, root `web`, `npm run build`, output `dist`, Node 24.x (20.x is discontinued on Vercel), skip builds when `web/` is unchanged. `web/vercel.json` is unchanged. Vercel Authentication is on, so the preview needs a Vercel login or a bypass secret.
+- **Vercel can proxy to the plain HTTP backend.** Through the preview, `/api/health`, login, `/photos`, `/scan` (5 to 6 s, `source: vision`), `/media`, publish, request, accept, chat, complete, badges and `/style` all worked. No HTTPS change is needed on the server.
+- Same flow driven in the browser on the preview with throwaway users on `webtest.edu`: no console errors, every `/api/*` call 200, no horizontal overflow at 390 px on any route.
+- **Git link is not set up.** The repo is `eshan06/loop`, but the Vercel GitHub app is installed on the `hwangolise` account only, so the project is not connected to the repo and pushes do not deploy by themselves. To get "every push to `main` deploys": the repo owner installs the Vercel GitHub app on `eshan06/loop`, then connects `loop-web` to it under Settings, Git, and sets the production branch to `main`.
+- Deploys made through the API from a Git ref are tagged `production` unless a target is set, so previews were created with `target: staging`. Do not create a deployment from `main` through the API until the link exists.
+- Not covered: Vercel build logs (the connection can't read them) and a real iPhone or Android browser.
 
 ## Requests to the server lane
 
