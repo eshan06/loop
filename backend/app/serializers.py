@@ -14,9 +14,11 @@ from sqlalchemy.orm import Session, selectinload
 
 from .config import settings
 from .impact import impact_for
-from .models import Listing, MeetupSpot, Message, Notification, Photo, Request, Save, User
+from .models import DonationBin, Event, Listing, MeetupSpot, Message, Notification, Photo, Request, Save, User
 from .schemas import (
     CampusOut,
+    DonationBinOut,
+    EventOut,
     ImpactOut,
     ListingOut,
     MeetupSpotOut,
@@ -55,9 +57,38 @@ def photo_out(photo: Photo) -> PhotoOut:
     return PhotoOut(id=photo.id, url=photo_url(photo), kind=photo.kind)
 
 
+def coord(value) -> float | None:
+    """DECIMAL(9,6) degrees -> JSON number (None stays None)."""
+    return None if value is None else float(value)
+
+
 def meetup_spot_out(spot: MeetupSpot | None) -> MeetupSpotOut | None:
-    """{id, name}; None when a listing's spot was removed (Listing.meetup_spot is nullable)."""
-    return None if spot is None else MeetupSpotOut(id=spot.id, name=spot.name)
+    """{id, name, lat, lng}; None when a listing's spot was removed (Listing.meetup_spot is nullable)."""
+    if spot is None:
+        return None
+    return MeetupSpotOut(id=spot.id, name=spot.name, lat=coord(spot.lat), lng=coord(spot.lng))
+
+
+def event_status(event: Event, now: datetime) -> str:
+    """upcoming before starts_at, live from starts_at until ends_at, ended after (naive UTC)."""
+    if now < event.starts_at:
+        return "upcoming"
+    return "live" if now < event.ends_at else "ended"
+
+
+def event_out(event: Event, now: datetime) -> EventOut:
+    status = event_status(event, now)
+    return EventOut(
+        id=event.id, title=event.title, description=event.description, kind=event.kind,
+        status=status, is_live=status == "live",
+        starts_at=iso(event.starts_at), ends_at=iso(event.ends_at),
+        location_name=event.location_name, lat=coord(event.lat), lng=coord(event.lng),
+    )
+
+
+def donation_bin_out(b: DonationBin) -> DonationBinOut:
+    return DonationBinOut(id=b.id, name=b.name, description=b.description, accepts=b.accepts,
+                          hours=b.hours, lat=float(b.lat), lng=float(b.lng))
 
 
 def avatar_url(user: User) -> str | None:

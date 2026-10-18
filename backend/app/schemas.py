@@ -66,6 +66,8 @@ class PhotoOut(BaseModel):
 class MeetupSpotOut(BaseModel):
     id: int
     name: str
+    lat: float | None
+    lng: float | None
 
 
 # ---- Auth and profile ------------------------------------------------------
@@ -301,3 +303,29 @@ class NotificationsReadIn(BaseModel):
 
     ids: list[StrictInt] | None = None
     all: StrictBool | None = None
+
+
+# ---- Campus events and the map (S-27) ----------------------------------------
+
+class EventOut(BaseModel):
+    id: int
+    title: str
+    description: str | None
+    kind: str
+    status: str
+    is_live: bool
+    starts_at: str
+    ends_at: str
+    location_name: str
+    lat: float | None
+    lng: float | None
+
+
+class DonationBinOut(BaseModel):
+    id: int
+    name: str
+    description: str | None
+    accepts: str | None
+    hours: str | None
+    lat: float
+    lng: float
