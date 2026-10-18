@@ -16,11 +16,12 @@ What a run does, in one transaction:
 1. Wipe the campus with SQL deletes (CLAUDE.md Gotcha: no ORM deletes of parents):
    its listings (cascading requests, messages, saves, reports), every photo,
    save, report, notification and badge of its users, its users that aren't
-   seed accounts, its dorms and meetup spots. Seed accounts keep their user
-   row (same id, sessions still valid, so a logged-in phone stays logged in);
-   their profile is reset.
-2. Rebuild: dorms, meetup spots, USERS, the listings in seed/photos/manifest.json
-   (photos copied to MEDIA_DIR/seed/, cached "Style it" ideas from
+   seed accounts, its dorms, meetup spots, events and donation bins. Seed
+   accounts keep their user row (same id, sessions still valid, so a logged-in
+   phone stays logged in); their profile is reset.
+2. Rebuild: dorms, meetup spots (with map coordinates), DONATION_BINS, EVENTS
+   (times relative to the seed date, Nashville wall-clock), USERS, the listings
+   in seed/photos/manifest.json (photos copied to MEDIA_DIR/seed/, cached "Style it" ideas from
    seed/style_ideas.json), then REQUESTS with MESSAGES and SAVES, and the
    notifications that activity would have sent (written by the same builders the
    API's event hooks use, app/notifications.py, back-dated with `at=`), and the
@@ -42,8 +43,9 @@ import hashlib
 import io
 import json
 import sys
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, time, timedelta, timezone
 from pathlib import Path
+from zoneinfo import ZoneInfo
 
 from PIL import Image
 from sqlalchemy import select, text, update
@@ -55,9 +57,10 @@ from app import notifications as notes
 from app.config import settings
 from app.db import SessionLocal, get_engine
 from app.models import (
-    Campus, Dorm, Listing, MeetupSpot, Message, Notification, Photo, Request, Save, User,
-    utcnow,
+    Campus, DonationBin, Dorm, Event, Listing, MeetupSpot, Message, Notification, Photo,
+    Request, Save, User, utcnow,
 )
+from app.routers.campus_life import EVENT_KINDS
 from app.photos import MAX_SIDE, normalize_jpeg
 from app.style import basis as style_basis
 from app.style import validate_ideas
@@ -166,6 +169,61 @@ SAVES: list[tuple[str, str, float]] = [
     ("riley.chen", "cableknit", 20),
 ]
 
+# ---- Campus map and events (S-27) ----
+# Approximate spots on Vanderbilt's campus in Nashville (WGS84). Every seeded meetup spot
+# gets coordinates; a new campus's default spots have none (null lat/lng).
+CAMPUS_BOUNDS = ((36.1380, 36.1520), (-86.8100, -86.7940))  # (lat min/max, lng min/max)
+SPOT_COORDS: dict[str, tuple[float, float]] = {
+    "Main Library entrance": (36.145020, -86.800560),  # Central Library, 21st Ave side
+    "Student Union": (36.146700, -86.802950),          # Sarratt Student Center
+    "Main Dining Hall": (36.148900, -86.804300),       # The Kitchen at Kissam
+    "Campus Center": (36.144700, -86.802700),
+    "Commons Center": (36.141550, -86.797250),
+    "Rand Dining Center": (36.146450, -86.803550),
+    "Alumni Lawn": (36.146050, -86.801900),
+}
+
+# (name, description, accepts, hours or None, lat, lng)
+DONATION_BINS: list[tuple] = [
+    ("Commons Center bin", "Inside the main doors, next to the mailroom.",
+     "Clean clothes, shoes tied in pairs, bags and belts", "7am to 11pm daily",
+     36.141420, -86.797480),
+    ("Sarratt Student Center bin", "Ground floor by the post office.",
+     "Clean clothes, coats, shoes in pairs", "8am to midnight daily",
+     36.146820, -86.802780),
+    ("Branscomb Quad bin", "Outdoor bin by the Branscomb Quad bike racks.",
+     "Clean clothes and linens, bagged", None,
+     36.142800, -86.804800),
+    ("Kissam Quad bin", "Under the archway between Warren and Moore.",
+     "Clean clothes, shoes in pairs", None,
+     36.149200, -86.804000),
+]
+
+# Event times are Nashville wall-clock: (days from the seed date, "HH:MM").
+EVENT_TZ = "America/Chicago"
+EVENTS: list[dict] = [
+    {"kind": "donation_drive", "title": "Fall Clothing Drive",
+     "description": "Two weeks of collecting gently used clothes for Nashville shelters. "
+                    "Drop items in any campus donation bin or at the Commons Center table.",
+     "start": (-3, "09:00"), "end": (11, "17:00"),
+     "location_name": "Commons Center", "spot": "Commons Center"},
+    {"kind": "swap_day", "title": "Kissam Quad Pop-up Swap",
+     "description": "A quick evening swap on the quad. Bring a piece, take a piece.",
+     "start": (-2, "16:00"), "end": (-2, "19:00"),
+     "location_name": "Kissam Quad", "spot": "Main Dining Hall"},
+    {"kind": "swap_day", "title": "Fall Swap Day",
+     "description": "The big one: bring up to five clean items and leave with new favorites. "
+                    "Racks by category, a fitting tent, free coffee, and everything left over "
+                    "goes to the Fall Clothing Drive.",
+     "start": (3, "11:00"), "end": (3, "15:00"),
+     "location_name": "Alumni Lawn", "spot": "Alumni Lawn"},
+    {"kind": "repair_workshop", "title": "Mend It: Sewing and Repair Workshop",
+     "description": "Learn to sew on buttons, patch jeans and fix hems. Machines, thread and "
+                    "snacks provided; bring something that needs fixing.",
+     "start": (7, "18:00"), "end": (7, "20:00"),
+     "location_name": "Rand Hall, Room 208", "spot": "Rand Dining Center"},
+]
+
 # Notifications: request ones (received/accepted/declined) newer than this many hours
 # stay unread; older ones count as seen. new_message ones are unread exactly when the
 # recipient has unread messages on that chat (the read markers above).
@@ -177,6 +235,53 @@ LISTING_FIELDS = ("title", "category", "size", "color", "brand", "condition",
 
 
 # --------------------------------------------------------------------------- data checks
+
+
+def on_campus(lat: float, lng: float) -> bool:
+    (lat_lo, lat_hi), (lng_lo, lng_hi) = CAMPUS_BOUNDS
+    return lat_lo <= lat <= lat_hi and lng_lo <= lng <= lng_hi
+
+
+def event_times(ev: dict, now: datetime) -> tuple[datetime, datetime]:
+    """(starts_at, ends_at) as naive UTC whole seconds, from the Nashville wall-clock spec."""
+    try:
+        tz = ZoneInfo(EVENT_TZ)
+    except Exception:  # no tz database: Central Daylight Time is close enough for a demo
+        tz = timezone(timedelta(hours=-5))
+    today = now.replace(tzinfo=UTC).astimezone(tz).date()
+
+    def at(spec: tuple[int, str]) -> datetime:
+        days, hhmm = spec
+        local = datetime.combine(today + timedelta(days=days), time.fromisoformat(hhmm), tz)
+        return local.astimezone(UTC).replace(tzinfo=None, microsecond=0)
+
+    return at(ev["start"]), at(ev["end"])
+
+
+def check_places(now: datetime) -> dict[str, int]:
+    """Validate spot coordinates, bins and events; returns event counts by status at `now`."""
+    assert set(SPOT_COORDS) == set(MEETUP_SPOTS), \
+        f"SPOT_COORDS must cover exactly MEETUP_SPOTS: {set(SPOT_COORDS) ^ set(MEETUP_SPOTS)}"
+    for name, (lat, lng) in SPOT_COORDS.items():
+        assert on_campus(lat, lng), f"spot {name!r} is off campus: {lat}, {lng}"
+    assert len({b[0] for b in DONATION_BINS}) == len(DONATION_BINS) >= 3, "3+ uniquely named bins"
+    for name, desc, accepts, hours, lat, lng in DONATION_BINS:
+        assert on_campus(lat, lng), f"bin {name!r} is off campus: {lat}, {lng}"
+        assert len(name) <= 120 and len(desc or "") <= 500 and len(accepts or "") <= 200 \
+            and len(hours or "") <= 80, f"bin {name!r}: text too long"
+    counts = {"upcoming": 0, "live": 0, "ended": 0}
+    for ev in EVENTS:
+        assert ev["kind"] in EVENT_KINDS, f"event {ev['title']!r}: bad kind {ev['kind']!r}"
+        assert ev["spot"] in SPOT_COORDS, f"event {ev['title']!r}: unknown spot {ev['spot']!r}"
+        assert len(ev["title"]) <= 120 and len(ev["description"]) <= 2000 \
+            and len(ev["location_name"]) <= 120, f"event {ev['title']!r}: text too long"
+        start, end = event_times(ev, now)
+        assert start < end, f"event {ev['title']!r} ends before it starts"
+        counts["upcoming" if now < start else "live" if now < end else "ended"] += 1
+    assert counts["upcoming"] >= 2 and counts["live"] >= 1 and counts["ended"] >= 1, \
+        f"events need 2+ upcoming, 1+ live, 1+ ended: {counts}"
+    assert {"swap_day", "donation_drive", "repair_workshop"} <= {e["kind"] for e in EVENTS}
+    return counts
 
 
 def load_manifest() -> list[dict]:
@@ -339,6 +444,8 @@ def wipe_campus(db: Session, campus_id: int) -> set[str]:
                {**p, **params})
     db.execute(text("DELETE FROM dorms WHERE campus_id = :c"), p)
     db.execute(text("DELETE FROM meetup_spots WHERE campus_id = :c"), p)
+    db.execute(text("DELETE FROM events WHERE campus_id = :c"), p)
+    db.execute(text("DELETE FROM donation_bins WHERE campus_id = :c"), p)
     return old_paths
 
 
@@ -373,9 +480,22 @@ def build(db: Session, campus: Campus, listings: list[dict], status: dict[str, s
         return (now - timedelta(hours=hours)).replace(microsecond=0)
 
     db.add_all(Dorm(campus_id=campus.id, name=n, created_at=ago(24 * 30)) for n in DORMS)
-    spots = {n: MeetupSpot(campus_id=campus.id, name=n, created_at=ago(24 * 30))
+    spots = {n: MeetupSpot(campus_id=campus.id, name=n, lat=SPOT_COORDS[n][0],
+                           lng=SPOT_COORDS[n][1], created_at=ago(24 * 30))
              for n in MEETUP_SPOTS}
     db.add_all(spots.values())
+    db.add_all(
+        DonationBin(campus_id=campus.id, name=name, description=desc, accepts=accepts,
+                    hours=hours, lat=lat, lng=lng, created_at=ago(24 * 30))
+        for name, desc, accepts, hours, lat, lng in DONATION_BINS
+    )
+    for ev in EVENTS:
+        starts, ends = event_times(ev, now)
+        lat, lng = SPOT_COORDS[ev["spot"]]
+        db.add(Event(campus_id=campus.id, kind=ev["kind"], title=ev["title"],
+                     description=ev["description"], starts_at=starts, ends_at=ends,
+                     location_name=ev["location_name"], lat=lat, lng=lng,
+                     created_at=ago(24 * 14)))
 
     existing = {u.email: u for u in db.scalars(select(User).where(User.campus_id == campus.id))}
     users: dict[str, User] = {}
@@ -519,6 +639,9 @@ def run(check_only: bool = False) -> int:
           f"{len(style)}/{len(listings)} with style ideas")
     print(f"unread notifications expected: {expected_unread({i['key']: i for i in listings})}")
     print(f"badges expected for jordan.park: {expected_badges({i['key']: i for i in listings})['jordan.park']}")
+    places = check_places(utcnow())
+    print(f"map ok: {len(SPOT_COORDS)} spots with coordinates, {len(DONATION_BINS)} bins; "
+          f"events {places}")
     missing = [item["key"] for item in listings if item["key"] not in style]
     if missing:
         print("  no current style ideas (run `python -m seed.style_warm`): " + ", ".join(missing))
@@ -541,6 +664,7 @@ def run(check_only: bool = False) -> int:
     stale = {f"{MEDIA_SUBDIR}/{p.name}" for p in seed_dir.glob("*") if p.is_file()}
     removed = remove_files((old_paths | stale) - used)
     print(f"seeded {DOMAIN} (campus {campus_id}): {len(DORMS)} dorms, {len(MEETUP_SPOTS)} spots, "
+          f"{len(DONATION_BINS)} donation bins, {len(EVENTS)} events, "
           f"{len(used)} photos in {seed_dir}, removed {removed} old files")
     print("demo accounts: " + ", ".join(DEMO_ACCOUNTS))
     return 0
