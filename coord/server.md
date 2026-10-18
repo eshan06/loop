@@ -74,6 +74,13 @@ None yet.
 
 ## Log
 
+### 2026-10-17 — Cross-lane iOS edit: TestFlight build uses the live server (server lane, approved by the user)
+
+- Done: the user asked the server lane to make this one iOS change, since the TestFlight build was stuck on mock data (placeholder art, no Mock/Live switch in Release). `APIConfig.defaultUseMocks` is now `true` in DEBUG and `false` in Release. Build number bumped to 2 (`project.yml` and `project.pbxproj`), and `Info.plist` now reads `$(MARKETING_VERSION)` / `$(CURRENT_PROJECT_VERSION)` instead of literal `1.0` / `1`, so bumping the build setting changes the uploaded build.
+- Not verified: not built (no Xcode on this Mac; `swiftc -parse` passes). Debug builds and the tests are unchanged.
+- iOS lane: pull, build Release, archive build 1.0 (2), upload to TestFlight. Phones sign in again after updating (the live server never saw a sign-in from the mock build).
+- Also done: deployed 9ff2fa2 and reseeded; `check ok`.
+
 ### 2026-10-17 — S-26 closed, server lane complete
 - Done: S-26. The database backup was skipped on purpose: `bash scripts/reseed.sh` rebuilds the demo campus in seconds, which is enough for a hackathon. Recording the backup screen capture is up to the team.
 - Now: every server task through Tier 3 is done except S-16, which waits for the two-phone integration run (Sync point C). Send server bugs from that run as requests and I'll fix them under S-16.

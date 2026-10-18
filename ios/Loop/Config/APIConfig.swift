@@ -6,7 +6,12 @@ import Foundation
 /// without editing code: `-useMocks NO` (or `YES`) in the scheme, or
 /// `xcrun simctl launch booted com.stacked.loop -useMocks NO`.
 enum APIConfig {
+    /// Debug builds start on mocks (the sign-in screen can switch); Release (TestFlight) has no switch, so it uses the live server.
+    #if DEBUG
     static let defaultUseMocks = true
+    #else
+    static let defaultUseMocks = false
+    #endif
 
     /// The live server, from "Server status" in `coord/server.md`.
     static let baseURL = URL(string: "http://163.192.218.131:8000")!
