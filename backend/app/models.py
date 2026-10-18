@@ -14,13 +14,15 @@ One-to-many relationships use passive_deletes=True so deletes leave cascading
 from __future__ import annotations
 
 from datetime import UTC, datetime
+from decimal import Decimal
 
-from sqlalchemy import JSON, DateTime, ForeignKey, String, Text, func
+from sqlalchemy import JSON, DateTime, ForeignKey, Numeric, String, Text, func
 from sqlalchemy.dialects.mysql import INTEGER, SMALLINT
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 UInt = INTEGER(unsigned=True)
 USmallInt = SMALLINT(unsigned=True)
+Coord = Numeric(9, 6)  # latitude/longitude in degrees (006_events_bins.sql)
 
 
 def utcnow() -> datetime:
@@ -111,6 +113,8 @@ class MeetupSpot(Base):
         UInt, ForeignKey("campuses.id", ondelete="CASCADE"), nullable=False
     )
     name: Mapped[str] = mapped_column(String(120), nullable=False)
+    lat: Mapped[Decimal | None] = mapped_column(Coord)
+    lng: Mapped[Decimal | None] = mapped_column(Coord)
     created_at: Mapped[datetime] = _created_at()
 
     campus: Mapped[Campus] = relationship(back_populates="meetup_spots")
@@ -305,3 +309,39 @@ class Dorm(Base):
     created_at: Mapped[datetime] = _created_at()
 
     campus: Mapped[Campus] = relationship(back_populates="dorms")
+
+
+class Event(Base):
+    """A campus event: Swap Day, a donation drive, a mending workshop (S-27)."""
+
+    __tablename__ = "events"
+
+    id: Mapped[int] = mapped_column(UInt, primary_key=True, autoincrement=True)
+    campus_id: Mapped[int] = mapped_column(
+        UInt, ForeignKey("campuses.id", ondelete="CASCADE"), nullable=False
+    )
+    title: Mapped[str] = mapped_column(String(120), nullable=False)
+    description: Mapped[str | None] = mapped_column(String(2000))
+    kind: Mapped[str] = mapped_column(String(30), nullable=False)
+    starts_at: Mapped[datetime] = mapped_column(DateTime, nullable=False)
+    ends_at: Mapped[datetime] = mapped_column(DateTime, nullable=False)
+    location_name: Mapped[str] = mapped_column(String(120), nullable=False)
+    lat: Mapped[Decimal | None] = mapped_column(Coord)
+    lng: Mapped[Decimal | None] = mapped_column(Coord)
+    created_at: Mapped[datetime] = _created_at()
+
+
+class DonationBin(Base):
+    __tablename__ = "donation_bins"
+
+    id: Mapped[int] = mapped_column(UInt, primary_key=True, autoincrement=True)
+    campus_id: Mapped[int] = mapped_column(
+        UInt, ForeignKey("campuses.id", ondelete="CASCADE"), nullable=False
+    )
+    name: Mapped[str] = mapped_column(String(120), nullable=False)
+    description: Mapped[str | None] = mapped_column(String(500))
+    accepts: Mapped[str | None] = mapped_column(String(200))
+    hours: Mapped[str | None] = mapped_column(String(80))
+    lat: Mapped[Decimal] = mapped_column(Coord, nullable=False)
+    lng: Mapped[Decimal] = mapped_column(Coord, nullable=False)
+    created_at: Mapped[datetime] = _created_at()
