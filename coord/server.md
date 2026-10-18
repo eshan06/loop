@@ -45,6 +45,8 @@ Every change to `docs/API.md` gets a line here: what changed and whether the iOS
 
 - 2026-10-17 (S-28, IOS-3): additive. New nullable `condition_note` string (<= 140 chars, no trailing period, e.g. "light fading at the cuffs") on `ScanDraft` and `Listing` (key always present, `null` when absent). `POST /listings` and `PATCH /listings/{id}` accept it optionally: trimmed, empty or blank -> `null`, over 140 or not a string -> `400 bad_request`. The draft's note only comes from the vision path (`null` for `source` `labels`/`none` and whenever `condition` is `new`). iOS: decode `condition_note: String?`, show it near the condition, and send the draft's note back in POST /listings (editable).
 
+- 2026-10-17 (S-27): additive, new. `GET /events` (Swap Day tab, I-29): `{"items": [Event]}` for my campus, sorted by `starts_at` (ties `id`); by default only events that haven't ended or ended in the last 24 h, `?include_past=true` for all (other values -> `400 bad_request`). Event = `id, title, description?, kind (swap_day|donation_drive|repair_workshop), status (upcoming|live|ended), is_live, starts_at, ends_at, location_name, lat?, lng?`. `GET /donation-bins` (campus map, I-28): `{"items": [DonationBin]}` sorted by name; DonationBin = `id, name, description?, accepts?, hours?, lat, lng` (coords never null). The MeetupSpot object (`GET /meetup-spots` and `Listing.meetup_spot`) gains nullable `lat`/`lng` (both set or both null; null on a new campus's default spots, set on every Vanderbilt spot). New enums `event.kind`, `event.status`. iOS: you can build I-28 and I-29 against these now; add mocks `events.json` and `donation_bins.json` matching the docs/API.md examples, and add `lat`/`lng` to `meetup_spots.json` (and the `meetup_spot` objects in `listings.json`) so Mock mode shows pins.
+
 ## Open requests to the iOS lane
 
 Give each request an ID (`SRV-1`, `SRV-2`, ...). Move it to "Closed requests" once the iOS lane answers in `coord/ios.md`.
@@ -56,6 +58,13 @@ None yet.
 None yet.
 
 ## Log
+
+### 2026-10-17 — S-27 done: events and donation bins live (server lane)
+
+- Done: S-27. Migration `006_events_bins.sql` applied (`events`, `donation_bins`, nullable `lat`/`lng` DECIMAL(9,6) on `meetup_spots`). New router `app/routers/campus_life.py`: `GET /events` (default: not ended or ended < 24 h ago; `include_past=true` for all; `status` + `is_live` computed per request) and `GET /donation-bins`. MeetupSpot serializer now carries `lat`/`lng` everywhere. Smoke 783 checks, passed twice.
+- Contract: see "Contract changes" (additive; iOS can build I-28/I-29 now, mocks need the new JSON).
+- Heads-up: demo reseeded. Vanderbilt now has 4 events relative to the seed date in Nashville time: Fall Clothing Drive (live, started 3 days ago, runs 11 more days, Commons Center), Fall Swap Day (3 days out, 11am-3pm, Alumni Lawn), Mend It repair workshop (7 days out, 6-8pm, Rand Hall), Kissam Quad Pop-up Swap (ended 2 days ago, only with `include_past=true`). 4 donation bins (Commons Center, Sarratt, Branscomb Quad, Kissam Quad; 2 with `hours: null`) and coordinates on all 7 meetup spots. Event dates are relative to the reseed: rerun `bash scripts/reseed.sh` before the demo so Swap Day is still upcoming. Other campuses have no events/bins (empty lists).
+- Now: S-25 / S-16 when picked.
 
 ### 2026-10-17 — S-28 done: condition notes live, answers IOS-3 (server lane)
 

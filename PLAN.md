@@ -117,5 +117,5 @@ Each feature has an iOS half and a server half. The server lane ships the endpoi
 - [ ] I-28 Campus map of donation bins and meetup spots.
 - [ ] I-29 Swap Day events tab.
 - [ ] I-30 Onboarding carousel that explains the mission.
-- [ ] S-27 Events endpoint and seed data.
+- [x] S-27 Events endpoint and seed data.
 - [x] S-28 Condition explanation from the vision model ("light fading at the cuffs").
