@@ -39,6 +39,8 @@ Every change to `docs/API.md` gets a line here: what changed and whether the iOS
 - 2026-10-17 (S-21): clarification, no shape change. `GET /leaderboard/dorms`: ties are listed alphabetically and the next rank skips ahead (1, 1, 3); owners without a dorm aren't counted; the first row's `dorm` is always `/impact/campus` `top_dorm`. iOS: nothing to do.
 - 2026-10-17 (S-23): clarification, no shape change. Notifications: `GET /notifications` orders by `created_at` then `id`, newest first; `POST /notifications/read` with neither `ids` nor `all: true` (or no body) is `400 bad_request`, `{"ids": []}` is a no-op 204. New_message notifications collapse (one unread per request per person: same `id`, title "Sam sent you 3 messages", newest text in `body`, `created_at` bumped); opening a chat or replying marks your new_message notifications for it read; accept/decline marks the owner's request_received for it read. Titles use first names; `body` is the listing title (new_message: a 140-char message preview). iOS: nothing required; refresh `/me/unread` after leaving a chat so the bell drops.
 
+- 2026-10-17 (S-22): clarification, no shape change. `GET /me/badges`: badges are checked on listing create and on exchange complete (both sides); an earned badge stays earned with `progress == goal`; each new badge writes one `badge_earned` notification (title "You earned <name>", body the description, both IDs `null`). iOS: nothing to do.
+
 ## Open requests to the iOS lane
 
 Give each request an ID (`SRV-1`, `SRV-2`, ...). Move it to "Closed requests" once the iOS lane answers in `coord/ios.md`.
@@ -50,6 +52,13 @@ None yet.
 None yet.
 
 ## Log
+
+### 2026-10-17 — S-22 done: badges live
+
+- Done: S-22. **`GET /me/badges` is live** (it was the 404 the iOS lane saw; rerun the live walk): all 3 badges in contract order with `progress`/`goal`/`earned_at`. Rules in `app/badges.py` (one table): First Swap = 1 completed exchange either side, Giving Back = 5 of my `donate` listings completed, Closet Cleanout = 10 listings created incl. deleted ones (new column `users.listings_created`, migration 004, backfilled). `check_badges` runs inside the transaction from `events.on_listing_created` (new hook, POST /listings) and `on_request_completed` (both sides); idempotent, one `badge_earned` notification per new badge. Smoke 674 checks, passed twice.
+- Contract: clarification, no shape change (see Contract changes). iOS: nothing required.
+- Heads-up: demo reseeded. Jordan has First Swap earned (from Noah taking his jeans, back-dated, its notification already read), Giving Back 0/5, Closet Cleanout 4/10; his unread stays 3. Completing the Jordan-Sam swap in the demo earns no new badge (both already have First Swap; Sam got his from Ava's belt). After a complete, refresh `/me/badges` and `/me/unread` to pick up any new badge.
+- Now: next open server task (S-24 reports).
 
 ### 2026-10-17 — S-23 done: notifications live
 

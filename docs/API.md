@@ -619,6 +619,8 @@ Always returns every badge, in this order. `earned_at` is `null` until the badge
 - Giving Back: five of my `donate` listings completed.
 - Closet Cleanout: ten listings created, counting ones since deleted or completed.
 
+Badges are checked when you create a listing and when one of your exchanges completes (both sides). Once earned, a badge stays earned and shows `progress` equal to `goal`. Each newly earned badge writes one `badge_earned` notification, never repeated: `title` "You earned First Swap" (the badge's `name`), `body` the badge's `description`, both IDs `null`.
+
 ### GET /notifications and POST /notifications/read
 
 `GET /notifications` returns a paged list of Notifications, newest first, plus `unread` (the total unread, across all pages) at the top level:
