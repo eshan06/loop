@@ -98,7 +98,10 @@ export function TopBar() {
           <div className="popwrap" ref={menuWrap}>
             <button className="avatar-btn" onClick={() => setMenu((m) => !m)} aria-expanded={menu} aria-label="Account menu">
               <span className="only-desktop"><Avatar name={user.name} url={user.avatar_url} size={34} /></span>
-              <span className="only-mobile"><MenuIcon /></span>
+              <span className="only-mobile menu-icon">
+                <MenuIcon />
+                {inboxCount + unread.notifications > 0 && <span className="menu-dot" aria-label="New activity" />}
+              </span>
             </button>
             {menu && (
               <div className="popover popover-menu" role="menu">

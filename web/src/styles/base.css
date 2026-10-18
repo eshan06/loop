@@ -161,7 +161,7 @@ ul { margin: 0; padding: 0; list-style: none; }
 .btn-post { margin-right: 6px; min-height: 40px; padding: 0 18px 0 14px; }
 .nav-icon { color: var(--ink); }
 .nav-icon.active { background: var(--surface); }
-.badge-count { position: absolute; top: 3px; right: 1px; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 9px; background: var(--ink); color: #fff; font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center; border: 2px solid #fff; box-sizing: content-box; font-variant-numeric: tabular-nums; line-height: 1; }
+.badge-count { position: absolute; top: -1px; right: -2px; min-width: 16px; height: 16px; padding: 0 4px; border-radius: 9px; background: var(--ink); color: #fff; font-size: 10px; font-weight: 700; display: flex; align-items: center; justify-content: center; border: 2px solid #fff; box-sizing: content-box; font-variant-numeric: tabular-nums; line-height: 1; pointer-events: none; }
 .avatar-btn { border: 0; background: none; padding: 2px; border-radius: 50%; display: inline-flex; margin-left: 4px; }
 .popwrap { position: relative; }
 .popover { position: absolute; right: 0; top: calc(100% + 8px); background: #fff; border-radius: 16px; box-shadow: 0 12px 40px rgba(0,0,0,.16), 0 0 0 1px var(--hairline); z-index: 40; overflow: hidden; }
@@ -253,3 +253,6 @@ ul { margin: 0; padding: 0; list-style: none; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
 }
+
+.menu-icon { position: relative; width: 40px; height: 40px; align-items: center; justify-content: center; }
+.menu-dot { position: absolute; top: 7px; right: 7px; width: 10px; height: 10px; border-radius: 50%; background: var(--ink); border: 2px solid #fff; box-sizing: content-box; }

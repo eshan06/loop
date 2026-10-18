@@ -134,7 +134,7 @@ export function RequestPane({ requestId, meId, backTo, onChanged }: Props) {
       {req.status === 'accepted' && (
         <>
           <div className="pane-toolbar">
-            <span className="muted small">Chat to set a time at {`the meetup spot`}. Mark it exchanged when it's done.</span>
+            <span className="muted small">Agree a time and place in the chat. Mark it exchanged when it's done.</span>
             <span className="pane-toolbar-btns">
               <button className="btn btn-lime btn-small" onClick={() => act('complete')} disabled={!!busy}>{busy === 'complete' ? 'Saving…' : 'Mark exchanged'}</button>
               {!iAmOwner && <button className="btn btn-ghost btn-small" onClick={() => act('cancel')} disabled={!!busy}>Cancel</button>}

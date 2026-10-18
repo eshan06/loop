@@ -282,3 +282,7 @@
   .profile-head { gap: 16px; }
   .gallery-main { border-radius: var(--r-card); }
 }
+
+/* read-only history under the celebration scrolls with the pane instead of squeezing */
+.pane-scroll .chat { flex: none; }
+.pane-scroll .chat-scroll { overflow: visible; }
