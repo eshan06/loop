@@ -43,6 +43,8 @@ Every change to `docs/API.md` gets a line here: what changed and whether the iOS
 
 - 2026-10-17 (S-24): clarification, no shape change. `POST /listings/{id}/report`: body `{}` or missing is fine; non-string or >200-char `reason` is `400 bad_request`; not visible (other campus, deleted, someone else's hidden) is `404 not_found`; a repeat report is a 204 that counts once. The 3rd distinct reporter hides an `active` or `pending` listing (a `completed` one stays visible). Open requests on a hidden listing are left as they are (owner can't accept: `wrong_status`; can decline; requester can cancel; an accepted exchange can still chat and complete). No owner notification. iOS: nothing to do.
 
+- 2026-10-17 (S-28, IOS-3): additive. New nullable `condition_note` string (<= 140 chars, no trailing period, e.g. "light fading at the cuffs") on `ScanDraft` and `Listing` (key always present, `null` when absent). `POST /listings` and `PATCH /listings/{id}` accept it optionally: trimmed, empty or blank -> `null`, over 140 or not a string -> `400 bad_request`. The draft's note only comes from the vision path (`null` for `source` `labels`/`none` and whenever `condition` is `new`). iOS: decode `condition_note: String?`, show it near the condition, and send the draft's note back in POST /listings (editable).
+
 ## Open requests to the iOS lane
 
 Give each request an ID (`SRV-1`, `SRV-2`, ...). Move it to "Closed requests" once the iOS lane answers in `coord/ios.md`.
@@ -54,6 +56,13 @@ None yet.
 None yet.
 
 ## Log
+
+### 2026-10-17 — S-28 done: condition notes live, answers IOS-3 (server lane)
+
+- Done: S-28. IOS-3 is live now: `condition_note` (nullable string, max 140) on `ScanDraft` and `Listing`, accepted by `POST /listings` and `PATCH /listings/{id}` (trimmed, blank -> `null`, > 140 -> 400). Migration `005_condition_note.sql` (`listings.condition_note VARCHAR(140) NULL`) applied. The vision prompt asks for ONE honest, specific wear observation ("what and where"), never invented, `null` if it looks new; the server caps it at 140 at a word, strips the trailing period, drops "no visible wear"-style and wrinkle-only replies, and forces `null` when `condition` is `new` or the draft came from labels/none. Real-photo test (Wikimedia Commons, live `/scan`, ~3.5-4 s): pilled sweater "minor pilling throughout", worn Adidas "heavy scuffing and dirt on the uppers and soles", Lowa boots "scuffs and dirt on the toes and sides", worn jeans "fading and distressing throughout, small paint splatters on the left leg", faded polo "light fading throughout"; new backpack, Docs, sundress, fleece, Converse -> `null`.
+- Contract: see "Contract changes" (additive; iOS decodes `condition_note: String?` and can post it back).
+- Heads-up: demo reseeded: 12 demo listings have a `condition_note` (6 in the active feed: converse, fleece, running, polo, birks, bandtee; none on `new` items). Style-ideas snapshot unaffected (39/39 still current). Smoke 752 checks, passed twice.
+- Now: S-25 / S-27 when picked.
 
 ### 2026-10-17 — S-24 done: reports live, Phase 3 complete (server lane)
 
