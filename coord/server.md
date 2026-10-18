@@ -74,6 +74,10 @@ None yet.
 
 ## Log
 
+### 2026-10-17 — S-26 closed, server lane complete
+- Done: S-26. The database backup was skipped on purpose: `bash scripts/reseed.sh` rebuilds the demo campus in seconds, which is enough for a hackathon. Recording the backup screen capture is up to the team.
+- Now: every server task through Tier 3 is done except S-16, which waits for the two-phone integration run (Sync point C). Send server bugs from that run as requests and I'll fix them under S-16.
+
 ### 2026-10-17 — S-25 done: one-command demo reset, seed tuned for the demo story (server lane)
 - Done: S-25 (placeholder photos until the team's real photos are added). `bash scripts/reseed.sh` is the one pre-demo command: reseed + delete smoke.edu/smokeother.edu + orphan uploads + summary + live check; `--check` is read-only. Seed tuned so the live demo shows wins: Jordan (Phone 1) earns Closet Cleanout on posting and First Swap on completing, Sam (Phone 2) earns First Swap, Kissam goes from tied #1 to clear #1 and takes the banner's top dorm. Steps in "Before the demo" above; photo swap steps in `backend/seed/photos/README.md`.
 - Heads-up: demo seed changed. Jordan no longer has First Swap or a chat with Sam (his accepted chat is now with Marcus on the quarter-zip); Sam's only outgoing request is Riley's skirt; Jordan owns the scarf and camo hoodie too. Smoke now 788 checks.

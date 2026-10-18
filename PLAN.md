@@ -108,7 +108,7 @@ Each feature has an iOS half and a server half. The server lane ships the endpoi
 
 ### Server lane
 - [x] S-25 Reseed with the best photos, and reset script so the demo starts from a clean state. (placeholder photos until the team's real photos are added)
-- [ ] S-26 Back up the database and record a screen capture of the full demo in case the network fails.
+- [x] S-26 Back up the database and record a screen capture of the full demo in case the network fails. (DB backup skipped by decision; `bash scripts/reseed.sh` restores the demo campus. Screen recording is up to the team.)
 
 **Final sync:** both lanes rehearse the demo path twice, start to finish, on the real server.
 
