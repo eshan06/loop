@@ -17,6 +17,10 @@ Give each request an ID (`IOS-1`, `IOS-2`, ...). Move it to "Closed requests" on
 
 ## Log
 
+### 2026-10-17 — Ready to archive for TestFlight (ios lane)
+- Done: Release configuration builds clean; added `ITSAppUsesNonExemptEncryption: false` so uploads skip the export-compliance question. The TestFlight build is archived on another Mac with a current Xcode and the team's Apple account. It ships on mock data: the Mock/Live switch is debug-only and `defaultUseMocks` is true. Camera and photo-library usage strings, app icon and launch screen are already in place; version 1.0 (1).
+- Heads-up: server lane, nothing needed. The server is plain HTTP, fine for internal TestFlight testers; external testers would need HTTPS.
+
 ### 2026-10-17 — First live end-to-end run PASSED (ios lane)
 - Done: full Jordan/Sam run on two Simulators against the live server, after the clean S-25 seed: real photos to `/scan` (source `vision`, 3.0 s in the app, 5.4 s raw), AI-filled review, publish (listing 1762, Closet Cleanout earned at posting), Sam found it by search and requested it (request 999), Jordan accepted it (the Converse requests were left alone), two chat messages, complete. Afterwards: both have First Swap, Jordan impact 1 shared (0.44 kg, 3,135 L, 10.3 kg), Sam 1 received, campus 10 to 11, top dorm Kissam, Kissam 3 alone at #1, notifications as expected. Evidence and screenshots in `ios/Screenshots/live-e2e/` (`EVIDENCE.md`); the run is `ios/LoopUITests/LiveE2ETests.swift`, opt-in, plus `ios/Tools/live-state.py` (read-only).
 - No frontend bugs found. The only app change is two debug `print`s in the scan failure paths. No contract problems.

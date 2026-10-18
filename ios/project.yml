@@ -39,6 +39,8 @@ targets:
         UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait]
         UIApplicationSceneManifest:
           UIApplicationSupportsMultipleScenes: false
+        # The app only uses HTTPS/HTTP through the system; no custom cryptography, so uploads skip the export-compliance question.
+        ITSAppUsesNonExemptEncryption: false
         NSCameraUsageDescription: Loop uses the camera to photograph clothes you want to share.
         NSPhotoLibraryUsageDescription: Loop lets you pick photos of clothes you want to share.
         # The demo server is plain HTTP on a bare IP (docs/ARCHITECTURE.md, "HTTPS and iOS").
