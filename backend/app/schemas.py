@@ -219,6 +219,12 @@ class RequestIn(BaseModel):
     note: StrictStr | None = None
 
 
+class ReportIn(BaseModel):
+    """Body of POST /listings/{id}/report. The body can be {} or missing."""
+
+    reason: StrictStr | None = None
+
+
 class RequestListingOut(BaseModel):
     """The short listing summary inside a Request."""
 

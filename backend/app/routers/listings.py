@@ -1,6 +1,7 @@
 """Listings: the campus feed, create, read, edit, delete, GET /me/listings,
 saves (PUT/DELETE /listings/{id}/save, GET /me/saved), similar items
-(GET /listings/{id}/similar), and Style it (POST /listings/{id}/style, app/style.py).
+(GET /listings/{id}/similar), Style it (POST /listings/{id}/style, app/style.py), and
+reports (POST /listings/{id}/report).
 
 Every query is scoped to the caller's campus; another campus's listing is 404.
 A `hidden` listing is 404 for everyone but its owner.
@@ -8,7 +9,7 @@ A `hidden` listing is 404 for everyone but its owner.
 
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, Query, Response
+from fastapi import APIRouter, Body, Depends, Query, Response
 from sqlalchemy import String, cast, delete, func, or_, select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
@@ -17,9 +18,9 @@ from .. import events
 from ..auth import current_user
 from ..db import get_db
 from ..errors import ApiError
-from ..models import Listing, MeetupSpot, Photo, Save, User
+from ..models import Listing, MeetupSpot, Photo, Report, Save, User
 from ..paging import Paging, paged, paging_params
-from ..schemas import ItemsList, ListingIn, ListingOut, Page, StyleOut
+from ..schemas import ItemsList, ListingIn, ListingOut, Page, ReportIn, StyleOut
 from ..style import ideas_for
 from ..serializers import listing_out, listings_out
 
@@ -37,6 +38,9 @@ TEXT_LIMITS = {"size": 20, "color": 60, "brand": 80, "description": 2000}
 TITLE_MAX = 120
 SIMILAR_DEFAULT = 6
 SIMILAR_MAX = 20
+REASON_MAX = 200
+HIDE_AFTER = 3  # distinct reporters
+HIDEABLE = ("active", "pending")  # a completed listing is history: reports are kept, it stays
 
 
 def _bad(message: str) -> ApiError:
@@ -402,3 +406,48 @@ def get_my_saved(
     return Page[ListingOut](
         items=listings_out(db, rows, user), total=total, next_offset=paging.next_offset(len(rows), total)
     )
+
+
+# ---- Reports -----------------------------------------------------------------
+# One report per user per listing (unique key); a repeat is a 204 that changes
+# nothing. The listing row is locked first, so concurrent reports count in order
+# and exactly one of them hides it. At HIDE_AFTER distinct reporters an active or
+# pending listing becomes hidden. Open requests on it are left alone: the owner
+# can't accept (the listing isn't active) but can decline, the requester can
+# cancel, and an accepted exchange can still chat and complete. Cancelling an
+# accepted request only reopens a `pending` listing, so hidden stays hidden.
+
+@router.post("/listings/{listing_id}/report", status_code=204)
+def report_listing(
+    listing_id: int,
+    body: ReportIn | None = Body(None),
+    user: User = Depends(current_user),
+    db: Session = Depends(get_db),
+) -> Response:
+    reason = _text(body.reason if body else None, "reason", REASON_MAX)
+    listing = db.scalar(
+        select(Listing).where(Listing.id == listing_id).with_for_update()
+        .execution_options(populate_existing=True)
+    )
+    if listing is None or listing.campus_id != user.campus_id or (
+        listing.status == "hidden" and listing.owner_id != user.id
+    ):
+        raise ApiError(404, "not_found", "That listing isn't available.")
+    if listing.owner_id == user.id:
+        raise ApiError(409, "own_listing", "This is your own listing.")
+    exists = db.scalar(
+        select(Report.id).where(Report.listing_id == listing.id, Report.reporter_id == user.id)
+    )
+    if exists is None:
+        db.add(Report(listing_id=listing.id, reporter_id=user.id, reason=reason))
+        db.flush()
+        count = db.scalar(
+            select(func.count(func.distinct(Report.reporter_id))).where(Report.listing_id == listing.id)
+        )
+        if count >= HIDE_AFTER and listing.status in HIDEABLE:
+            listing.status = "hidden"
+    try:
+        db.commit()
+    except IntegrityError:  # same user reported twice at once: counts once
+        db.rollback()
+    return Response(status_code=204)

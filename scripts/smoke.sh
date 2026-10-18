@@ -1592,6 +1592,148 @@ bdg "$TOK_BR"
 bcheck "B['first_swap']['progress'] == 1 and B['giving_back']['earned_at'] is None and B['closet_cleanout']['earned_at'] is None" "receiver still has only First Swap"
 
 # ---------------------------------------------------------------------------
+section "reports and hidden listings (S-24)"
+# Fresh users: owner RO, reporters R1, R2, R3 (all smoke.edu). RO's listing L_RP gets
+# three reports and becomes hidden; then every hidden rule is checked from both sides.
+# R3's listing L_RS shares L_RP's tag, so L_RP shows up in L_RS's similar row.
+rp_list() {  # rp_list TOKEN TITLE -> prints a new listing id (category bags, tag rptag)
+  local photo; photo="$(up "$SMALL_JPEG" front "$1")" || exit 1
+  req POST /listings "{\"title\": \"$2\", \"category\": \"bags\", \"condition\": \"good\", \"share_type\": \"free\", \"tags\": [\"rptag${RUN}\"], \"meetup_spot_id\": $SPOT1, \"photo_ids\": [$photo]}" "$1"
+  [[ "$STATUS" == 201 ]] || fail "list $2"
+  jget 'd["id"]'
+}
+read -r TOK_RO ID_RO <<<"$(nt_user rpo Rory)" || exit 1
+read -r TOK_R1 ID_R1 <<<"$(nt_user rp1)" || exit 1
+read -r TOK_R2 ID_R2 <<<"$(nt_user rp2)" || exit 1
+read -r TOK_R3 ID_R3 <<<"$(nt_user rp3)" || exit 1
+ok "4 fresh users: owner and 3 reporters"
+L_RP="$(rp_list "$TOK_RO" "Report me tote $MK")" || exit 1
+sleep 1
+L_RS="$(rp_list "$TOK_R3" "Similar tote $MK")" || exit 1
+ok "owner listed L_RP, R3 listed a similar L_RS"
+
+# Before any report: R1 has a pending request, R2 has it saved, it's in feed and similar.
+req POST "/listings/$L_RP/requests" '{}' "$TOK_R1"
+expect 201 "R1 requests L_RP (stays pending)"
+RQ_RP="$(jget 'd["id"]')"
+req PUT "/listings/$L_RP/save" "" "$TOK_R2"
+expect 204 "R2 saves L_RP"
+req GET /me/saved "" "$TOK_R2"
+check "[l['id'] for l in d['items']] == [$L_RP]" "L_RP is in R2's saved list"
+req GET "/listings/$L_RS/similar" "" "$TOK_R1"
+check "$L_RP in [l['id'] for l in d['items']]" "L_RP is in L_RS's similar row"
+
+# Errors.
+req POST "/listings/$L_RP/report" '{}'
+expect 401 unauthorized "report without a token"
+req POST "/listings/$L_RP/report" '{"reason": "mine"}' "$TOK_RO"
+expect 409 own_listing "reporting your own listing"
+req POST /listings/999999999/report '{}' "$TOK_R1"
+expect 404 not_found "report a missing listing"
+req POST "/listings/$L_RP/report" '{}' "$TOKEN_C"
+expect 404 not_found "report another campus's listing"
+LONG201="$(python3 -c 'print("x" * 201)')"
+req POST "/listings/$L_RP/report" "{\"reason\": \"$LONG201\"}" "$TOK_R1"
+expect 400 bad_request "reason over 200 characters"
+check "'reason' in d['error']['message']" "the 400 names reason"
+req POST "/listings/$L_RP/report" '{"reason": 5}' "$TOK_R1"
+expect 400 bad_request "reason that isn't a string"
+
+# Reports 1 and 2 (R1 twice counts once): still visible.
+LONG200="$(python3 -c 'print("y" * 200)')"
+req POST "/listings/$L_RP/report" "{\"reason\": \"$LONG200\"}" "$TOK_R1"
+expect 204 "R1 reports (200-char reason)"
+[[ ! -s "$BODY" ]] || fail "report body should be empty"
+ok "report body is empty"
+req POST "/listings/$L_RP/report" '{"reason": "Not clothing"}' "$TOK_R1"
+expect 204 "R1 reports again: 204, counts once"
+req POST "/listings/$L_RP/report" '{}' "$TOK_R2"
+expect 204 "R2 reports (empty body)"
+req GET "/listings/$L_RP" "" "$TOK_R3"
+expect 200 "2 reporters (one twice): still visible"
+check "d['status'] == 'active'" "still active after 2 distinct reporters"
+req GET "/listings?q=rptag${RUN}" "" "$TOK_R3"
+check "$L_RP in [l['id'] for l in d['items']]" "still in the feed after 2 reporters"
+
+# Report 3 hides it.
+req POST "/listings/$L_RP/report" "" "$TOK_R3"
+expect 204 "R3 reports (no body): third distinct reporter"
+
+# Owner still sees it.
+req GET "/listings/$L_RP" "" "$TOK_RO"
+expect 200 "owner GET hidden listing"
+check "d['status'] == 'hidden' and d['is_mine'] is True" "owner sees status hidden"
+req GET /me/listings "" "$TOK_RO"
+check "any(l['id'] == $L_RP and l['status'] == 'hidden' for l in d['items'])" "owner's /me/listings (active tab) includes it"
+req GET "/listings?q=rptag${RUN}" "" "$TOK_RO"
+check "$L_RP not in [l['id'] for l in d['items']]" "not in the owner's feed either"
+req POST "/listings/$L_RP/report" '{}' "$TOK_RO"
+expect 409 own_listing "owner reporting own hidden listing"
+
+# Everyone else: 404 everywhere, gone from lists.
+for who in R1 R2 R3; do
+  tokvar="TOK_$who"; tok="${!tokvar}"
+  req GET "/listings/$L_RP" "" "$tok"
+  expect 404 not_found "$who: GET hidden listing"
+done
+req GET "/listings/$L_RP/similar" "" "$TOK_R1"
+expect 404 not_found "similar on a hidden listing"
+req POST "/listings/$L_RP/style" "" "$TOK_R1"
+expect 404 not_found "style on a hidden listing"
+req PUT "/listings/$L_RP/save" "" "$TOK_R1"
+expect 404 not_found "save a hidden listing"
+req DELETE "/listings/$L_RP/save" "" "$TOK_R2"
+expect 404 not_found "unsave a hidden listing"
+req POST "/listings/$L_RP/requests" '{}' "$TOK_R2"
+expect 404 not_found "request a hidden listing"
+req POST "/listings/$L_RP/report" '{}' "$TOK_R2"
+expect 404 not_found "report a hidden listing (already reported)"
+req POST "/listings/$L_RP/report" '{}' "$TOKEN_A"
+expect 404 not_found "report a hidden listing (new reporter)"
+req GET "/listings?q=rptag${RUN}" "" "$TOK_R1"
+check "[l['id'] for l in d['items']] == [$L_RS]" "feed search: only L_RS left"
+req GET "/listings?limit=100" "" "$TOK_R1"
+check "$L_RP not in [l['id'] for l in d['items']]" "not in the unfiltered feed"
+req GET /me/saved "" "$TOK_R2"
+check "d['items'] == [] and d['total'] == 0" "gone from R2's saved list"
+req GET "/listings/$L_RS/similar" "" "$TOK_R1"
+expect 200 "similar for L_RS"
+check "$L_RP not in [l['id'] for l in d['items']]" "gone from L_RS's similar row"
+
+# Open requests are left alone: the owner can't accept, the requester can still cancel.
+req GET "/requests/$RQ_RP" "" "$TOK_R1"
+expect 200 "R1 still sees the request"
+check "d['status'] == 'pending'" "the request is still pending"
+req POST "/requests/$RQ_RP/accept" "" "$TOK_RO"
+expect 409 wrong_status "owner can't accept on a hidden listing"
+req POST "/requests/$RQ_RP/cancel" "" "$TOK_R1"
+expect 200 "R1 cancels the pending request"
+req GET "/listings/$L_RP" "" "$TOK_RO"
+check "d['status'] == 'hidden'" "still hidden after the cancel"
+
+# A pending listing (accepted request) is hidden too, and cancelling doesn't unhide it.
+L_RQ="$(rp_list "$TOK_RO" "Report pending tote $MK")" || exit 1
+req POST "/listings/$L_RQ/requests" '{}' "$TOK_R1"
+expect 201 "R1 requests L_RQ"
+RQ_RQ="$(jget 'd["id"]')"
+req POST "/requests/$RQ_RQ/accept" "" "$TOK_RO"
+expect 200 "owner accepts: L_RQ is pending"
+for who in R1 R2 R3; do
+  tokvar="TOK_$who"
+  req POST "/listings/$L_RQ/report" '{}' "${!tokvar}"
+  [[ "$STATUS" == 204 ]] || fail "$who reports L_RQ"
+done
+ok "3 reporters on the pending listing"
+req GET "/listings/$L_RQ" "" "$TOK_RO"
+check "d['status'] == 'hidden'" "pending listing hidden after 3 reports"
+req POST "/requests/$RQ_RQ/cancel" "" "$TOK_R1"
+expect 200 "R1 cancels the accepted request"
+req GET "/listings/$L_RQ" "" "$TOK_RO"
+check "d['status'] == 'hidden'" "cancelling an accepted request doesn't unhide it"
+req GET "/listings/$L_RQ" "" "$TOK_R2"
+expect 404 not_found "still 404 for others"
+
+# ---------------------------------------------------------------------------
 section "demo campus vanderbilt.edu (S-15, read-only)"
 # READ-ONLY on purpose: the demo data must survive smoke runs. Logging in only adds a
 # session row. Never call GET /requests/{id}/messages here (it moves read markers), and
