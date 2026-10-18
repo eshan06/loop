@@ -666,5 +666,5 @@ How it works (additive detail, nothing for the app to do):
 
 - The body can be `{}` or missing. A `reason` that isn't a string, or is over 200 characters, is `bad_request` (400). Only listings the caller can see can be reported: another campus, deleted, or someone else's `hidden` listing is `404 not_found`.
 - The third distinct reporter hides an `active` or `pending` listing. A `completed` listing keeps its reports but stays visible, since it's exchange history.
-- Open requests on a hidden listing stay as they are. The owner can't accept a `pending` one (`wrong_status`, because the listing isn't `active`) but can decline it, and the requester can cancel. An `accepted` exchange can still chat and complete. Cancelling an accepted request doesn't unhide the listing.
+- Open requests on a hidden listing stay as they are. The owner can't accept a `pending` one (`wrong_status`, because the listing isn't `active`) but can decline it, and the requester can cancel. An `accepted` exchange can still chat and complete (completing moves the listing to `completed` as usual). Cancelling an accepted request doesn't unhide the listing.
 - The owner gets no notification (there is no notification type for it). The owner still sees the listing in `GET /listings/{id}` and the `active` tab of `GET /me/listings` with `status: "hidden"`, and can edit or delete it.

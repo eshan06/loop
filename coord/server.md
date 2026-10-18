@@ -41,6 +41,8 @@ Every change to `docs/API.md` gets a line here: what changed and whether the iOS
 
 - 2026-10-17 (S-22): clarification, no shape change. `GET /me/badges`: badges are checked on listing create and on exchange complete (both sides); an earned badge stays earned with `progress == goal`; each new badge writes one `badge_earned` notification (title "You earned <name>", body the description, both IDs `null`). iOS: nothing to do.
 
+- 2026-10-17 (S-24): clarification, no shape change. `POST /listings/{id}/report`: body `{}` or missing is fine; non-string or >200-char `reason` is `400 bad_request`; not visible (other campus, deleted, someone else's hidden) is `404 not_found`; a repeat report is a 204 that counts once. The 3rd distinct reporter hides an `active` or `pending` listing (a `completed` one stays visible). Open requests on a hidden listing are left as they are (owner can't accept: `wrong_status`; can decline; requester can cancel; an accepted exchange can still chat and complete). No owner notification. iOS: nothing to do.
+
 ## Open requests to the iOS lane
 
 Give each request an ID (`SRV-1`, `SRV-2`, ...). Move it to "Closed requests" once the iOS lane answers in `coord/ios.md`.
@@ -52,6 +54,13 @@ None yet.
 None yet.
 
 ## Log
+
+### 2026-10-17 — S-24 done: reports live, Phase 3 complete (server lane)
+
+- Done: S-24. **This completes Phase 3 on the server lane** (S-17 to S-24 all live). `POST /listings/{id}/report` (204) in `app/routers/listings.py`: locks the listing row, one report per user (repeat counts once), `own_listing` (409) for your own, `404 not_found` for anything you can't see, `reason` optional (<=200). The 3rd distinct reporter sets an `active` or `pending` listing to `hidden` in the same transaction. First time hiding was possible, so every earlier hidden rule got tested: non-owners get 404 on detail, similar, style, save PUT/DELETE, request create, report; it leaves the feed/search, other users' `/me/saved` and similar rows; the owner still gets detail (status `hidden`) and the `/me/listings` active tab. All were already right, no fixes needed. Smoke 727 checks, passed twice.
+- Contract: clarification, no shape change (see Contract changes). Open requests on a hidden listing stay as they are; cancelling an accepted one doesn't unhide it. No notification (no type for it). iOS: nothing required; I-25's report button can go live.
+- Heads-up: demo data untouched (smoke never reports demo listings). Don't report a demo listing 3 times from 3 accounts during rehearsal or it hides; `bash scripts/reseed.sh` restores it.
+- Now: Phase 4 server tasks (S-16 integration fixes, S-25 reseed/reset).
 
 ### 2026-10-17 — S-22 done: badges live
 

@@ -98,7 +98,7 @@ Each feature has an iOS half and a server half. The server lane ships the endpoi
 - [x] S-21 Dorm leaderboard.
 - [x] S-22 Badge rules and `GET /me/badges`.
 - [x] S-23 Notifications written on request and message events, plus list and mark-read.
-- [ ] S-24 Reports, with listings auto-hidden after three reports.
+- [x] S-24 Reports, with listings auto-hidden after three reports.
 
 ## Phase 4: Polish and demo
 
