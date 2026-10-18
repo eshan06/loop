@@ -1417,20 +1417,26 @@ check "len(d['items'][0]['body']) <= 140 and d['items'][0]['body'].endswith('…
 req GET /me/unread "" "$TOK_N1"
 check "d['notifications'] == 2" "N1 /me/unread notifications 2"
 
-# Complete and cancel send nothing.
+# Complete and cancel send no request notifications. Completing a first exchange earns
+# First Swap (S-22), so each side gets exactly one badge_earned; both mark it read.
 req POST "/requests/$NR1/complete" "" "$TOK_N1"; [[ "$STATUS" == 200 ]] || fail "N1 completes"
-nts "$TOK_NO"; check "d['total'] == 4" "complete: nothing for the owner"
-nts "$TOK_N1"; check "d['total'] == 3" "complete: nothing for the requester"
+nts "$TOK_NO"
+check "d['total'] == 5 and d['unread'] == 1 and d['items'][0]['type'] == 'badge_earned' and d['items'][0]['request_id'] is None" "complete: the owner only gets First Swap"
+req POST /notifications/read "{\"ids\": [$(jget "d['items'][0]['id']")]}" "$TOK_NO"; [[ "$STATUS" == 204 ]] || fail "owner reads the badge notification"
+nts "$TOK_N1"
+check "d['total'] == 4 and d['items'][0]['type'] == 'badge_earned' and [n['type'] for n in d['items'][1:]] == ['new_message', 'new_message', 'request_accepted']" "complete: the requester only gets First Swap"
+req POST /notifications/read "{\"ids\": [$(jget "d['items'][0]['id']")]}" "$TOK_N1"; [[ "$STATUS" == 204 ]] || fail "N1 reads the badge notification"
+sleep 1
 req POST "/listings/$NL2/requests" '{}' "$TOK_N2"; [[ "$STATUS" == 201 ]] || fail "N2 requests NL2"
 NR4="$(jget 'd["id"]')"
-nts "$TOK_NO"; check "d['total'] == 5 and d['unread'] == 1 and d['items'][0]['request_id'] == $NR4" "N2's request on NL2 notifies the owner"
+nts "$TOK_NO"; check "d['total'] == 6 and d['unread'] == 1 and d['items'][0]['request_id'] == $NR4" "N2's request on NL2 notifies the owner"
 req POST "/requests/$NR4/cancel" "" "$TOK_N2"; [[ "$STATUS" == 200 ]] || fail "N2 cancels pending"
-nts "$TOK_NO"; check "d['total'] == 5" "cancel (pending): nothing for the owner"
+nts "$TOK_NO"; check "d['total'] == 6" "cancel (pending): nothing for the owner"
 req POST "/listings/$NL2/requests" '{}' "$TOK_N3"; [[ "$STATUS" == 201 ]] || fail "N3 requests NL2"
 NR5="$(jget 'd["id"]')"
 req POST "/requests/$NR5/accept" "" "$TOK_NO"; [[ "$STATUS" == 200 ]] || fail "owner accepts N3 on NL2"
 req POST "/requests/$NR5/cancel" "" "$TOK_N3"; [[ "$STATUS" == 200 ]] || fail "N3 cancels accepted"
-nts "$TOK_NO"; check "d['total'] == 6 and not any(n['type'] not in ('request_received', 'new_message') for n in d['items'])" "cancel (accepted): owner got only the request_received"
+nts "$TOK_NO"; check "d['total'] == 7 and not any(n['type'] not in ('request_received', 'new_message', 'badge_earned') for n in d['items'])" "cancel (accepted): owner got only the request_received"
 nts "$TOK_N3"; check "d['total'] == 2 and d['items'][0]['type'] == 'request_accepted' and d['items'][0]['request_id'] == $NR5" "N3: declined earlier, now accepted, nothing for the cancel"
 nts "$TOK_N2"; check "d['total'] == 1" "N2: nothing for its own cancel"
 
@@ -1447,7 +1453,7 @@ expect 204 "POST /notifications/read with ids"
 [[ ! -s "$BODY" ]] || fail "mark-read 204 has an empty body"
 ok "mark-read body is empty"
 nts "$TOK_N1"
-check "d['unread'] == 1 and [n['read'] for n in d['items'] if n['id'] == $N1_FIRST] == [True] and d['total'] == 3" "only that ID is read"
+check "d['unread'] == 1 and [n['read'] for n in d['items'] if n['id'] == $N1_FIRST] == [True] and d['total'] == 4" "only that ID is read"
 req POST /notifications/read "{\"ids\": [$N1_FIRST]}" "$TOK_N1"
 expect 204 "marking it again is still 204"
 nts "$TOK_N1"; check "d['unread'] == 1" "idempotent"
@@ -1465,10 +1471,125 @@ req POST /notifications/read "" "$TOK_N1"
 expect 400 bad_request "mark-read with no body"
 req POST /notifications/read '{"all": true}' "$TOK_N1"
 expect 204 "POST /notifications/read all"
-nts "$TOK_N1"; check "d['unread'] == 0 and all(n['read'] for n in d['items']) and d['total'] == 3" "all read, nothing deleted"
+nts "$TOK_N1"; check "d['unread'] == 0 and all(n['read'] for n in d['items']) and d['total'] == 4" "all read, nothing deleted"
 req GET /me/unread "" "$TOK_N1"
 check "d['notifications'] == 0" "/me/unread notifications 0"
 nts "$TOK_NO"; check "d['unread'] == 1" "marking all for N1 didn't touch the owner's"
+
+# ---------------------------------------------------------------------------
+section "badges (S-22)"
+# Fresh users: giver BG (Gwen), receiver BR (Remy). Rules (docs/API.md GET /me/badges):
+# first_swap = 1 completed exchange either side; giving_back = 5 of my donate listings
+# completed; closet_cleanout = 10 listings created, deleted ones included.
+BADGE_KEYS="{'id','name','description','earned_at','progress','goal'}"
+BADGE_ORDER="['first_swap', 'giving_back', 'closet_cleanout']"
+# bdg TOKEN -> GET /me/badges into $BODY, checks the shape; B = {id: badge} in checks
+bdg() {
+  req GET /me/badges "" "$1"; [[ "$STATUS" == 200 ]] || fail "GET /me/badges"
+  check "[b['id'] for b in d['items']] == $BADGE_ORDER and all(set(b) == $BADGE_KEYS for b in d['items']) and [b['goal'] for b in d['items']] == [1, 5, 10] and all(0 <= b['progress'] <= b['goal'] and (b['earned_at'] is None or ISO.match(b['earned_at'])) for b in d['items'])" "badges: all 3 in order, contract keys, goals 1/5/10" >/dev/null
+}
+# bcheck EXPR DESC -> check with B = {id: badge} from the last bdg
+bcheck() { check "(lambda B: $1)({b['id']: b for b in d['items']})" "$2"; }
+# badge_notes TOKEN -> prints the number of badge_earned notifications
+badge_notes() {
+  nts "$1"; jget "len([n for n in d['items'] if n['type'] == 'badge_earned'])"
+}
+b_list() {  # b_list TOKEN TITLE SHARE_TYPE -> prints a new listing id
+  local photo; photo="$(up "$SMALL_JPEG" front "$1")" || exit 1
+  req POST /listings "{\"title\": \"$2\", \"category\": \"tops\", \"condition\": \"good\", \"share_type\": \"$3\", \"meetup_spot_id\": $SPOT1, \"photo_ids\": [$photo]}" "$1"
+  [[ "$STATUS" == 201 ]] || fail "list $2"
+  jget 'd["id"]'
+}
+b_swap() {  # b_swap LISTING_ID -> BR requests it, BG accepts, BG marks it done
+  req POST "/listings/$1/requests" '{}' "$TOK_BR"; [[ "$STATUS" == 201 ]] || fail "BR requests $1"
+  local rid; rid="$(jget 'd["id"]')"
+  req POST "/requests/$rid/accept" "" "$TOK_BG"; [[ "$STATUS" == 200 ]] || fail "BG accepts $rid"
+  req POST "/requests/$rid/complete" "" "$TOK_BG"; [[ "$STATUS" == 200 ]] || fail "BG completes $rid"
+}
+read -r TOK_BG USR_BG <<<"$(nt_user bg "Gwen Smoke")" || exit 1
+read -r TOK_BR USR_BR <<<"$(nt_user br "Remy Smoke")" || exit 1
+[[ -n "$TOK_BG" && -n "$TOK_BR" ]] || fail "set up badge users"
+ok "2 fresh users for badges"
+
+req GET /me/badges
+expect 401 unauthorized "GET /me/badges without a token"
+req GET /me/badges "" "$TOK_BG"
+expect 200 "GET /me/badges"
+check "len(d) == 1 and len(d['items']) == 3" "body is {items: [3 badges]}"
+bdg "$TOK_BG"
+check "d['items'] == [{'id': 'first_swap', 'name': 'First Swap', 'description': 'Complete your first exchange', 'earned_at': None, 'progress': 0, 'goal': 1}, {'id': 'giving_back', 'name': 'Giving Back', 'description': 'Donate five items', 'earned_at': None, 'progress': 0, 'goal': 5}, {'id': 'closet_cleanout', 'name': 'Closet Cleanout', 'description': 'List ten items', 'earned_at': None, 'progress': 0, 'goal': 10}]" "new user: exact names/descriptions, nothing earned, progress 0"
+
+# Listings: 1 -> progress 1, nothing earned yet.
+BL1="$(b_list "$TOK_BG" "Badge tee 1 $MK" donate)" || exit 1
+bdg "$TOK_BG"
+bcheck "B['closet_cleanout']['progress'] == 1 and B['closet_cleanout']['earned_at'] is None and B['first_swap']['progress'] == 0" "first listing: Closet Cleanout 1 of 10, not earned"
+[[ "$(badge_notes "$TOK_BG")" == 0 ]] || fail "no badge notification after one listing"
+ok "no badge_earned notification after one listing"
+BL_IDS="$BL1"
+for i in 2 3 4 5 6 7 8 9; do
+  lid="$(b_list "$TOK_BG" "Badge tee $i $MK" donate)" || exit 1
+  BL_IDS="$BL_IDS $lid"
+done
+bdg "$TOK_BG"
+bcheck "B['closet_cleanout']['progress'] == 9 and B['closet_cleanout']['earned_at'] is None" "9 listings: 9 of 10"
+# Delete one: still counts (listings created, deleted included).
+DEL_ID="${BL_IDS##* }"; BL_IDS="${BL_IDS% *}"
+req DELETE "/listings/$DEL_ID" "" "$TOK_BG"; expect 204 "delete one of the 9 listings"
+bdg "$TOK_BG"
+bcheck "B['closet_cleanout']['progress'] == 9" "a deleted listing still counts (9 of 10)"
+BL10="$(b_list "$TOK_BG" "Badge tee 10 $MK" donate)" || exit 1
+BL_IDS="$BL_IDS $BL10"
+bdg "$TOK_BG"
+bcheck "B['closet_cleanout']['progress'] == 10 and ISO.match(B['closet_cleanout']['earned_at']) and B['first_swap']['earned_at'] is None and B['giving_back']['earned_at'] is None" "10th listing earns Closet Cleanout (10 of 10, earned_at set)"
+CC_AT="$(jget "d['items'][2]['earned_at']")"
+nts "$TOK_BG"
+check "d['total'] == 1 and d['unread'] == 1 and set(d['items'][0]) == $NOTIF_KEYS" "one notification for the giver"
+check "d['items'][0]['type'] == 'badge_earned' and d['items'][0]['title'] == 'You earned Closet Cleanout' and d['items'][0]['body'] == 'List ten items' and d['items'][0]['request_id'] is None and d['items'][0]['listing_id'] is None and d['items'][0]['read'] is False" "badge_earned: title, body, both IDs null, unread"
+req GET /me/unread "" "$TOK_BG"
+check "d['notifications'] == 1" "/me/unread counts the badge notification"
+sleep 1
+BL11="$(b_list "$TOK_BG" "Badge tee 11 $MK" swap)" || exit 1
+bdg "$TOK_BG"
+bcheck "B['closet_cleanout']['progress'] == 10 and B['closet_cleanout']['earned_at'] == '$CC_AT'" "11th listing: progress stops at 10, earned_at unchanged"
+[[ "$(badge_notes "$TOK_BG")" == 1 ]] || fail "11th listing re-sent Closet Cleanout"
+ok "11th listing: no duplicate badge notification"
+bdg "$TOK_BR"
+bcheck "all(b['earned_at'] is None and b['progress'] == 0 for b in B.values())" "the receiver has nothing yet"
+
+# Exchanges: the first earns First Swap for both sides; donations count toward Giving Back.
+read -r -a BL <<<"$BL_IDS"
+b_swap "${BL[0]}"
+bdg "$TOK_BG"
+bcheck "ISO.match(B['first_swap']['earned_at']) and B['first_swap']['progress'] == 1 and B['giving_back']['progress'] == 1 and B['giving_back']['earned_at'] is None" "giver: First Swap earned, Giving Back 1 of 5"
+bdg "$TOK_BR"
+bcheck "ISO.match(B['first_swap']['earned_at']) and B['giving_back']['progress'] == 0 and B['closet_cleanout']['progress'] == 0" "receiver: First Swap earned, receiving doesn't count as giving"
+nts "$TOK_BR"
+check "d['items'][0]['type'] == 'badge_earned' and d['items'][0]['title'] == 'You earned First Swap' and d['items'][0]['body'] == 'Complete your first exchange' and d['items'][0]['request_id'] is None" "receiver gets a First Swap notification"
+[[ "$(badge_notes "$TOK_BR")" == 1 ]] || fail "receiver should have 1 badge notification"
+[[ "$(badge_notes "$TOK_BG")" == 2 ]] || fail "giver should have 2 badge notifications"
+ok "one badge_earned each for First Swap"
+bdg "$TOK_BG"; FS_AT="$(jget "d['items'][0]['earned_at']")"
+b_swap "${BL[1]}"; b_swap "${BL[2]}"; b_swap "${BL[3]}"
+bdg "$TOK_BG"
+bcheck "B['giving_back']['progress'] == 4 and B['giving_back']['earned_at'] is None and B['first_swap']['earned_at'] == '$FS_AT'" "4 donations: Giving Back 4 of 5, First Swap not re-earned"
+[[ "$(badge_notes "$TOK_BG")" == 2 && "$(badge_notes "$TOK_BR")" == 1 ]] || fail "more exchanges duplicated First Swap"
+ok "more exchanges: no duplicate First Swap rows or notifications"
+# A swap (not donate) listing completed doesn't count toward Giving Back.
+b_swap "$BL11"
+bdg "$TOK_BG"
+bcheck "B['giving_back']['progress'] == 4" "a completed swap listing doesn't count as a donation"
+b_swap "${BL[4]}"
+bdg "$TOK_BG"
+bcheck "all(ISO.match(b['earned_at']) and b['progress'] == b['goal'] for b in B.values())" "5th donation earns Giving Back: the giver has all 3"
+nts "$TOK_BG"
+check "[n['title'] for n in d['items'] if n['type'] == 'badge_earned'] == ['You earned Giving Back', 'You earned First Swap', 'You earned Closet Cleanout']" "giver's 3 badge notifications, newest first"
+b_swap "${BL[5]}"
+[[ "$(badge_notes "$TOK_BG")" == 3 ]] || fail "6th donation re-sent a badge"
+ok "6th donation: still exactly 3 badge notifications"
+bdg "$TOK_BG"
+bcheck "B['giving_back']['progress'] == 5" "Giving Back progress stops at 5"
+bdg "$TOK_BR"
+bcheck "B['first_swap']['progress'] == 1 and B['giving_back']['earned_at'] is None and B['closet_cleanout']['earned_at'] is None" "receiver still has only First Swap"
 
 # ---------------------------------------------------------------------------
 section "demo campus vanderbilt.edu (S-15, read-only)"
@@ -1534,6 +1655,10 @@ else
   check "{'request_received', 'request_accepted', 'new_message'} <= {n['type'] for n in d['items']} and all(n['request_id'] and n['listing_id'] for n in d['items'] if n['type'] != 'badge_earned')" "Jordan's notifications cover requests, an accept and a message, with IDs"
   check "[(n['created_at'], n['id']) for n in d['items']] == sorted(((n['created_at'], n['id']) for n in d['items']), reverse=True)" "Jordan's notifications newest first"
   check "any(n['type'] == 'new_message' and n['title'].startswith('Sam sent you') for n in d['items'])" "Jordan has a message notification from Sam"
+  check "any(n['type'] == 'badge_earned' and n['title'] == 'You earned First Swap' and n['request_id'] is None and n['listing_id'] is None for n in d['items'])" "Jordan's history has a First Swap badge notification"
+  bdg "$DEMO_J"
+  bcheck "B['first_swap']['progress'] == 1 and ISO.match(B['first_swap']['earned_at'])" "Jordan's /me/badges: First Swap earned"
+  bcheck "any(b['earned_at'] is None and 0 < b['progress'] < b['goal'] for b in B.values())" "Jordan has a badge in progress (e.g. Closet Cleanout)"
 
   req GET "/me/requests?role=incoming" "" "$DEMO_S"
   check "d['total'] >= 1" "Sam has incoming requests"
