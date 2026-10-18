@@ -66,8 +66,10 @@ Everything else stays as designed: black primary buttons, black selected chips, 
 - **`PrimaryButton`**: a full-width black capsule with white text, 50 pt tall. It shows a loading state with a spinner.
 
 ### 2.6 Wordmark and icon
-- Wordmark: lowercase **"loop"** in SF Pro Rounded Bold, plus a loop glyph (a continuous rounded loop, like an infinity sign) drawn as a SwiftUI `Shape` so it scales cleanly.
-- App icon: a white loop glyph on black. Export a 1024 px PNG from the same shape.
+- Wordmark (final, typography-first): lowercase **"loop."** in SF Pro Rounded Bold, near-black `Theme.ink` (#191919) in the app, with no glyph. On the welcome and launch screens a Loop Lime highlighter sits behind it.
+- App icon: the same "loop." in Loop Lime on a solid #191919 square: no symbol, gradient, shadow or border. `ios/Tools/make-app-icon.swift` renders the 1024 px PNG (no alpha) into the asset catalog.
+- Launch background is the warm off-white #FAF8F4, so launch flows into the welcome screen with no white flash.
+- Welcome screen text is `Theme.ink`; secondary copy and placeholders use `Theme.inkSecondary` / `Theme.inkPlaceholder` (about 7:1 and 4.5:1). Buttons stay black with white text.
 
 ### 2.7 Copy tone
 Friendly, short, and about campus. Use the user's dorm or campus where we have it.

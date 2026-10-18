@@ -10,8 +10,14 @@ enum Theme {
     /// Use it sparingly (Scan button, welcome mark, publish and completion moments, "You" markers),
     /// and always put near-black (`onLime`) on top of it.
     static let lime = Color(red: 199.0 / 255.0, green: 231.0 / 255.0, blue: 90.0 / 255.0)
+    /// Near-black #191919: the logo's background, editorial text on the welcome screen, and text on lime.
+    static let ink = Color(red: 25.0 / 255.0, green: 25.0 / 255.0, blue: 25.0 / 255.0)
+    /// Secondary and placeholder text on the welcome screen: ink at 72% is about 7:1 on the warm background.
+    static let inkSecondary = ink.opacity(0.72)
+    /// Placeholder text in a field: ink at 62% is about 4.5:1 on `surface`.
+    static let inkPlaceholder = ink.opacity(0.62)
     /// Text and icons on lime.
-    static let onLime = Color(red: 0.07, green: 0.07, blue: 0.07)
+    static let onLime = ink
     static let background = Color(red: 0.980, green: 0.973, blue: 0.957)   // warm off-white #FAF8F4
     static let surface = Color(red: 0.941, green: 0.929, blue: 0.906)      // warm gray #F0EDE7
     static let textPrimary = Color(uiColor: .label)

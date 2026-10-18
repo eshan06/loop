@@ -8,6 +8,18 @@ import SwiftUI
     @FocusState private var focused: Bool
     @State private var useMocks = APIConfig.useMocks
 
+    #if DEBUG
+    /// The Mock/Live selector's labels are drawn by UIKit, so SwiftUI colors don't reach them. Set only while this
+    /// screen is up; `onDisappear` puts the system colors back for every other segmented control.
+    private static func setSegmentedTitleColor(_ color: UIColor) {
+        let attributes: [NSAttributedString.Key: Any] = [.foregroundColor: color]
+        UISegmentedControl.appearance().setTitleTextAttributes(attributes, for: .normal)
+        UISegmentedControl.appearance().setTitleTextAttributes(attributes, for: .selected)
+    }
+
+    init() { Self.setSegmentedTitleColor(UIColor(Theme.ink)) }
+    #endif
+
     private var trimmed: String { email.trimmingCharacters(in: .whitespaces) }
 
     var body: some View {
@@ -18,18 +30,19 @@ import SwiftUI
                 Text("Swap, give, and donate clothes\non your campus.")
                     .font(.title3)
                     .multilineTextAlignment(.center)
-                    .foregroundStyle(Theme.textSecondary)
+                    .foregroundStyle(Theme.ink)
             }
             Spacer()
 
             VStack(alignment: .leading, spacing: Theme.Space.s) {
-                TextField("Email", text: $email, prompt: Text(verbatim: "you@school.edu").foregroundColor(Color(uiColor: .placeholderText)))
+                TextField("Email", text: $email, prompt: Text(verbatim: "you@school.edu").foregroundColor(Theme.inkPlaceholder))
                     .keyboardType(.emailAddress)
                     .textContentType(.emailAddress)
                     .textInputAutocapitalization(.never)
                     .autocorrectionDisabled()
                     .submitLabel(.continue)
                     .focused($focused)
+                    .foregroundStyle(Theme.ink)
                     .onSubmit(submit)
                     .padding(.horizontal, Theme.Space.m)
                     .frame(height: 52)
@@ -52,7 +65,7 @@ import SwiftUI
 
                 Text("Use your college .edu email. Loop only shows you people on your campus.")
                     .font(.footnote)
-                    .foregroundStyle(Theme.textSecondary)
+                    .foregroundStyle(Theme.inkSecondary)
                     .frame(maxWidth: .infinity)
                     .multilineTextAlignment(.center)
                     .padding(.top, Theme.Space.xs)
@@ -65,6 +78,9 @@ import SwiftUI
             .padding(.bottom, Theme.Space.l)
         }
         .background(Theme.background)
+        #if DEBUG
+        .onDisappear { Self.setSegmentedTitleColor(.label) }
+        #endif
         .animation(.snappy, value: error)
         .sensoryFeedback(.warning, trigger: error) { _, new in new != nil }
     }
@@ -84,11 +100,11 @@ import SwiftUI
             }
             Text("Demo accounts")
                 .font(.caption.weight(.semibold))
-                .foregroundStyle(Theme.textSecondary)
+                .foregroundStyle(Theme.inkSecondary)
                 .padding(.top, 4)
             HStack(spacing: Theme.Space.xs) {
                 ForEach(DemoAccounts.all, id: \.email) { account in
-                    Chip(title: account.label) {
+                    Chip(title: account.label, textColor: Theme.ink) {
                         email = account.email
                         submit()
                     }

@@ -50,6 +50,8 @@ import SwiftUI
     let title: String
     var isSelected = false
     var systemImage: String?
+    /// Text color when not selected.
+    var textColor = Theme.textPrimary
     let action: () -> Void
 
     var body: some View {
@@ -59,7 +61,7 @@ import SwiftUI
                 if let systemImage { Image(systemName: systemImage).font(.caption2.weight(.bold)) }
             }
             .font(.subheadline.weight(.medium))
-            .foregroundStyle(isSelected ? Color.white : Theme.textPrimary)
+            .foregroundStyle(isSelected ? Color.white : textColor)
             .padding(.horizontal, 12)
             .padding(.vertical, 8)
             .background(isSelected ? Theme.accent : Theme.surface, in: Capsule())

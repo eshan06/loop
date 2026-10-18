@@ -17,6 +17,12 @@ Give each request an ID (`IOS-1`, `IOS-2`, ...). Move it to "Closed requests" on
 
 ## Log
 
+### 2026-10-17 — I-26 done: typography-first logo, app icon, ink welcome screen (ios lane)
+- Done: I-26. App icon is "loop." in Loop Lime on solid #191919 (`ios/Tools/make-app-icon.swift` renders it into the asset catalog; verified on the Simulator home screen). In-app wordmark is type only (glyph removed, period added) in near-black `Theme.ink`; launch background is now #FAF8F4 instead of white. Sign-in typography uses `Theme.ink` with accessible secondary colors; the Loop Lime highlighter and black buttons stay. Clean build, 35 unit + 12 UI tests pass, including the read-only live-server walk.
+- Synced: 12 new server commits (S-25 reseed/demo story, S-26, S-27 events and donation bins). Additive only: `lat`/`lng` on meetup spots (the app's `MeetupSpot` ignores them) and new `GET /events`, `GET /donation-bins`. No iOS change needed. Not built, by design: I-28 map, I-29 Swap Day, and IOS-3 (showing `condition_note`, now live on the server; the app still ignores it).
+- Now: Sync point C on two phones (I-27, I-17): Jordan on Phone 1, Sam on Phone 2, per "Before the demo" in `coord/server.md`; real-iPhone camera check (I-9).
+- Heads-up: no live mutations were run. Run `bash scripts/reseed.sh` after any rehearsal.
+
 ### 2026-10-17 — Re-synced after S-22, S-24, S-28; compatible, ready for coordinated live testing
 - Done: pulled S-22 (badges), S-24 (reports), S-28 (`condition_note`). Read the API.md diffs and the router/schema changes: all additive, nothing breaks the app. `GET /me/badges` now answers 200 live and decodes into `Badge`; the Badges row on Profile shows again. `POST /listings/{id}/report` matches what `LiveAPIClient.report` sends. `condition_note` is now in live listings; the app ignores the key (IOS-3 stays open on the iOS side: adopting it is a feature, not done).
 - Tests: clean run against the live server, 35 unit + 11 UI, 0 failures (one earlier unit run hit a 401 in the live read-only test, then passed on 3 reruns; not reproduced).

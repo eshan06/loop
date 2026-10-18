@@ -415,4 +415,20 @@ final class LoopUITests: XCTestCase {
                       "Review shows the three photos in order")
         shot("05d-review-from-library")
     }
+
+    /// The welcome screen, then the installed app icon on the Simulator home screen.
+    func testSignInAndAppIconOnHomeScreen() {
+        XCTAssertTrue(app.buttons["Jordan"].waitForExistence(timeout: 10))
+        shot("signin-ink")
+
+        XCUIDevice.shared.press(.home)
+        let springboard = XCUIApplication(bundleIdentifier: "com.apple.springboard")
+        let icon = springboard.icons["Loop"]
+        for _ in 0..<4 where !icon.exists {
+            springboard.swipeLeft()
+            Thread.sleep(forTimeInterval: 0.6)
+        }
+        XCTAssertTrue(icon.waitForExistence(timeout: 3), "Loop icon on the home screen")
+        shot("app-icon-home")
+    }
 }

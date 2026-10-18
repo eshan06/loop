@@ -116,4 +116,4 @@ iOS lane: open `ios/Loop.xcodeproj` and run. The base URL and the mock switch li
 - Real device vs Simulator: the camera needs a real iPhone. To test the photo picker, add media first (`xcrun simctl addmedia booted a.jpg b.heic`); the UI tests use it.
 - The sign-in screen (DEBUG builds) has a Mock data / Live server switch, so a phone can talk to the real server with no code change and no launch arguments. Mock and live sessions keep separate tokens.
 - Loop Lime (`Theme.lime`, `#C7E75A`) is an accent, not a theme: Scan button, welcome highlighter, Just posted tag, completion checkmark, "You"/"Yours". Near-black (`Theme.onLime`) on top of it. Don't write the hex anywhere else.
-
+- App icon: `swift ios/Tools/make-app-icon.swift` renders "loop." (lime on #191919, no alpha) into the asset catalog; edit the script, not the PNG. The in-app wordmark is type only; welcome-screen text uses `Theme.ink` (#191919).
