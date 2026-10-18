@@ -173,7 +173,7 @@ UNREAD_WITHIN_H = 6
 REQUEST_TYPES = ("request_received", "request_accepted", "request_declined")
 
 LISTING_FIELDS = ("title", "category", "size", "color", "brand", "condition",
-                  "description", "tags", "share_type")
+                  "condition_note", "description", "tags", "share_type")
 
 
 # --------------------------------------------------------------------------- data checks
@@ -195,6 +195,10 @@ def load_manifest() -> list[dict]:
                                     "accessories", "bags"), f"{where}: bad category"
         assert item["condition"] in ("new", "like_new", "good", "worn"), f"{where}: bad condition"
         assert item["share_type"] in ("swap", "free", "donate"), f"{where}: bad share_type"
+        note = item.get("condition_note")
+        assert note is None or (1 <= len(note) <= 140 and note == note.strip()
+                                and not note.endswith(".")), f"{where}: condition_note"
+        assert not (note and item["condition"] == "new"), f"{where}: a new item has no condition_note"
         assert 1 <= len(item["title"]) <= 120, f"{where}: title length"
         assert len(item["tags"]) <= 10 and all(len(t) <= 30 for t in item["tags"]), f"{where}: tags"
         assert item["hours_ago"] > 0, f"{where}: hours_ago must be > 0"
