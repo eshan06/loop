@@ -37,6 +37,7 @@
 		622ADEBE8BB6B8BB11127DF3 /* SignInView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 27D71E7D404EED25F60B8984 /* SignInView.swift */; };
 		75914DCA4EF4895C9061A52D /* ThreadModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6FF8C96B68B1C001F736B674 /* ThreadModel.swift */; };
 		7607F110639F130EF73800C9 /* APIError.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1D0AC3D401D3A12F52FFFADA /* APIError.swift */; };
+		77ECED8D596F9B090E8DCFC4 /* LoopLogoShape.swift in Sources */ = {isa = PBXBuildFile; fileRef = 59CB4A88C4055ABB9C1B58A2 /* LoopLogoShape.swift */; };
 		781A96366ECB4776B3A3FE16 /* meetup_spots.json in Resources */ = {isa = PBXBuildFile; fileRef = EA55896656D0414A22411AE5 /* meetup_spots.json */; };
 		78572CBA1F274A632750A770 /* OnDeviceLabeler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 19F2E58A738750446EC759E6 /* OnDeviceLabeler.swift */; };
 		78C234212F12984C0E28C438 /* ImpactView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B9639383DB465CC3B05FDE96 /* ImpactView.swift */; };
@@ -124,6 +125,7 @@
 		488D24699123BF2CE1924087 /* style.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = style.json; sourceTree = "<group>"; };
 		4D7879E7C2DA445E28D951CD /* listings.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = listings.json; sourceTree = "<group>"; };
 		519478F1F77FB0EA6CC46DBF /* RequestsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RequestsView.swift; sourceTree = "<group>"; };
+		59CB4A88C4055ABB9C1B58A2 /* LoopLogoShape.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoopLogoShape.swift; sourceTree = "<group>"; };
 		63B71BF05C29BD3A3D8AD9BA /* APIConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIConfig.swift; sourceTree = "<group>"; };
 		65E03848BB6FF1B2FEB976CA /* NotificationsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationsView.swift; sourceTree = "<group>"; };
 		6667CC80B22C536AAABE7395 /* ImageProcessing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageProcessing.swift; sourceTree = "<group>"; };
@@ -235,6 +237,7 @@
 				15C955CCF06B25240C6B0537 /* Buttons.swift */,
 				FA057875D2BAB3159891E39A /* CachedImage.swift */,
 				E4E491E9E75782BA723229A6 /* Capsules.swift */,
+				59CB4A88C4055ABB9C1B58A2 /* LoopLogoShape.swift */,
 				BC26C81F6B11FC52201E9464 /* LoopMark.swift */,
 				0DB26E616EB4479D63E3C38E /* States.swift */,
 				DD8AB40CFF4131C51A0CAC2C /* Toast.swift */,
@@ -619,6 +622,7 @@
 				435FFA2B9E085B408C31198F /* ListingForm.swift in Sources */,
 				3FCA5F9941ECC2F10C9BB658 /* LiveAPIClient.swift in Sources */,
 				7C64ACDF98F9E89C06B1E16F /* LoopApp.swift in Sources */,
+				77ECED8D596F9B090E8DCFC4 /* LoopLogoShape.swift in Sources */,
 				81471297D3BEB4206D07D660 /* LoopMark.swift in Sources */,
 				90ABC971DA3447DFC871A01D /* MainTabView.swift in Sources */,
 				DBEDA68B2424FF976C7201E5 /* MockAPIClient.swift in Sources */,
@@ -749,7 +753,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 2;
+				CURRENT_PROJECT_VERSION = 3;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
@@ -875,7 +879,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 2;
+				CURRENT_PROJECT_VERSION = 3;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;

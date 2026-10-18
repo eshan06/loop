@@ -26,7 +26,7 @@ import SwiftUI
         VStack(spacing: 0) {
             Spacer()
             VStack(spacing: Theme.Space.m) {
-                Wordmark(size: 52, highlight: true)
+                Wordmark(size: 52)
                 Text("Swap, give, and donate clothes\non your campus.")
                     .font(.title3)
                     .multilineTextAlignment(.center)

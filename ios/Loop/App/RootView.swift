@@ -39,7 +39,7 @@ import SwiftUI
 
 @MainActor private struct LaunchView: View {
     var body: some View {
-        Wordmark(size: 44, highlight: true)
+        Wordmark(size: 44)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .background(Theme.background)
     }

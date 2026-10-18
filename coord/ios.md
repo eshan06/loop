@@ -17,6 +17,13 @@ Give each request an ID (`IOS-1`, `IOS-2`, ...). Move it to "Closed requests" on
 
 ## Log
 
+### 2026-10-17 — Infinity Loop logo approved and applied; build 1.0 (3) ready for TestFlight (ios lane)
+- Done: the approved black infinity Loop logo (no period) is in the app icon (black on white, 1024 px, no alpha), the sign-in wordmark and the launch view. It is traced from `design/Minimalist Loop Infinity Wordmark.png` (committed as the team's source artwork) with `ios/Tools/trace-logo.py` into `ios/Tools/loop-logo.json` and `LoopLogoShape.swift`; `make-app-icon.swift` now draws from the same JSON. The old lime highlighter behind the wordmark is gone; Loop Lime stays on the Scan button, tags and the completion checkmark.
+- Synced: the web portal merge and `3da5d5f` (Release builds use the live server, build 2). No conflicts; `web/` and `backend/` untouched. The build-2 commit predates the logo, so any TestFlight build 2 still shows "loop.".
+- Build: `CURRENT_PROJECT_VERSION` is now 3 (1.0 (3)); project regenerated with `bash ios/generate.sh`. Release build succeeds and has no Mock/Live switch (live server default). Unit and UI tests pass.
+- Now: the archive and upload happen on the other Mac (Archive, Release, Any iOS Device). Not uploaded from here. Next: two real phones (I-17/I-27), real-iPhone camera (I-9).
+- Heads-up: every later TestFlight upload needs a new build number above 3.
+
 ### 2026-10-17 — Ready to archive for TestFlight (ios lane)
 - Done: Release configuration builds clean; added `ITSAppUsesNonExemptEncryption: false` so uploads skip the export-compliance question. The TestFlight build is archived on another Mac with a current Xcode and the team's Apple account. It ships on mock data: the Mock/Live switch is debug-only and `defaultUseMocks` is true. Camera and photo-library usage strings, app icon and launch screen are already in place; version 1.0 (1).
 - Heads-up: server lane, nothing needed. The server is plain HTTP, fine for internal TestFlight testers; external testers would need HTTPS.

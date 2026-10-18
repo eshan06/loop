@@ -1,15 +1,18 @@
 import SwiftUI
 
-/// Lowercase "loop." in SF Pro Rounded Bold: the logo is type only, same as the app icon.
+/// The Loop logo, drawn from the approved artwork's outline (`LoopLogoShape`), so it stays sharp at any size.
+/// It is flat: near-black `Theme.ink`, no outline, shadow or gradient.
 @MainActor struct Wordmark: View {
+    /// Roughly the old wordmark's type size: the logo is `size * 2.9` points wide.
     var size: CGFloat = 34
-    /// A Loop Lime highlighter stroke behind the word. Used on the welcome and launch screens.
+    /// An optional Loop Lime highlighter stroke behind the logo. Off by default: the logo is meant to stand flat.
     var highlight = false
 
     var body: some View {
-        Text("loop.")
-            .font(.system(size: size, weight: .bold, design: .rounded))
-            .foregroundStyle(Theme.ink)
+        LoopLogoShape()
+            .fill(Theme.ink, style: FillStyle(eoFill: true))
+            .aspectRatio(1 / LoopLogoShape.aspect, contentMode: .fit)
+            .frame(width: size * 2.9)
             .background(alignment: .bottom) {
                 if highlight {
                     Capsule()
@@ -17,7 +20,7 @@ import SwiftUI
                         .frame(height: size * 0.34)
                         .rotationEffect(.degrees(-1.5))
                         .padding(.horizontal, -size * 0.08)
-                        .offset(y: -size * 0.06)
+                        .offset(y: -size * 0.04)
                 }
             }
             .accessibilityElement(children: .ignore)

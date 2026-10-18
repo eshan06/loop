@@ -1,50 +1,63 @@
 #!/usr/bin/env swift
-// Renders the 1024x1024 app icon: "loop." in SF Pro Rounded Bold, Loop Lime on near-black.
+// Renders the 1024x1024 app icon: the Loop logo in near-black on white.
+// The outline comes from ios/Tools/loop-logo.json (made by ios/Tools/trace-logo.py from the approved artwork),
+// the same outline the in-app logo (LoopLogoShape) draws.
 // Usage: swift ios/Tools/make-app-icon.swift [output.png]
 // Default output: ios/Loop/Assets.xcassets/AppIcon.appiconset/AppIcon.png (no alpha, as the App Store requires).
-// The colors are baked into the PNG, so the hex values live here too; the in-app token is Theme.lime.
-import AppKit
-import CoreText
+// The colors are baked into the PNG, so they are written here too; in the app they are Theme.ink and white.
+import CoreGraphics
+import Foundation
+import ImageIO
 
 let side = 1024
-let background = NSColor(srgbRed: 0x19 / 255, green: 0x19 / 255, blue: 0x19 / 255, alpha: 1)
-let lime = NSColor(srgbRed: 0xC7 / 255, green: 0xE7 / 255, blue: 0x5A / 255, alpha: 1)
-let wordWidth = CGFloat(side) * 0.74
-
+let logoWidth = CGFloat(side) * 0.70
 let out = CommandLine.arguments.count > 1
     ? CommandLine.arguments[1]
     : "ios/Loop/Assets.xcassets/AppIcon.appiconset/AppIcon.png"
 
-func font(size: CGFloat) -> NSFont {
-    let base = NSFont.systemFont(ofSize: size, weight: .bold)
-    let rounded = base.fontDescriptor.withDesign(.rounded) ?? base.fontDescriptor
-    return NSFont(descriptor: rounded, size: size) ?? base
-}
-
-func line(size: CGFloat) -> CTLine {
-    let text = NSAttributedString(string: "loop.", attributes: [.font: font(size: size), .foregroundColor: lime, .kern: -size * 0.01])
-    return CTLineCreateWithAttributedString(text)
-}
-
-// Size the word to a fixed share of the icon width, measured on the ink, not the advance.
-let probe = CTLineGetImageBounds(line(size: 100), nil)
-let size = 100 * wordWidth / probe.width
-let ctLine = line(size: size)
-let ink = CTLineGetImageBounds(ctLine, nil)
-
 let srgb = CGColorSpace(name: CGColorSpace.sRGB)!
+let ink = CGColor(colorSpace: srgb, components: [0x19 / 255.0, 0x19 / 255.0, 0x19 / 255.0, 1])!
+let white = CGColor(colorSpace: srgb, components: [1, 1, 1, 1])!
+
+guard let data = FileManager.default.contents(atPath: "ios/Tools/loop-logo.json"),
+      let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
+      let aspect = json["aspect"] as? Double,
+      let contours = json["contours"] as? [[String: Any]] else { fatalError("run from the repo root; loop-logo.json missing") }
+
 guard let cg = CGContext(data: nil, width: side, height: side, bitsPerComponent: 8, bytesPerRow: 0, space: srgb,
                          bitmapInfo: CGImageAlphaInfo.noneSkipLast.rawValue) else { fatalError("no context") }
-cg.setFillColor(background.cgColor)
+cg.setFillColor(white)
 cg.fill(CGRect(x: 0, y: 0, width: side, height: side))
-// Center the ink box: the tall "l" and the descending "p" balance around the middle.
-cg.textPosition = CGPoint(x: (CGFloat(side) - ink.width) / 2 - ink.minX,
-                          y: (CGFloat(side) - ink.height) / 2 - ink.minY)
-CTLineDraw(ctLine, cg)
+
+// The outline is y-down in units of the logo's width; center it in the icon (CoreGraphics is y-up).
+let originX = (CGFloat(side) - logoWidth) / 2
+let logoHeight = logoWidth * CGFloat(aspect)
+let originY = (CGFloat(side) - logoHeight) / 2
+func point(_ x: Double, _ y: Double) -> CGPoint {
+    CGPoint(x: originX + CGFloat(x) * logoWidth, y: CGFloat(side) - (originY + CGFloat(y) * logoWidth))
+}
+let path = CGMutablePath()
+for contour in contours {
+    let start = contour["start"] as! [Double]
+    path.move(to: point(start[0], start[1]))
+    for segment in contour["segments"] as! [[Any]] {
+        let kind = segment[0] as! String
+        let v = segment.dropFirst().map { ($0 as! NSNumber).doubleValue }
+        if kind == "l" {
+            path.addLine(to: point(v[0], v[1]))
+        } else {
+            path.addCurve(to: point(v[4], v[5]), control1: point(v[0], v[1]), control2: point(v[2], v[3]))
+        }
+    }
+    path.closeSubpath()
+}
+cg.setFillColor(ink)
+cg.addPath(path)
+cg.fillPath(using: .evenOdd)
 
 guard let image = cg.makeImage(),
       let destination = CGImageDestinationCreateWithURL(URL(fileURLWithPath: out) as CFURL, "public.png" as CFString, 1, nil)
 else { fatalError("png") }
 CGImageDestinationAddImage(destination, image, nil)
 guard CGImageDestinationFinalize(destination) else { fatalError("write") }
-print("wrote \(out) (font size \(Int(size)))")
+print("wrote \(out)")

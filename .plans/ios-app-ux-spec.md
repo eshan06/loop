@@ -37,10 +37,9 @@ Scope: how the iOS app looks, feels, and behaves screen by screen. The API, data
 
 **Loop Lime** is a controlled accent, not a theme. It is defined once, as `Theme.lime` in `DesignSystem/Theme.swift` (with `Theme.onLime`, near-black, for anything on top of it). Text and icons on lime are always near-black. It appears only in:
 1. The raised Scan button in the tab bar.
-2. The welcome and launch screens: a highlighter stroke behind the word "loop".
-3. Publishing: the new card gets a lime "Just posted" tag for about 6 seconds (a tag only, no border around the photo).
-4. Exchange completion: the checkmark disc.
-5. "You" / "Yours" markers (leaderboard row, item cards, item detail).
+2. Publishing: the new card gets a lime "Just posted" tag for about 6 seconds (a tag only, no border around the photo).
+3. Exchange completion: the checkmark disc.
+4. "You" / "Yours" markers (leaderboard row, item cards, item detail).
 
 Everything else stays as designed: black primary buttons, black selected chips, neutral gray capsules, and status colors that keep their system meaning (green accepted, red decline, orange pending). Don't use lime for body text, icons on the off-white page (contrast), tab selection, or impact statistics.
 
@@ -66,8 +65,8 @@ Everything else stays as designed: black primary buttons, black selected chips, 
 - **`PrimaryButton`**: a full-width black capsule with white text, 50 pt tall. It shows a loading state with a spinner.
 
 ### 2.6 Wordmark and icon
-- Wordmark (final, typography-first): lowercase **"loop."** in SF Pro Rounded Bold, near-black `Theme.ink` (#191919) in the app, with no glyph. On the welcome and launch screens a Loop Lime highlighter sits behind it.
-- App icon: the same "loop." in Loop Lime on a solid #191919 square: no symbol, gradient, shadow or border. `ios/Tools/make-app-icon.swift` renders the 1024 px PNG (no alpha) into the asset catalog.
+- Wordmark (final, approved 2026-10-17): the black infinity **Loop** logo, no period: a rigid "L" and a single continuous infinity-shaped "oo", flat near-black `Theme.ink` (#191919), no gradient, shadow or outline. Source artwork is `design/Minimalist Loop Infinity Wordmark.png`; `ios/Tools/trace-logo.py` traces it into a vector (`LoopLogoShape`), and `Wordmark` draws it on the welcome and launch screens with no highlighter.
+- App icon: the same logo in #191919 on solid white (#FFFFFF), about 70% of the width, no alpha. `ios/Tools/make-app-icon.swift` renders the 1024 px PNG into the asset catalog.
 - Launch background is the warm off-white #FAF8F4, so launch flows into the welcome screen with no white flash.
 - Welcome screen text is `Theme.ink`; secondary copy and placeholders use `Theme.inkSecondary` / `Theme.inkPlaceholder` (about 7:1 and 4.5:1). Buttons stay black with white text.
 

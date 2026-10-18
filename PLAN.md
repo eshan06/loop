@@ -103,7 +103,7 @@ Each feature has an iOS half and a server half. The server lane ships the endpoi
 ## Phase 4: Polish and demo
 
 ### iOS lane
-- [x] I-26 App icon, launch screen, and a pass for spacing, animation, and loading states.
+- [x] I-26 App icon, launch screen, and a pass for spacing, animation, and loading states. (Approved infinity Loop logo in the icon, sign-in and launch view; TestFlight build 1.0 (3).)
 - [ ] I-27 Install on two phones logged in as two demo accounts.
 
 ### Server lane
