@@ -17,6 +17,12 @@ Give each request an ID (`IOS-1`, `IOS-2`, ...). Move it to "Closed requests" on
 
 ## Log
 
+### 2026-10-17 — Re-synced after S-22, S-24, S-28; compatible, ready for coordinated live testing
+- Done: pulled S-22 (badges), S-24 (reports), S-28 (`condition_note`). Read the API.md diffs and the router/schema changes: all additive, nothing breaks the app. `GET /me/badges` now answers 200 live and decodes into `Badge`; the Badges row on Profile shows again. `POST /listings/{id}/report` matches what `LiveAPIClient.report` sends. `condition_note` is now in live listings; the app ignores the key (IOS-3 stays open on the iOS side: adopting it is a feature, not done).
+- Tests: clean run against the live server, 35 unit + 11 UI, 0 failures (one earlier unit run hit a 401 in the live read-only test, then passed on 3 reruns; not reproduced).
+- Needs: nothing. Next: Sync point C on two phones (I-17), real-iPhone camera check (I-9), I-26.
+- Heads-up: demo data reports hide at 3 reporters; don't rehearse reports on demo listings.
+
 ### 2026-10-17 — Frontend readiness audit and Loop Lime
 - Done: scan pipeline audit (camera flow, library per step, resize and JPEG upload order, Apple Vision, `/scan` request format, skeletons, retry and manual fallback, post and feed refresh, request to chat to complete, Mock to Live). Fixed: retry no longer overwrites what the user typed; a failed post resumes photo uploads instead of redoing them; image encoding moved off the main thread; library picks are decoded with ImageIO (a 31 MB HEIC works); Vision has an 8 s deadline; the keyboard no longer covers the form; `new_message` banners now fire again when a collapsed notification gets another message (docs/API.md says it keeps its `id`); detail refreshes when a request notification arrives; the feed clears filters so a new post is visible; the Mock/Live switch on the sign-in screen works without code changes; `-useMocks NO` was being ignored and now works. Loop Lime added as `Theme.lime`.
 - Verified: clean build; 35 unit tests and 11 UI tests pass, including the live read-only ones (`TEST_RUNNER_LOOP_LIVE=1`). Every live GET decodes into the app's models. Request formatting for `POST /scan` matches `backend/app/routers/scan.py` (repeated `photos` parts, `kinds`, `labels`).
