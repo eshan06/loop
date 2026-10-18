@@ -297,7 +297,7 @@ Bonus for the live demo: do step 2 from the laptop and step 4 from the iPhone ap
 
 ## Deploys
 
-Every push to `main` that changes `web/` deploys to production on its own. One-time setup, done in the Vercel dashboard by whoever owns the Vercel account:
+Once the Git link exists, every push to `main` that changes `web/` deploys to production on its own (until then, see the manual redeploy note in the status log). One-time setup, done in the Vercel dashboard by whoever owns the Vercel account:
 
 1. Add New → Project → import the Loop GitHub repo.
 2. Root Directory: `web`. Framework preset: Vite (build `npm run build`, output `dist`).
@@ -328,6 +328,15 @@ Pull requests get their own preview URL automatically, if you ever work on a bra
 - **Git link is not set up.** The repo is `eshan06/loop`, but the Vercel GitHub app is installed on the `hwangolise` account only, so the project is not connected to the repo and pushes do not deploy by themselves. To get "every push to `main` deploys": the repo owner installs the Vercel GitHub app on `eshan06/loop`, then connects `loop-web` to it under Settings, Git, and sets the production branch to `main`.
 - Deploys made through the API from a Git ref are tagged `production` unless a target is set, so previews were created with `target: staging`. Do not create a deployment from `main` through the API until the link exists.
 - Not covered: Vercel build logs (the connection can't read them) and a real iPhone or Android browser.
+
+### 2026-10-18: production deploy (manual)
+- Merged `web/portal` into `main` with a normal merge commit, `a5fa4a8` (Eshan approved the merge; nothing outside `web/` and `docs/WEB.md` changed, iOS, backend and API contract untouched).
+- Production deployment `dpl_AtUqQ7iEH55QVJwUN3TZ9DairYNB`, READY, built from `a5fa4a8` on project `loop-web`. Production alias: `https://loop-web-snowy.vercel.app` (also `loop-web-olis3s.vercel.app`, `loop-web-git-main-olis3s.vercel.app`). Settings unchanged: Vite, root `web`, `npm run build`, output `dist`, Node 24.x, `web/vercel.json` proxy.
+- **Vercel Authentication is on for every URL, production included**, so the site is private to people signed in to the owning Vercel account (not public yet). Making it public needs a separate decision: Settings, Deployment Protection, turn Vercel Authentication off.
+- Gotcha: the setting `all_except_custom_domains` left the production alias `loop-web-snowy.vercel.app` open to anyone for about two minutes after the first deploy. It is now set to `all`. Re-check after changing protection settings.
+- Verified on production, with throwaway users on `webtest.edu`: the full flow through the API (login, profile, avatar upload, `/scan` in 5.2 s with `source: vision`, `/api/media`, publish, request, accept, message, complete, First Swap badge) and again in the browser UI (sign-in, profile, drop three photos, Oracle scan, review form, publish, accept, chat polling, mark exchanged, celebration). No console messages after a reload with the tracker on. No horizontal overflow at 390 px on any of 14 routes, and the 404 page has its own title.
+- Vanderbilt demo data: a read-only snapshot (27 active listings, campus impact, leaderboard, Jordan's listings and requests) is identical before and after, hash `4bedbdd3f47f`. The test data lives on the `webtest.edu` campus only. No reseed.
+- **Redeploying is manual until the Git link exists.** After merging web changes to `main`, create a production deployment on `loop-web` from `main` (Vercel MCP `create_deployment` with `gitSource` github `eshan06/loop` ref `main`, `target: production`, no `projectSettings`), or connect the repo for automatic deploys. A deployment made from a Git ref through the API is production by default, so for previews use `target: staging`.
 
 ## Requests to the server lane
 
