@@ -17,6 +17,11 @@ Give each request an ID (`IOS-1`, `IOS-2`, ...). Move it to "Closed requests" on
 
 ## Log
 
+### 2026-10-17 — Live integration check; Simulator ready in Live mode (ios lane)
+- Done: synced (only a README move since the last entry). Checked `LiveAPIClient` against the deployed server (`http://163.192.218.131:8000`, ATS exception on, error envelope, 401/404/400 shapes) and ran a read-only audit of every GET endpoint as Jordan, Sam and Riley against the app's models (`ios/Tools/live-audit.py`): no mismatches. The only keys the app ignores are `condition_note` and meetup spot `lat`/`lng`. Enum values in live data are all known. Demo state matches S-25 step 1 (27 active, 6 Jordan's, 3 unread).
+- Now: waiting for the go-ahead to run the two-phone test (I-27, I-17) with the agreed accounts and the server lane ready. No live mutations have been run.
+- Heads-up: iPhone 15 Pro Simulator is signed out, in Live server mode, with three seed photos in its library. Logging in creates a session only. Run `bash scripts/reseed.sh` after any rehearsal.
+
 ### 2026-10-17 — I-26 done: typography-first logo, app icon, ink welcome screen (ios lane)
 - Done: I-26. App icon is "loop." in Loop Lime on solid #191919 (`ios/Tools/make-app-icon.swift` renders it into the asset catalog; verified on the Simulator home screen). In-app wordmark is type only (glyph removed, period added) in near-black `Theme.ink`; launch background is now #FAF8F4 instead of white. Sign-in typography uses `Theme.ink` with accessible secondary colors; the Loop Lime highlighter and black buttons stay. Clean build, 35 unit + 12 UI tests pass, including the read-only live-server walk.
 - Synced: 12 new server commits (S-25 reseed/demo story, S-26, S-27 events and donation bins). Additive only: `lat`/`lng` on meetup spots (the app's `MeetupSpot` ignores them) and new `GET /events`, `GET /donation-bins`. No iOS change needed. Not built, by design: I-28 map, I-29 Swap Day, and IOS-3 (showing `condition_note`, now live on the server; the app still ignores it).
